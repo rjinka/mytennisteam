@@ -1,6 +1,7 @@
 import express from 'express';
 import Court from '../models/courtModel.js';
 import Player from '../models/playerModel.js';
+import Group from '../models/groupModel.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -27,14 +28,33 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
+// @route   GET /api/courts/:groupid
+// @desc    Get all courts for a specific group
+// @access  Private
+router.get('/:groupid', protect, async (req, res) => {
+    try {
+        const { groupid } = req.params;
+
+        // Authorization check: User must be a member of the group to view its courts.
+        const group = await Group.findOne({ id: groupid });
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+
+        const courts = await Court.find({ groupid: groupid });
+        res.json(courts);
+    } catch (error) {
+        console.error(`Error fetching courts for group ${req.params.groupid}:`, error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
 // @route   POST /api/courts
 // @desc    Create a new court
 router.post('/', protect, async (req, res) => {
     const { name, groupid } = req.body;
 
     try {
-        // Authorization check: Only group admins can create courts
-        const Group = (await import('../models/groupModel.js')).default;
         const group = await Group.findOne({ id: groupid });
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
@@ -86,8 +106,6 @@ router.delete('/:id', protect, async (req, res) => {
         }
 
         // Authorization check: Only group admins can delete courts
-        const Group = (await import('../models/groupModel.js')).default;
-        const group = await Group.findOne({ id: court.groupid });
         if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
             return res.status(403).json({ msg: 'User not authorized to delete this court' });
         }

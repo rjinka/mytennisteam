@@ -55,6 +55,9 @@ router.get('/player', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
     const { name } = req.body;
     try {
+        if (!name) {
+            return res.status(400).json({ msg: 'Name is required' });
+        }
         const newGroup = new Group({
             id: uuidv4(),
             name,
@@ -162,6 +165,10 @@ router.delete('/:id', protect, async (req, res) => {
         res.status(500).json({ msg: 'Server Error' });
     }
 });
+
+// @route   POST /api/groups/:groupId/invite
+// @desc    Invite a player to a group
+// @access  Private
 
 router.post('/:groupId/invite', protect, async (req, res) => {
     const { email } = req.body;

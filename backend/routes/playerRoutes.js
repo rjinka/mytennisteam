@@ -20,6 +20,26 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
+// @route GET /api/players/:groupid
+// @desc Get all players in a group
+// @access Public
+router.get('/:groupid', protect, async (req, res) => {
+    try {
+        const { groupid } = req.params;
+
+        const group = await Group.findOne({ id: groupid });
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+
+        const players = await Player.find({ groupid: groupid }).populate('user');
+        res.json(players);
+    } catch (error) {
+        console.error(`Error fetching players for group ${req.params.groupid}:`, error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
 // @route   PUT /api/players/:id
 // @desc    Update a player
 // @access  Public

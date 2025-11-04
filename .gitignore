@@ -78,3 +78,7 @@ node_modules/
 dist/
 
 app.yaml
+
+/.idea
+.idea/workspace.xml
+.idea/caches/deviceStreaming.xml

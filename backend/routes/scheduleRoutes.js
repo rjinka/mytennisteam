@@ -28,6 +28,27 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
+// @route GET /api/schedules/:groupid
+// @desc Get all schedules for a group
+// @access private
+router.get('/:groupid', protect, async( req, res) => {
+    try {
+        const { groupid } = req.params;
+        
+        // Authorization check: User must be a member of the group to view its courts.
+        const group = await Group.findOne({ id: groupid });
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+
+        const schdeules = await Schedule.find({ groupid: groupid });
+        res.json(schdeules);
+    } catch (error) {
+        console.error(`Error fetching schedules for group ${req.params.groupid}:`, error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+})
+
 // @route   POST /api/schedules
 // @desc    Create a new schedule
 router.post('/', protect, async (req, res) => {

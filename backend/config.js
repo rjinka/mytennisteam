@@ -1,9 +1,15 @@
 import dotenv from 'dotenv';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Load environment variables from .env file for local development
 if (process.env.NODE_ENV !== 'production') {
-    dotenv.config({ path: './dev.env' });
+    // Construct an absolute path to the .env file to avoid issues with the current working directory.
+    // This makes the configuration loading more reliable.
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    dotenv.config({ path: path.resolve(__dirname, 'dev.env') });
 }
 
 const accessSecretVersion = async (name, projectId, versionId = 'latest') => {
