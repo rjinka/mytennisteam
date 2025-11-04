@@ -26,17 +26,24 @@ app.use('/api/auth', authRoutes);
 // --- CORS Configuration ---
 // Define the list of allowed origins (domains)
 const allowedOrigins = [
-    'http://localhost:3000', // Backend's own origin
     'http://localhost:5000', // Vite dev server
     'http://127.0.0.1:5000', // Default for live-server
+    'https://mytennisteam.com', // Production frontend domain
     'https://mytennisteam-fe.web.app', // backup
     process.env.FRONTEND_URL   // Your deployed frontend URL from Firebase Hosting
-];
+].filter(Boolean); // Filter out any falsy values (e.g., undefined from process.env)
 
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
+
+        // For development/debugging purposes, log the origin and the allowed list.
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('CORS Check:');
+            console.log('  - Request Origin:', origin);
+            console.log('  - Allowed Origins:', allowedOrigins);
+        }
 
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
