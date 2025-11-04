@@ -2,6 +2,7 @@ import express from 'express';
 import Schedule from '../models/scheduleModel.js';
 import { protect } from '../middleware/authMiddleware.js';
 import Player from '../models/playerModel.js';
+import { v4 as uuidv4 } from 'uuid';
 import Group from '../models/groupModel.js';
 
 const router = express.Router();
