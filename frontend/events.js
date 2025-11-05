@@ -11,12 +11,14 @@ export function setupGlobalEventListeners() {
     const playerManagementTabBtn = document.getElementById('playerManagementTabBtn');
     const scheduleManagementTabBtn = document.getElementById('scheduleManagementTabBtn');
     const groupManagementTabBtn = document.getElementById('groupManagementTabBtn');
+    const courtManagementTabBtn = document.getElementById('courtManagementTabBtn');
     const playerManagementTabContent = document.getElementById('playerManagementTabContent');
     const scheduleManagementTabContent = document.getElementById('scheduleManagementTabContent');
     const groupManagementTabContent = document.getElementById('groupManagementTabContent');
+    const courtManagementTabContent = document.getElementById('courtManagementTabContent');
 
-    const allTabButtons = [groupManagementTabBtn, scheduleManagementTabBtn, playerManagementTabBtn];
-    const allTabContents = [playerManagementTabContent, scheduleManagementTabContent, groupManagementTabContent];
+    const allTabButtons = [groupManagementTabBtn, scheduleManagementTabBtn, courtManagementTabBtn, playerManagementTabBtn];
+    const allTabContents = [playerManagementTabContent, scheduleManagementTabContent, groupManagementTabContent, courtManagementTabContent];
 
     const activateTab = (activeBtn, activeContent) => {
         allTabButtons.forEach(btn => btn.classList.remove('active'));
@@ -34,6 +36,10 @@ export function setupGlobalEventListeners() {
     groupManagementTabBtn.onclick = () => {
         activateTab(groupManagementTabBtn, groupManagementTabContent);
         renderGroupsList();
+    };
+    courtManagementTabBtn.onclick = () => {
+        activateTab(courtManagementTabBtn, courtManagementTabContent);
+        renderCourtsList();
     };
 
     // Logout Button
@@ -73,7 +79,7 @@ export function setupGlobalEventListeners() {
 
             document.body.classList.remove('modal-open');
             document.getElementById('editGroupModalOverlay').classList.remove('show');
-            await app.setCurrentGroup(app.selection.currentGroupId); // Refresh UI for current group
+            await app.setCurrentGroup(app.selection.currentGroupId, true); // Refresh UI for current group
             renderGroupsList(); // Re-render the admin group list
         } catch (error) {
             console.error('Error updating group:', error);

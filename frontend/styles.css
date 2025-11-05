@@ -67,7 +67,7 @@
         }
 
         .tab-btn span {
-            margin-right: 100px;
+            margin-right: 50px;
         }
 
         .player-list-grid {
@@ -392,7 +392,7 @@
         /* gap: 0.5rem; */ /* Replaced with margin for better control */
         justify-content: center;
         align-items: center;
-        padding: 0.5rem;
+        padding: 0.5rem 0 0.5rem 0;
         font-size: 0.8rem; /* Slightly larger font for readability */
         border-bottom: none; /* Remove the top border line from desktop view */
     }

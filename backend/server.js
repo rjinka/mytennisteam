@@ -38,12 +38,6 @@ const corsOptions = {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
 
-        // For development/debugging purposes, log the origin and the allowed list.
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('CORS Check:');
-            console.log('  - Request Origin:', origin);
-            console.log('  - Allowed Origins:', allowedOrigins);
-        }
 
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';

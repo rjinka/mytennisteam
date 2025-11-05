@@ -48,7 +48,7 @@ router.get('/:groupid', protect, async( req, res) => {
         console.error(`Error fetching schedules for group ${req.params.groupid}:`, error);
         res.status(500).json({ msg: 'Server Error' });
     }
-})
+});
 
 // @route   POST /api/schedules
 // @desc    Create a new schedule
@@ -81,7 +81,7 @@ router.post('/', protect, async (req, res) => {
 // @desc    Update an existing schedule
 // @access  Public
 router.put('/:id', protect, async (req, res) => {
-    const scheduleId = req.params.id;
+    const { id: scheduleId } = req.params;
     const updatedScheduleData = req.body;
 
     try {
@@ -98,7 +98,7 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         // --- Handle isCompleted logic ---
-        const oldRecurrenceCount = schedule.recurrenceCount;
+        const oldRecurrenceCount = schedule.recurrenceCount || 0;
         const newRecurrenceCount = updatedScheduleData.recurrenceCount;
 
         // Check if the schedule is now completed
