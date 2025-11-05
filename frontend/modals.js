@@ -20,7 +20,7 @@ export const showGroupSelectionModal = async () => {
         // Auto-select only if there's exactly one group in total.
         if (groupsToShow.length === 1) {
             const singleGroup = groupsToShow[0];
-            setCurrentGroup(singleGroup.id);
+            await setCurrentGroup(singleGroup.id);
             modalOverlay.classList.remove('show');
             document.body.classList.remove('modal-open');
             return; // Exit before showing the modal
@@ -41,6 +41,7 @@ export const showGroupSelectionModal = async () => {
             // Since "Groups" is now the default, we just need to ensure the others are hidden.
             document.getElementById('playerManagementTabContent').classList.add('hidden');
             document.getElementById('scheduleManagementTabContent').classList.add('hidden');
+            document.getElementById('courtManagementTabContent').classList.add('hidden');
             document.getElementById('groupManagementTabContent').classList.remove('hidden');
             groupManagementTabBtn.classList.add('active');
         }
@@ -57,8 +58,8 @@ export const showGroupSelectionModal = async () => {
             const button = document.createElement('button');
             button.className = 'btn btn-primary w-full';
             button.textContent = group.name;
-            button.onclick = () => {
-                setCurrentGroup(group.id);
+            button.onclick = async () => {
+                await setCurrentGroup(group.id);
                 modalOverlay.classList.remove('show');
                 document.body.classList.remove('modal-open');
             };
@@ -83,15 +84,32 @@ export const populateScheduleCourtsDropdown = () => {
         return;
     }
     courtsArray.forEach(court => {
+        const container = document.createElement('div');
+        container.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-50';
+
         const label = document.createElement('label');
-        label.className = 'flex items-center gap-2';
+        label.className = 'flex items-center gap-2 cursor-pointer';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = court.id;
         checkbox.className = 'form-checkbox h-4 w-4 text-blue-600';
         label.appendChild(checkbox);
         label.appendChild(document.createTextNode(court.name || `Court ${court.id}`));
-        courtsDropdown.appendChild(label);
+
+        const select = document.createElement('select');
+        select.className = 'court-gametype-select input-field text-sm p-1 w-32';
+        select.style.display = 'none'; // Initially hidden
+        select.innerHTML = `
+            <option value="1" selected>Doubles</option>
+            <option value="0">Singles</option>
+        `;
+
+        checkbox.onchange = (e) => {
+            select.style.display = e.target.checked ? 'block' : 'none';
+        };
+
+        container.append(label, select);
+        courtsDropdown.appendChild(container);
     });
 };
 
@@ -102,8 +120,6 @@ export const showEditScheduleModal = (schedule) => {
     document.getElementById('editScheduleTimeInput').value = schedule.time;
     document.getElementById('editScheduleDurationInput').value = schedule.duration;
     document.getElementById('editIsRecurring').checked = schedule.recurring;
-    document.getElementById('editScheduleFrequencySelect').value = schedule.frequency;
-    document.getElementById('editScheduleGameTypeSelect').value = schedule.gameType;
 
     const recurrenceOptionsContainer = document.getElementById('editScheduleRecurrenceOptions');
     recurrenceOptionsContainer.style.display = schedule.recurring ? 'flex' : 'none';
@@ -111,22 +127,43 @@ export const showEditScheduleModal = (schedule) => {
     const recurrenceCountContainer = document.getElementById('editScheduleRecurrenceCountContainer');
     recurrenceCountContainer.style.display = schedule.frequency > 0 ? 'flex' : 'none';
     document.getElementById('editScheduleRecurrenceCountInput').value = schedule.recurrenceCount || 8;
+    document.getElementById('editScheduleFrequencySelect').value = schedule.frequency;
 
     const courtsDropdown = document.getElementById('editScheduleCourtsInput');
     courtsDropdown.innerHTML = '';
     Object.values(courts).forEach(court => {
+        const scheduleCourt = schedule.courts.find(c => c.courtId === court.id);
+        const isChecked = !!scheduleCourt;
+        const gameType = scheduleCourt ? scheduleCourt.gameType : '1'; // Default to Doubles
+
+        const container = document.createElement('div');
+        container.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-50';
+
         const label = document.createElement('label');
-        label.className = 'flex items-center gap-2';
+        label.className = 'flex items-center gap-2 cursor-pointer';
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = court.id;
         checkbox.className = 'form-checkbox h-4 w-4 text-blue-600';
-        if (schedule.courts.includes(court.id)) {
-            checkbox.checked = true;
-        }
+        checkbox.checked = isChecked;
+
         label.appendChild(checkbox);
         label.appendChild(document.createTextNode(court.name || `Court ${court.id}`));
-        courtsDropdown.appendChild(label);
+
+        const select = document.createElement('select');
+        select.className = 'court-gametype-select input-field text-sm p-1 w-32';
+        select.style.display = isChecked ? 'block' : 'none';
+        select.innerHTML = `
+            <option value="1" ${gameType === '1' ? 'selected' : ''}>Doubles</option>
+            <option value="0" ${gameType === '0' ? 'selected' : ''}>Singles</option>
+        `;
+
+        checkbox.onchange = (e) => {
+            select.style.display = e.target.checked ? 'block' : 'none';
+        };
+
+        container.append(label, select);
+        courtsDropdown.appendChild(container);
     });
 
     document.body.classList.add('modal-open');

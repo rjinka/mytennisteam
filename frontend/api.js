@@ -128,8 +128,9 @@ export const getPlayerGroups = async () => {
     return response.json();
 };
 
-export const getSchedules = async () => {
-    const response = await fetch(`${API_BASE_URL}/schedules`, {
+export const getSchedules = async (groupId = '') => {
+    const url = groupId ? `${API_BASE_URL}/schedules/${groupId}` : `${API_BASE_URL}/schedules`;
+    const response = await fetch(url, {
         headers: getAuthHeaders(),
     });
     if (!response.ok) {
@@ -190,8 +191,9 @@ export const updateCourt = async (courtId, courtData) => {
     }
     return response.json();
 };
-export const getPlayers = async () => {
-    const response = await fetch(`${API_BASE_URL}/players`, { headers: getAuthHeaders() });
+export const getPlayers = async (groupId = '') => {
+    const url = groupId ? `${API_BASE_URL}/players/${groupId}` : `${API_BASE_URL}/players`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new ApiError('Failed to fetch players', response.status);
     return response.json();
 };
@@ -228,8 +230,9 @@ export const deletePlayer = async (playerId) => {
     return response.json();
 };
 
-export const getCourts = async () => {
-    const response = await fetch(`${API_BASE_URL}/courts`, { headers: getAuthHeaders() });
+export const getCourts = async (groupId = '') => {
+    const url = groupId ? `${API_BASE_URL}/courts/${groupId}` : `${API_BASE_URL}/courts`;
+    const response = await fetch(url, { headers: getAuthHeaders() });
     if (!response.ok) throw new ApiError('Failed to fetch courts', response.status);
     return response.json();
 };

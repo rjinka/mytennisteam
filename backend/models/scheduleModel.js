@@ -4,11 +4,14 @@ const scheduleSchema = new mongoose.Schema({
     id: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     groupid: { type: String, required: true },
-    courts: [{ type: String }],
+    courts: [{
+        _id: false, // prevent mongoose from creating an _id for each court object
+        courtId: { type: String, required: true },
+        gameType: { type: String, required: true }
+    }],
     day: { type: String, required: true },
     time: { type: String, required: true },
     duration: { type: Number, required: true },
-    gameType: { type: String, required: true },
     recurring: { type: Boolean, default: false },
     frequency: { type: Number, default: 0 },
     recurrenceCount: { type: Number, default: 1 },

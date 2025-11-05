@@ -2,6 +2,7 @@ import express from 'express';
 import Court from '../models/courtModel.js';
 import Player from '../models/playerModel.js';
 import { protect } from '../middleware/authMiddleware.js';
+import Group from '../models/groupModel.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -26,6 +27,29 @@ router.get('/', protect, async (req, res) => {
         res.status(500).json({ msg: 'Server Error' });
     }
 });
+
+// @route GET /api/courts/:groupid
+// @desc Get all courts for a group
+// @access private
+router.get('/:groupid', protect, async( req, res) => {
+    try {
+        const { groupid } = req.params;
+
+        // check if group exists
+        const group = await Group.findOne({ id: groupid });
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+        
+        // Get all courts for a group
+        const courts = await Court.find({ groupid: groupid });
+        res.json(courts);
+        } catch (error) {
+        console.error(`Error fetching courts for group ${req.params.groupid}:`, error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
 
 // @route   POST /api/courts
 // @desc    Create a new court
@@ -86,8 +110,11 @@ router.delete('/:id', protect, async (req, res) => {
         }
 
         // Authorization check: Only group admins can delete courts
-        const Group = (await import('../models/groupModel.js')).default;
         const group = await Group.findOne({ id: court.groupid });
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+
         if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
             return res.status(403).json({ msg: 'User not authorized to delete this court' });
         }

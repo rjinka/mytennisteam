@@ -38,15 +38,12 @@ export async function reloadData() {
     showLoading(true);
     try {
         // Fetch all data from their respective endpoints
-        // Note: We fetch admin groups here for the management tab.
-        const [adminGroupsData, playerGroupsData, schedulesData, playersData, courtsData] = await Promise.all([
+        // We only fetch groups initially. Other data is loaded when a group is selected.
+        const [adminGroupsData, playerGroupsData] = await Promise.all([
             api.getAdminGroups(),
-            api.getPlayerGroups(),
-            api.getSchedules(),
-            api.getPlayers(),
-            api.getCourts()
+            api.getPlayerGroups()
         ]);
-        handleDataUpdate({ groups: adminGroupsData, playerGroups: playerGroupsData, schedules: schedulesData, players: playersData, courts: courtsData }, false);
+        handleDataUpdate({ groups: adminGroupsData, playerGroups: playerGroupsData }, false);
     } catch (error) {
         console.error("Failed to reload data:", error);
         if (error.status === 401) {
@@ -67,19 +64,6 @@ export function handleDataUpdate(apiData, isInitialLoad = false) {
         groups = (apiData.groups || []).reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
         playerGroups = (apiData.playerGroups || []).reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
 
-        schedules = (apiData.schedules || []).reduce((acc, schedule) => {
-            acc[schedule.id] = schedule;
-            return acc;
-        }, {});
-        players = (apiData.players || []).reduce((acc, player) => {
-            acc[player.id] = player;
-            return acc;
-        }, {});
-        courts = (apiData.courts || []).reduce((acc, court) => {
-            acc[court.id] = court;
-            return acc;
-        }, {});
-
         if (isInitialLoad) {
             showGroupSelectionModal();
         } else {
@@ -88,7 +72,7 @@ export function handleDataUpdate(apiData, isInitialLoad = false) {
     }
 }
 
-export async function setCurrentGroup(groupId) {
+export async function setCurrentGroup(groupId, isInitialLoad = false) {
     selection.currentGroupId = groupId;
 
     // Find and display the group name
@@ -106,15 +90,30 @@ export async function setCurrentGroup(groupId) {
     scheduleDetailsContainer.classList.add('hidden');
     scheduleDetailsContainer.classList.remove('flex', 'flex-col');
     selection.selectedSchedule = null;
+    
+    // Fetch data specific to the selected group
+    if (groupId) {
+        const [schedulesData, playersData, courtsData] = await Promise.all([
+            api.getSchedules(groupId),
+            api.getPlayers(groupId),
+            api.getCourts(groupId)
+        ]);
+        schedules = (schedulesData || []).reduce((acc, schedule) => ({ ...acc, [schedule.id]: schedule }), {});
+        players = (playersData || []).reduce((acc, player) => ({ ...acc, [player.id]: player }), {});
+        courts = (courtsData || []).reduce((acc, court) => ({ ...acc, [court.id]: court }), {});
+    } else {
+        schedules = {};
+        players = {};
+        courts = {};
+    }
 
-    // Now that all data is loaded at startup, we just need to re-render the components.
-    renderAllPlayers();
-    renderCourtsList();
+    // Re-render all components with the new group-specific data
     renderGroupsList();
     renderSchedulesList();
+    renderCourtsList();
+    renderAllPlayers();
 
-    // After rendering, automatically select the first schedule if one exists
-    if (group) { // Only proceed if a valid group is selected
+    if (group && !isInitialLoad) { // Only proceed if a valid group is selected
         const groupSchedules = Object.values(schedules).filter(s => s.groupid === group.id);
         if (groupSchedules.length > 0) {
             showScheduleDetails(groupSchedules[0]);
@@ -127,7 +126,7 @@ export async function setCurrentGroup(groupId) {
 async function refreshDataForCurrentGroup() {
     if (!selection.currentGroupId) return;
     const selectedScheduleId = selection.selectedSchedule ? selection.selectedSchedule.id : null;
-    await setCurrentGroup(selection.currentGroupId);
+    await setCurrentGroup(selection.currentGroupId, true);
     if (selectedScheduleId) {
         const reselectedSchedule = Object.values(schedules).find(s => s.id === selectedScheduleId);
         if (reselectedSchedule) {
@@ -137,7 +136,7 @@ async function refreshDataForCurrentGroup() {
 }
 
 export async function loadSchedulesForGroup() {
-    const allSchedules = await api.getSchedules();
+    const allSchedules = await api.getSchedules(selection.currentGroupId);
     const groupSchedules = allSchedules.filter(s => s.groupid === selection.currentGroupId) || [];
     schedules = groupSchedules.reduce((acc, schedule) => {
         acc[schedule.id] = schedule; // Assuming schedule has a unique '_id'
@@ -152,7 +151,7 @@ export async function loadSchedulesForGroup() {
 
 export async function loadCourtsForGroup() {
     try {
-        const allCourts = await api.getCourts();
+        const allCourts = await api.getCourts(selection.currentGroupId);
         const groupCourts = allCourts.filter(c => c.groupid === selection.currentGroupId) || [];
         courts = groupCourts.reduce((acc, court) => {
             acc[court.id] = court; // Assuming court has a unique '_id'
@@ -181,7 +180,7 @@ export async function createNewGroup() {
         // Explicitly re-render the group list in the admin tab
         renderGroupsList();
 
-        setCurrentGroup(newGroup.id);
+        await setCurrentGroup(newGroup.id);
         document.body.classList.remove('modal-open');
 
         await refreshDataForCurrentGroup();
@@ -227,23 +226,36 @@ export async function createNewCourt() {
 }
 
 export async function createNewSchedule() {
-    const name = document.getElementById('createScheduleNameInput').value;
+    const nameInput = document.getElementById('createScheduleNameInput');
+    const name = nameInput.value.trim();
+    if (!name) {
+        showMessageBox('Input Required', 'Please enter a schedule name.');
+        return;
+    }
     const day = document.getElementById('createScheduleDayInput').value;
     const time = document.getElementById('createScheduleTimeInput').value;
     const duration = parseInt(document.getElementById('createScheduleDurationInput').value);
     const recurring = document.getElementById('createScheduleIsRecurringSelect').checked;
     const frequency = document.getElementById('createScheduleFrequencySelect').value;
     const courtsDiv = document.getElementById('createScheduleCourtsInput');
-    const selectedCourtIds = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-    const gameType = document.getElementById('createScheduleGameTypeSelect').value;
+    
+    const selectedCourts = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => {
+        const gameTypeSelect = cb.closest('div').querySelector('.court-gametype-select');
+        return {
+            courtId: cb.value,
+            gameType: gameTypeSelect.value
+        };
+    });
 
     let recurrenceCount = 0;
     if (recurring && frequency > 0) {
         recurrenceCount = parseInt(document.getElementById('createScheduleRecurrenceCountInput').value);
     }
 
-    const maxPlayersCount = gameType == 0 ? 2 * selectedCourtIds.length : 4 * selectedCourtIds.length;
-    const newSchedule = { name, groupid: selection.currentGroupId, courts: selectedCourtIds, day, time, duration, gameType, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
+    const maxPlayersCount = selectedCourts.reduce((sum, court) => {
+        return sum + (court.gameType === '0' ? 2 : 4);
+    }, 0);
+    const newSchedule = { name, groupid: selection.currentGroupId, courts: selectedCourts, day, time, duration, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
 
     showLoading(true);
     try {
@@ -270,17 +282,28 @@ export async function saveScheduleChanges() {
     
     // Store old values BEFORE they are updated from the form
     const oldCourts = [...(scheduleBeingEdited.courts || [])];
-    const oldGameType = scheduleBeingEdited.gameType;
     const oldRecurrenceCount = scheduleBeingEdited.recurrenceCount;
-    
-    ui.scheduleBeingEdited.name = document.getElementById('editScheduleNameInput').value;
+
+    const nameInput = document.getElementById('editScheduleNameInput');
+    const name = nameInput.value.trim();
+    if (!name) {
+        showMessageBox('Input Required', 'Please enter a schedule name.');
+        return;
+    }
+    ui.scheduleBeingEdited.name = name;
     scheduleBeingEdited.day = document.getElementById('editScheduleDayInput').value;
     scheduleBeingEdited.time = document.getElementById('editScheduleTimeInput').value;
     scheduleBeingEdited.duration = parseInt(document.getElementById('editScheduleDurationInput').value);
     scheduleBeingEdited.recurring = document.getElementById('editIsRecurring').checked;
+
     const courtsDiv = document.getElementById('editScheduleCourtsInput');
-    scheduleBeingEdited.courts = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-    scheduleBeingEdited.gameType = document.getElementById('editScheduleGameTypeSelect').value;
+    scheduleBeingEdited.courts = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => {
+        const gameTypeSelect = cb.closest('div').querySelector('.court-gametype-select');
+        return {
+            courtId: cb.value,
+            gameType: gameTypeSelect.value
+        };
+    });
 
     if (scheduleBeingEdited.recurring) {
         scheduleBeingEdited.frequency = document.getElementById('editScheduleFrequencySelect').value;
@@ -291,11 +314,13 @@ export async function saveScheduleChanges() {
     }
 
     // Calculate new maxPlayersCount based on updated courts and gameType
-    scheduleBeingEdited.maxPlayersCount = parseInt(scheduleBeingEdited.gameType) === 0 ? 2 * scheduleBeingEdited.courts.length : 4 * scheduleBeingEdited.courts.length;
+    scheduleBeingEdited.maxPlayersCount = scheduleBeingEdited.courts.reduce((sum, court) => {
+        return sum + (court.gameType === '0' ? 2 : 4);
+    }, 0);
 
     // Check if courts or gameType (which affects maxPlayersCount) have changed
-    const courtsChanged = oldCourts.length !== scheduleBeingEdited.courts.length || oldCourts.some((courtId, index) => courtId !== scheduleBeingEdited.courts[index]);
-    const gameTypeChanged = oldGameType !== scheduleBeingEdited.gameType;
+    const courtsChanged = JSON.stringify(oldCourts) !== JSON.stringify(scheduleBeingEdited.courts);
+    const gameTypeChanged = courtsChanged; // If courts changed, game types might have too.
 
     // Determine if the schedule is being reactivated (was completed, now extended)
     const isBeingReactivated = scheduleBeingEdited.isCompleted && scheduleBeingEdited.recurring && parseInt(document.getElementById('editScheduleRecurrenceCountInput').value) > oldRecurrenceCount;
