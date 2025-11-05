@@ -24,7 +24,7 @@ class PlayerAdapter(
 
     class PlayerViewHolder(private val binding: ItemPlayerBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(player: Player, onEditClicked: (Player) -> Unit, onDeleteClicked: (Player) -> Unit) {
-            binding.playerNameTextView.text = player.name
+            binding.playerNameTextView.text = player.user.name // Corrected to use nested user object
 
             binding.editPlayerButton.setOnClickListener {
                 onEditClicked(player)
@@ -43,6 +43,7 @@ class PlayerDiffCallback : DiffUtil.ItemCallback<Player>() {
     }
 
     override fun areContentsTheSame(oldItem: Player, newItem: Player): Boolean {
+        // This more specific check ensures the UI updates correctly.
         return oldItem == newItem
     }
 }

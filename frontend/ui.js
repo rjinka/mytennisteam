@@ -1,10 +1,12 @@
-import { setCurrentGroup, loadSchedulesForGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup, parseJwt } from './app.js';
+import { setCurrentGroup, loadSchedulesForGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup, parseJwt, saveScheduleChanges } from './app.js';
 import { addEditGroupListeners, addRemoveGroupListeners, addScheduleActionListeners } from './events.js';
-import { showEditScheduleModal, populateScheduleCourtsDropdown } from './modals.js';
+import { showEditScheduleModal, populateScheduleCourtsDropdown, hideEditScheduleModal } from './modals.js';
 import { addSwapButtonListenersForSchedule } from './events.js';
 import { getDerivedStats } from './rotation.js';
 import { addNewPlayer, addRemovePlayerListeners, addEditPlayerListeners, addViewStatsListeners } from './events.js';
 import { addRemoveCourtListeners, addEditCourtListeners } from './events.js';
+import { getRotationButtonState, updateSchedule } from './api.js';
+
 
 const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -167,39 +169,23 @@ export const showScheduleDetails = async (schedule) => {
     }
 
     const generateBtn = document.getElementById('generateRotationBtn');
-    const currentDate = new Date();
-    const currentDayOfWeek = currentDate.getDay();
-    const scheduleDay = parseInt(schedule.day);
+    try {
+        const buttonState = await getRotationButtonState(schedule.id);
+        generateBtn.style.display = buttonState.visible ? 'block' : 'none';
+        generateBtn.textContent = buttonState.text;
+        generateBtn.disabled = buttonState.disabled;
 
-    const isScheduleDayToday = (scheduleDay === currentDayOfWeek);
-    const isAdmin = isCurrentUserAdminOfSelectedGroup();
-    const hasRotationBeenGeneratedForCurrentPeriod = (schedule.lastGeneratedWeek === schedule.week);
-    const isRotationGenerated = schedule.isRotationGenerated;
-
-    generateBtn.style.display = 'none'; // Hide by default
-
-    if (isAdmin) {
-        generateBtn.style.display = 'block'; // Show for admins
-    }
-
-    if (schedule.isCompleted) {
-        generateBtn.textContent = 'Schedule Finished';
-        generateBtn.disabled = true;
-    } else if (!schedule.recurring) { // One-time schedule logic
-        generateBtn.textContent = 'Finish Schedule';
-        generateBtn.disabled = false;
-    } else if (isRotationGenerated && !isScheduleDayToday && isAdmin) { // Recurring schedule logic
-        schedule.isRotationGenerated = false;
-        await showScheduleDetails(schedule);
-    } else if (isScheduleDayToday && !isRotationGenerated && isAdmin) {
-        generateBtn.textContent = 'Generate Rotation';
-        generateBtn.disabled = false;
-    } else if (hasRotationBeenGeneratedForCurrentPeriod && isAdmin) {
-        generateBtn.textContent = 'Rotation Generated';
-        generateBtn.disabled = true;
-    } else if (isAdmin) {
-        generateBtn.textContent = 'Generate Rotation';
-        generateBtn.disabled = false;
+        if (buttonState.resetRotationFlag) {
+            // The backend determined the rotation flag should be reset.
+            // We update it silently on the frontend and then on the backend.
+            schedule.isRotationGenerated = false;
+            await updateSchedule(schedule.id, { isRotationGenerated: false });
+            // Re-fetch the button state after the update
+            await showScheduleDetails(schedule);
+        }
+    } catch (error) {
+        console.error("Could not get rotation button state:", error);
+        generateBtn.style.display = 'none';
     }
 
     addSwapButtonListenersForSchedule(schedule);

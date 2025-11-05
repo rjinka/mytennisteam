@@ -2,7 +2,6 @@ import { renderGroupsList, renderSchedulesList, renderCourtsList, renderAllPlaye
 import { showGroupSelectionModal, hideEditScheduleModal } from './modals.js';
 import { setupGlobalEventListeners } from './events.js';
 import * as api from './api.js';
-import { generateRotationForSchedule } from './rotation.js';
 
 export let groups = {};
 export let playerGroups = {};
@@ -39,11 +38,8 @@ export async function reloadData() {
     try {
         // Fetch all data from their respective endpoints
         // We only fetch groups initially. Other data is loaded when a group is selected.
-        const [adminGroupsData, playerGroupsData] = await Promise.all([
-            api.getAdminGroups(),
-            api.getPlayerGroups()
-        ]);
-        handleDataUpdate({ groups: adminGroupsData, playerGroups: playerGroupsData }, false);
+        const allGroupsData = await api.getPlayerGroups();
+        handleDataUpdate({ allGroups: allGroupsData }, false);
     } catch (error) {
         console.error("Failed to reload data:", error);
         if (error.status === 401) {
@@ -59,10 +55,16 @@ export async function reloadData() {
 
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
-        // Keep admin groups and player groups separate.
-        // `groups` is used for the admin tab, `playerGroups` is for selection by non-admins.
-        groups = (apiData.groups || []).reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
-        playerGroups = (apiData.playerGroups || []).reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
+        const token = localStorage.getItem('token');
+        const user = token ? parseJwt(token) : {};
+        const allGroups = apiData.allGroups || [];
+
+        // Separate groups into admin and player groups on the client side
+        groups = allGroups.filter(g => user.isSuperAdmin || g.admins.includes(user.id))
+                          .reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
+
+        playerGroups = allGroups.reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
+
 
         if (isInitialLoad) {
             showGroupSelectionModal();
@@ -281,7 +283,10 @@ export async function saveScheduleChanges() {
     if (!scheduleBeingEdited) return;
     
     // Store old values BEFORE they are updated from the form
-    const oldCourts = [...(scheduleBeingEdited.courts || [])];
+    const oldCourts = (scheduleBeingEdited.courts || []).map(c => ({
+        courtId: c.courtId,
+        gameType: c.gameType
+    }));
     const oldRecurrenceCount = scheduleBeingEdited.recurrenceCount;
 
     const nameInput = document.getElementById('editScheduleNameInput');
@@ -290,31 +295,31 @@ export async function saveScheduleChanges() {
         showMessageBox('Input Required', 'Please enter a schedule name.');
         return;
     }
-    ui.scheduleBeingEdited.name = name;
-    scheduleBeingEdited.day = document.getElementById('editScheduleDayInput').value;
-    scheduleBeingEdited.time = document.getElementById('editScheduleTimeInput').value;
-    scheduleBeingEdited.duration = parseInt(document.getElementById('editScheduleDurationInput').value);
-    scheduleBeingEdited.recurring = document.getElementById('editIsRecurring').checked;
+    const day = document.getElementById('editScheduleDayInput').value;
+    const time = document.getElementById('editScheduleTimeInput').value;
+    const duration = parseInt(document.getElementById('editScheduleDurationInput').value);
+    const recurring = document.getElementById('editIsRecurring').checked;
 
     const courtsDiv = document.getElementById('editScheduleCourtsInput');
-    scheduleBeingEdited.courts = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => {
+    const courts = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => {
         const gameTypeSelect = cb.closest('div').querySelector('.court-gametype-select');
         return {
             courtId: cb.value,
             gameType: gameTypeSelect.value
         };
     });
-
-    if (scheduleBeingEdited.recurring) {
-        scheduleBeingEdited.frequency = document.getElementById('editScheduleFrequencySelect').value;
-        scheduleBeingEdited.recurrenceCount = parseInt(document.getElementById('editScheduleRecurrenceCountInput').value);
+    
+    let frequency, recurrenceCount;
+    if (recurring) {
+        frequency = document.getElementById('editScheduleFrequencySelect').value;
+        recurrenceCount = parseInt(document.getElementById('editScheduleRecurrenceCountInput').value);
     } else {
-        scheduleBeingEdited.frequency = 0;
-        scheduleBeingEdited.recurrenceCount = 1;
+        frequency = 0;
+        recurrenceCount = 1;
     }
 
     // Calculate new maxPlayersCount based on updated courts and gameType
-    scheduleBeingEdited.maxPlayersCount = scheduleBeingEdited.courts.reduce((sum, court) => {
+    const maxPlayersCount = courts.reduce((sum, court) => {
         return sum + (court.gameType === '0' ? 2 : 4);
     }, 0);
 
@@ -322,29 +327,28 @@ export async function saveScheduleChanges() {
     const courtsChanged = JSON.stringify(oldCourts) !== JSON.stringify(scheduleBeingEdited.courts);
     const gameTypeChanged = courtsChanged; // If courts changed, game types might have too.
 
-    // Determine if the schedule is being reactivated (was completed, now extended)
-    const isBeingReactivated = scheduleBeingEdited.isCompleted && scheduleBeingEdited.recurring && parseInt(document.getElementById('editScheduleRecurrenceCountInput').value) > oldRecurrenceCount;
-
-    if (courtsChanged || gameTypeChanged || isBeingReactivated) {
-        // If courts, game type changed, or schedule is reactivated, we need to re-generate the lineup
-        try {
-            // Fetch player stats for the schedule before generating the rotation
-            // Note: `players` is a global object in app.js
-            const playerStats = await Promise.all(Object.values(players).map(p => api.getPlayerStats(p.id, scheduleBeingEdited.id)));
-            generateRotationForSchedule(scheduleBeingEdited, playerStats);
-            scheduleBeingEdited.isRotationGenerated = false; // Reset this so a new rotation can be generated
-        } catch (error) {
-            console.error('Error regenerating rotation after schedule change:', error);
-            showMessageBox('Error', 'Failed to regenerate player rotation.');
-            // Decide if you want to proceed with saving the schedule even if rotation failed
-            // For now, we'll let it proceed to save other schedule changes.
-        }
+    // If courts changed, this might affect the lineup. Reset the generated flag.
+    let isRotationGenerated = scheduleBeingEdited.isRotationGenerated;
+    if (courtsChanged) {
+        isRotationGenerated = false;
     }
+
+    const payload = {
+        name,
+        day,
+        time,
+        duration,
+        recurring,
+        courts,
+        frequency,
+        recurrenceCount,
+        maxPlayersCount,
+        isRotationGenerated
+    };
 
     showLoading(true);
     try {
-        // We only send the properties that were changed in the modal
-        const updatedSchedule = await api.updateSchedule(scheduleBeingEdited.id, scheduleBeingEdited);
+        const updatedSchedule = await api.updateSchedule(scheduleBeingEdited.id, payload);
         
         // Update local data with the response from the server
         schedules[updatedSchedule.id] = updatedSchedule;

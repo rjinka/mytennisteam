@@ -350,7 +350,7 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
     const swapMessage = document.getElementById('swapMessage');
     const confirmSwapBtn = document.getElementById('confirmSwapBtn');
     const swapWithBackupCheckbox = document.getElementById('swapWithBackupCheckbox');
-    const backupSwapContainer = document.getElementById('backupSwapContainer');
+    const backupSwapContainer = document.getElementById('backupSwapContainer'); // This container holds the backup player select dropdown
     const backupPlayerSelect = document.getElementById('backupPlayerSelect');
 
     const populateRegularSwaps = () => {
@@ -359,10 +359,12 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
         const playingIds = schedule.playingPlayersIds || [];
         const benchIds = schedule.benchPlayersIds || [];
 
+        // The player being swapped is either on the court or on the bench.
+        // The eligible partners are on the opposite list.
         if (direction === 'moveToBench') {
-            eligibleSwapPartners = Object.values(players).filter(p => benchIds.includes(p.id));
+            eligibleSwapPartners = benchIds.map(id => players[id]).filter(Boolean);
         } else {
-            eligibleSwapPartners = Object.values(players).filter(p => playingIds.includes(p.id) && p.id !== player.id);
+            eligibleSwapPartners = playingIds.map(id => players[id]).filter(p => p && p.id !== player.id);
         }
 
         if (eligibleSwapPartners.length === 0) {
@@ -399,9 +401,12 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
         const useBackup = e.target.checked;
         backupSwapContainer.style.display = useBackup ? 'flex' : 'none';
         swapPlayerSelect.style.display = useBackup ? 'none' : 'block';
-        confirmSwapBtn.disabled = true;
+        confirmSwapBtn.disabled = true; // Disable button until a selection is made
         if (useBackup) {
             populateBackupSwaps();
+            backupPlayerSelect.value = ''; // Reset selection
+        } else {
+            swapPlayerSelect.value = ''; // Reset selection
         }
     };
 

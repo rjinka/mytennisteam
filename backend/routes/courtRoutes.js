@@ -3,7 +3,6 @@ import Court from '../models/courtModel.js';
 import Player from '../models/playerModel.js';
 import Group from '../models/groupModel.js';
 import { protect } from '../middleware/authMiddleware.js';
-import Group from '../models/groupModel.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();

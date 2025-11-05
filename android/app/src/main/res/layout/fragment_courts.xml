@@ -4,30 +4,23 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SchedulesFragment">
+    tools:context=".CourtsFragment">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/schedules_recycler_view"
+        android:id="@+id/courts_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:paddingBottom="88dp" />
 
-    <!-- This container will hold the detail view -->
-    <FrameLayout
-        android:id="@+id/schedule_detail_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_schedule"
+        android:id="@+id/fab_add_court"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
         app:tint="@color/white"
-        android:contentDescription="Add new schedule" />
+        android:contentDescription="Add new court" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

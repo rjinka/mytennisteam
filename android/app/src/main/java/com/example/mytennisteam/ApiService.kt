@@ -103,39 +103,23 @@ interface ApiService {
 
     @POST("/api/invitations/accept/{token}")
     suspend fun acceptInvitation(@Path("token") token: String)
+
+    @GET("/api/schedules/{id}/rotation-button-state")
+    suspend fun getRotationButtonState(
+        @Header("Authorization") token: String,
+        @Path("id") scheduleId: String
+    ): RotationButtonState
+
+    @POST("/api/schedules/{id}/generate-rotation")
+    suspend fun generateRotation(
+        @Header("Authorization") token: String,
+        @Path("id") scheduleId: String
+    )
+
+    @PUT("/api/schedules/{id}/swapPlayers")
+    suspend fun swapPlayers(
+        @Header("Authorization") token: String,
+        @Path("id") scheduleId: String,
+        @Body body: SwapPlayerRequest
+    )
 }
-
-data class AuthRequest(val token: String)
-
-data class AuthResponse(val token: String)
-
-data class UpdateGroupRequest(val name: String)
-
-data class CreateGroupRequest(val name: String)
-
-data class CreateCourtRequest(val name: String, val groupid: String)
-
-data class UpdateCourtRequest(val name: String, val groupid: String)
-
-data class CreateScheduleRequest(
-    val name: String,
-    val groupid: String,
-    val day: String,
-    val time: String,
-    val duration: Double,
-    val gameType: String,
-    val maxPlayersCount: Int
-)
-
-data class UpdateScheduleRequest(
-    val name: String,
-    val day: String,
-    val time: String,
-    val duration: Double,
-    val gameType: String,
-    val maxPlayersCount: Int
-)
-
-data class InvitePlayerRequest(val email: String)
-
-data class UpdatePlayerRequest(val name: String)

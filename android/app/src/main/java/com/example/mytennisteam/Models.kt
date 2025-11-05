@@ -1,6 +1,6 @@
 package com.example.mytennisteam
 
-// --- Data Models based on the provided schemas ---
+// --- Core Data Models ---
 
 data class Group(
     val id: String,
@@ -11,11 +11,15 @@ data class Group(
 
 data class Player(
     val id: String,
-    val name: String, // Populated from User details by the backend
+    val user: User,
     val userId: String,
     val groupid: String,
-    val availability: List<PlayerAvailability>,
-    val scheduleStats: Map<String, List<String>>
+    val availability: List<PlayerAvailability>
+)
+
+data class User(
+    val name: String,
+    val picture: String?
 )
 
 data class PlayerAvailability(
@@ -27,7 +31,7 @@ data class Schedule(
     val id: String,
     val name: String,
     val groupid: String,
-    val courts: List<String>,
+    val courts: List<ScheduleCourt>,
     val day: String,
     val time: String,
     val duration: Double,
@@ -44,8 +48,63 @@ data class Schedule(
     val isCompleted: Boolean
 )
 
+data class ScheduleCourt(
+    val courtId: String,
+    val gameType: String
+)
+
 data class Court(
     val id: String,
     val name: String,
     val groupid: String
+)
+
+// --- API Request/Response Models ---
+
+data class AuthRequest(val token: String)
+data class AuthResponse(val token: String)
+
+data class UpdateGroupRequest(val name: String)
+data class CreateGroupRequest(val name: String)
+
+data class CreateCourtRequest(val name: String, val groupid: String)
+data class UpdateCourtRequest(val name: String, val groupid: String)
+
+data class CreateScheduleRequest(
+    val name: String,
+    val groupid: String,
+    val day: String,
+    val time: String,
+    val duration: Double,
+    val courts: List<ScheduleCourt>,
+    val recurring: Boolean,
+    val frequency: Int,
+    val recurrenceCount: Int,
+    val maxPlayersCount: Int
+)
+
+data class UpdateScheduleRequest(
+    val name: String,
+    val day: String,
+    val time: String,
+    val duration: Double,
+    val courts: List<ScheduleCourt>,
+    val recurring: Boolean,
+    val frequency: Int,
+    val recurrenceCount: Int,
+    val maxPlayersCount: Int
+)
+
+data class InvitePlayerRequest(val email: String)
+data class UpdatePlayerRequest(val name: String, val availability: List<PlayerAvailability>)
+
+data class SwapPlayerRequest(
+    val playerInId: String,
+    val playerOutId: String
+)
+
+data class RotationButtonState(
+    val visible: Boolean,
+    val disabled: Boolean,
+    val text: String
 )

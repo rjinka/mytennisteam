@@ -13,35 +13,32 @@ import Court from '../models/courtModel.js';
 
 const router = express.Router();
 
-// @route   GET /api/groups/admin
-// @desc    Get groups where the current user is an admin
+// @route   GET /api/groups/player
+// @desc    Get groups where the current user is a player but also a admin to another group
 // @access  Private
-router.get('/admin', protect, async (req, res) => {
+router.get('/player', protect, async (req, res) => {
     try {
         let groups;
         if (!req.user) return res.status(401).json({ msg: 'Not authorized' });
         if (req.user.isSuperAdmin) {
             groups = await Group.find({}); // Super admin gets all groups
-        } else {
-            groups = await Group.find({ admins: req.user.id });
+            return res.json(groups);
         }
-        res.json(groups);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: 'Server Error' });
-    }
-});
 
-// @route   GET /api/groups/player
-// @desc    Get groups where the current user is a player but not necessarily an admin
-// @access  Private
-router.get('/player', protect, async (req, res) => {
-    try {
+        // find list of all groups that players is a group admin
+        const adminGroups = await Group.find({ admins: req.user.id });
+
         // Find all player entries for the current user
         const playerEntries = await Player.find({ userId: req.user.id });
-        const groupIds = playerEntries.map(p => p.groupid);
+        const playerGroupIds = playerEntries.map(p => p.groupid);
         // Find all groups corresponding to these group IDs
-        const groups = await Group.find({ id: { $in: groupIds } });
+        const playerGroups = await Group.find({ id: { $in: playerGroupIds } });
+
+        // combine adminGroups and playerGroups but remove duplicates
+        const combinedGroups = [...adminGroups, ...playerGroups];
+        groups = combinedGroups.filter((group, index, self) =>
+            index === self.findIndex((g) => g.id === group.id)
+        );
         res.json(groups);
     } catch (error) {
         console.error(error);

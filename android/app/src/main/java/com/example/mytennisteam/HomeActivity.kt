@@ -15,6 +15,7 @@ class HomeActivity : AppCompatActivity() {
 
     // Create and cache fragment instances
     private val groupsFragment = GroupsFragment()
+    private val courtsFragment = CourtsFragment()
     private val schedulesFragment = SchedulesFragment()
     private val playersFragment = PlayersFragment()
     private var activeFragment: Fragment = groupsFragment
@@ -30,8 +31,9 @@ class HomeActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             // Add all fragments initially, but show only the active one
             supportFragmentManager.beginTransaction()
-                .add(R.id.fragment_container, playersFragment, "3").hide(playersFragment)
-                .add(R.id.fragment_container, schedulesFragment, "2").hide(schedulesFragment)
+                .add(R.id.fragment_container, playersFragment, "4").hide(playersFragment)
+                .add(R.id.fragment_container, schedulesFragment, "3").hide(schedulesFragment)
+                .add(R.id.fragment_container, courtsFragment, "2").hide(courtsFragment)
                 .add(R.id.fragment_container, groupsFragment, "1")
                 .commit()
             fetchInitialData()
@@ -55,6 +57,7 @@ class HomeActivity : AppCompatActivity() {
     private fun setupBottomNavigation() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             val selectedFragment = when (item.itemId) {
+                R.id.navigation_courts -> courtsFragment
                 R.id.navigation_schedules -> schedulesFragment
                 R.id.navigation_players -> playersFragment
                 else -> groupsFragment

@@ -18,11 +18,11 @@ class ApiError extends Error {
     }
 }
 
-export const swapPlayers = async (scheduleId, playerBeingSwappedId, swapPartnerId, swapActionDirection) => {
+export const swapPlayers = async (scheduleId, playerInId, playerOutId) => {
     const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/swapPlayers`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ playerBeingSwappedId, swapPartnerId, swapActionDirection }),
+        body: JSON.stringify({ playerInId, playerOutId }),
     });
 
     if (!response.ok) {
@@ -55,6 +55,29 @@ export const updateSchedule = async (scheduleId, scheduleData) => {
     if (!response.ok) {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to update schedule', response.status);
+    }
+    return response.json();
+};
+
+export const generateRotation = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/generate-rotation`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to generate rotation', response.status);
+    }
+    return response.json();
+};
+
+export const getRotationButtonState = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/rotation-button-state`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to get button state', response.status);
     }
     return response.json();
 };
@@ -107,15 +130,6 @@ export const updateGroupAdmins = async (groupId, adminUserIds) => {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to update group admins', response.status);
     }
-    return response.json();
-};
-
-export const getAdminGroups = async () => {
-    const response = await fetch(`${API_BASE_URL}/groups/admin`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new ApiError('Failed to fetch groups', response.status);
     return response.json();
 };
 

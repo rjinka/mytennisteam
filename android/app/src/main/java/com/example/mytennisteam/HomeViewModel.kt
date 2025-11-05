@@ -9,7 +9,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-// A single data class to hold the entire state of the home screen
+// Data class for the main screen's entire state
 data class HomeData(
     val selectedGroup: Group,
     val schedules: List<Schedule>,
@@ -24,6 +24,21 @@ class HomeViewModel : ViewModel() {
 
     private val _homeData = MutableLiveData<HomeData>()
     val homeData: LiveData<HomeData> = _homeData
+
+    private val _selectedSchedule = MutableLiveData<Schedule?>()
+    val selectedSchedule: LiveData<Schedule?> = _selectedSchedule
+
+    private val _rotationButtonState = MutableLiveData<RotationButtonState>()
+    val rotationButtonState: LiveData<RotationButtonState> = _rotationButtonState
+
+    fun onScheduleSelected(schedule: Schedule, token: String) {
+        _selectedSchedule.value = schedule
+        fetchRotationButtonState(token, schedule.id)
+    }
+
+    fun onScheduleDeselected() {
+        _selectedSchedule.value = null
+    }
 
     fun fetchInitialGroups(token: String) {
         viewModelScope.launch {
@@ -59,11 +74,21 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    fun createGroup(token: String, groupName: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.instance.createGroup(token, CreateGroupRequest(name = groupName))
+                fetchInitialGroups(token)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to create group", e)
+            }
+        }
+    }
+
     fun updateGroup(token: String, groupId: String, newName: String) {
         viewModelScope.launch {
             try {
-                val updateRequest = UpdateGroupRequest(name = newName)
-                RetrofitClient.instance.updateGroup(token, groupId, updateRequest)
+                RetrofitClient.instance.updateGroup(token, groupId, UpdateGroupRequest(name = newName))
                 fetchInitialGroups(token)
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to update group", e)
@@ -82,26 +107,11 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun createGroup(token: String, groupName: String) {
-        viewModelScope.launch {
-            try {
-                val createRequest = CreateGroupRequest(name = groupName)
-                RetrofitClient.instance.createGroup(token, createRequest)
-                fetchInitialGroups(token)
-            } catch (e: Exception) {
-                Log.e("HomeViewModel", "Failed to create group", e)
-            }
-        }
-    }
-
     fun createCourt(token: String, courtName: String, groupId: String) {
         viewModelScope.launch {
             try {
-                val createRequest = CreateCourtRequest(name = courtName, groupid = groupId)
-                RetrofitClient.instance.createCourt(token, createRequest)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                RetrofitClient.instance.createCourt(token, CreateCourtRequest(name = courtName, groupid = groupId))
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to create court", e)
             }
@@ -111,11 +121,8 @@ class HomeViewModel : ViewModel() {
     fun updateCourt(token: String, courtId: String, newName: String, groupId: String) {
         viewModelScope.launch {
             try {
-                val updateRequest = UpdateCourtRequest(name = newName, groupid = groupId)
-                RetrofitClient.instance.updateCourt(token, courtId, updateRequest)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                RetrofitClient.instance.updateCourt(token, courtId, UpdateCourtRequest(name = newName, groupid = groupId))
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to update court", e)
             }
@@ -126,9 +133,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.instance.deleteCourt(token, courtId)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to delete court", e)
             }
@@ -139,9 +144,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.instance.createSchedule(token, request)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to create schedule", e)
             }
@@ -152,9 +155,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.instance.updateSchedule(token, scheduleId, request)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to update schedule", e)
             }
@@ -165,9 +166,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.instance.deleteSchedule(token, scheduleId)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to delete schedule", e)
             }
@@ -177,23 +176,18 @@ class HomeViewModel : ViewModel() {
     fun invitePlayer(token: String, groupId: String, email: String) {
         viewModelScope.launch {
             try {
-                val request = InvitePlayerRequest(email = email)
-                RetrofitClient.instance.invitePlayer(token, groupId, request)
-                Log.d("HomeViewModel", "Invitation sent to $email")
+                RetrofitClient.instance.invitePlayer(token, groupId, InvitePlayerRequest(email = email))
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to send invitation", e)
             }
         }
     }
 
-    fun updatePlayer(token: String, playerId: String, newName: String) {
+    fun updatePlayer(token: String, playerId: String, newName: String, newAvailability: List<PlayerAvailability>) {
         viewModelScope.launch {
             try {
-                val request = UpdatePlayerRequest(name = newName)
-                RetrofitClient.instance.updatePlayer(token, playerId, request)
-                _homeData.value?.selectedGroup?.let {
-                    loadDataForGroup(token, it)
-                }
+                RetrofitClient.instance.updatePlayer(token, playerId, UpdatePlayerRequest(name = newName, availability = newAvailability))
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Failed to update player", e)
             }
@@ -204,11 +198,46 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 RetrofitClient.instance.deletePlayer(token, playerId)
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to delete player", e)
+            }
+        }
+    }
+
+    fun fetchRotationButtonState(token: String, scheduleId: String) {
+        viewModelScope.launch {
+            try {
+                val state = RetrofitClient.instance.getRotationButtonState(token, scheduleId)
+                _rotationButtonState.value = state
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to fetch rotation button state", e)
+            }
+        }
+    }
+
+    fun generateRotation(token: String, scheduleId: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.instance.generateRotation(token, scheduleId)
                 _homeData.value?.selectedGroup?.let {
                     loadDataForGroup(token, it)
                 }
+                fetchRotationButtonState(token, scheduleId)
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "Failed to delete player", e)
+                Log.e("HomeViewModel", "Failed to generate rotation", e)
+            }
+        }
+    }
+
+    fun swapPlayer(token: String, scheduleId: String, playerInId: String, playerOutId: String) {
+        viewModelScope.launch {
+            try {
+                val request = SwapPlayerRequest(playerInId = playerInId, playerOutId = playerOutId)
+                RetrofitClient.instance.swapPlayers(token, scheduleId, request)
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it) }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to swap player", e)
             }
         }
     }
