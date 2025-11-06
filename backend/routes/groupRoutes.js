@@ -153,7 +153,7 @@ router.delete('/:id', protect, async (req, res) => {
         await Schedule.deleteMany({ groupid: groupId });
         await Player.deleteMany({ groupid: groupId });
         await Court.deleteMany({ groupid: groupId });
-        await Invitation.deleteMany({ groupId: groupId });
+        await Invitation.deleteMany({ groupId: group._id });
 
         await group.deleteOne();
         res.json({ msg: 'Group removed' });
@@ -199,7 +199,7 @@ router.post('/:groupId/invite', protect, async (req, res) => {
         // Create invitation (this will be handled by the invitation model's defaults)
         const invitation = await Invitation.create({
             email: email,
-            groupId: group.id, // Use the custom id for the ref
+            groupId: group._id, // Use the ObjectId for the ref
         });
 
         const inviteUrl = `${process.env.FRONTEND_URL}?join_token=${invitation.join_token}`;
