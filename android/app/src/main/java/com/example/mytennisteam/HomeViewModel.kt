@@ -3,6 +3,7 @@ package com.example.mytennisteam
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val _allGroups = MutableLiveData<List<Group>>()
     val allGroups: LiveData<List<Group>> = _allGroups
@@ -35,6 +36,25 @@ class HomeViewModel : ViewModel() {
     private val _forceLogout = MutableLiveData<Event<Unit>>()
     val forceLogout: LiveData<Event<Unit>> = _forceLogout
 
+    companion object {
+        private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
+
+        fun provideFactory(
+            owner: androidx.savedstate.SavedStateRegistryOwner,
+            defaultArgs: android.os.Bundle? = null
+        ): androidx.lifecycle.ViewModelProvider.Factory =
+            object : androidx.lifecycle.AbstractSavedStateViewModelFactory(owner, defaultArgs) {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : androidx.lifecycle.ViewModel> create(
+                    key: String,
+                    modelClass: Class<T>,
+                    handle: androidx.lifecycle.SavedStateHandle
+                ): T {
+                    return HomeViewModel(handle) as T
+                }
+            }
+    }
+
     fun onScheduleSelected(schedule: Schedule, token: String, loadingViewModel: LoadingViewModel) {
         _selectedSchedule.value = schedule
         fetchRotationButtonState(token, schedule.id, loadingViewModel)
@@ -50,7 +70,9 @@ class HomeViewModel : ViewModel() {
             try {
                 val groups = RetrofitClient.instance.getGroups(token)
                 _allGroups.value = groups
-                groups.firstOrNull()?.let {
+                val savedGroupId = savedStateHandle.get<String>(SELECTED_GROUP_ID_KEY)
+                val groupToLoad = groups.find { it.id == savedGroupId } ?: groups.firstOrNull()
+                groupToLoad?.let {
                     loadDataForGroup(token, it, loadingViewModel)
                 }
             } catch (e: Exception) {
@@ -85,6 +107,7 @@ class HomeViewModel : ViewModel() {
 
                 withContext(Dispatchers.Main) {
                     _homeData.value = HomeData(group, schedules, players, courts)
+                    savedStateHandle[SELECTED_GROUP_ID_KEY] = group.id
                     _selectedSchedule.value?.let {
                         val updatedSchedule = schedules.find { s -> s.id == it.id }
                         _selectedSchedule.value = updatedSchedule
