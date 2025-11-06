@@ -37,14 +37,14 @@ class CourtsFragment : Fragment() {
         observeViewModel()
 
         binding.fabAddCourt.setOnClickListener {
-            showCreateCourtDialog()
+            showCreateOrEditCourtDialog(null)
         }
     }
 
     private fun setupRecyclerView() {
         courtAdapter = CourtAdapter(
             onEditClicked = { court ->
-                showEditCourtDialog(court)
+                showCreateOrEditCourtDialog(court)
             },
             onDeleteClicked = { court ->
                 showDeleteCourtConfirmation(court)
@@ -64,22 +64,27 @@ class CourtsFragment : Fragment() {
         }
     }
 
-    private fun showCreateCourtDialog() {
+    private fun showCreateOrEditCourtDialog(court: Court?) {
         val currentGroup = homeViewModel.homeData.value?.selectedGroup
         if (currentGroup == null) {
             Toast.makeText(context, "Please select a group first", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_group, null)
-        val textInputLayout = dialogView.findViewById<TextInputLayout>(R.id.new_group_name_input_layout)
-        val courtNameEditText = dialogView.findViewById<EditText>(R.id.new_group_name_edit_text)
-        textInputLayout.hint = "Court Name"
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_court, null)
+        val courtNameInputLayout = dialogView.findViewById<TextInputLayout>(R.id.court_name_input_layout)
+        val courtNameEditText = dialogView.findViewById<EditText>(R.id.court_name_edit_text)
+
+        if (court != null) {
+            courtNameEditText.setText(court.name)
+        }
+
+        val dialogTitle = if (court == null) "Create New Court" else "Edit Court Name"
 
         val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Create New Court")
+            .setTitle(dialogTitle)
             .setView(dialogView)
-            .setPositiveButton("Create", null)
+            .setPositiveButton(if (court == null) "Create" else "Save", null)
             .setNegativeButton("Cancel", null)
             .create()
 
@@ -90,45 +95,15 @@ class CourtsFragment : Fragment() {
                 if (courtName.isNotBlank()) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
-                        homeViewModel.createCourt("Bearer $rawToken", courtName, currentGroup.id, loadingViewModel)
+                        if (court == null) {
+                            homeViewModel.createCourt("Bearer $rawToken", courtName, currentGroup.id, loadingViewModel)
+                        } else {
+                            homeViewModel.updateCourt("Bearer $rawToken", court.id, courtName, court.groupid, loadingViewModel)
+                        }
                         dialog.dismiss()
                     }
                 } else {
-                    textInputLayout.error = "Required field"
-                }
-            }
-        }
-        dialog.show()
-    }
-
-    private fun showEditCourtDialog(court: Court) {
-        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_group, null)
-        val textInputLayout = dialogView.findViewById<TextInputLayout>(R.id.new_group_name_input_layout)
-        val newCourtNameEditText = dialogView.findViewById<EditText>(R.id.new_group_name_edit_text)
-        newCourtNameEditText.setText(court.name)
-        textInputLayout.hint = "Court Name"
-
-        val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Edit Court Name")
-            .setView(dialogView)
-            .setPositiveButton("Save", null)
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        dialog.setOnShowListener { _ ->
-            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener { 
-                val newName = newCourtNameEditText.text.toString().trim()
-                if (newName.isNotBlank()) {
-                    if (newName != court.name) {
-                        val rawToken = SessionManager.getAuthToken(requireContext())
-                        if (rawToken != null) {
-                            homeViewModel.updateCourt("Bearer $rawToken", court.id, newName, court.groupid, loadingViewModel)
-                        }
-                    }
-                    dialog.dismiss()
-                } else {
-                    textInputLayout.error = "Required field"
+                    courtNameInputLayout.error = "Court name cannot be empty"
                 }
             }
         }
