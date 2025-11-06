@@ -96,4 +96,9 @@ const startServer = async () => {
     }
 };
 
-startServer();
+// Start the server only if this file is run directly (not when imported for tests)
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+export { app, startServer };
