@@ -154,21 +154,27 @@ export const getSchedules = async (groupId = '') => {
     }
     return response.json();
 };
-// Placeholder functions for other API calls used in the frontend context
-// These would typically be implemented to interact with your backend's respective routes.
-export const getPlayerStats = async (playerId, scheduleId) => {
-    const response = await fetch(`${API_BASE_URL}/playerstats/${playerId}/${scheduleId}`, {
+
+export const getScheduleStats = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/stats/schedule/${scheduleId}`, {
         headers: getAuthHeaders(),
     });
-    if (response.status === 404) {
-        // It's not an error if stats don't exist yet, just return an empty structure.
-        return { playerId, scheduleId, stats: [] };
-    }
     if (!response.ok) {
-        throw new ApiError('Failed to fetch player stats', response.status);
+        throw new ApiError('Failed to fetch schedule stats', response.status);
     }
     return response.json();
 };
+
+export const getPlayerStats = async (playerId) => {
+    const response = await fetch(`${API_BASE_URL}/stats/player/${playerId}`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        throw new ApiError('Failed to fetch all player stats', response.status);
+    }
+    return response.json();
+};
+
 export const createPlayerStat = async (statData) => {
     const response = await fetch(`${API_BASE_URL}/playerstats`, {
         method: 'POST',

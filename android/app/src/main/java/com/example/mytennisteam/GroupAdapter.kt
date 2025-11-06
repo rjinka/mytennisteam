@@ -3,6 +3,7 @@ package com.example.mytennisteam
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -47,9 +48,18 @@ class GroupAdapter(
         ) {
             binding.groupNameTextView.text = group.name
 
-            (binding.root as MaterialCardView).setCardBackgroundColor(
-                if (isSelected) Color.parseColor("#E3F2FD") else Color.WHITE
-            )
+            val card = binding.root as MaterialCardView
+            if (isSelected) {
+                card.setCardBackgroundColor(ContextCompat.getColor(itemView.context, R.color.selected_group_color))
+                binding.groupNameTextView.setTextColor(Color.WHITE)
+                binding.editGroupButton.setColorFilter(Color.WHITE)
+                binding.deleteGroupButton.setColorFilter(Color.WHITE)
+            } else {
+                card.setCardBackgroundColor(Color.WHITE)
+                binding.groupNameTextView.setTextColor(Color.BLACK)
+                binding.editGroupButton.setColorFilter(ContextCompat.getColor(itemView.context, R.color.default_icon_tint))
+                binding.deleteGroupButton.setColorFilter(ContextCompat.getColor(itemView.context, R.color.default_icon_tint))
+            }
 
             itemView.setOnClickListener {
                 onGroupSelected(group)

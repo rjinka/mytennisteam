@@ -176,22 +176,22 @@ export const showScheduleStatsModal = async (schedule) => {
     statsBody.innerHTML = '';
 
     showLoading(true);
-    let playersForSchedule = [];
-    let playerStats = [];
+    let allStatsForSchedule = [];
     try {
-        playersForSchedule = Object.values(players).filter(p => 
-            p.availability?.some(a => a.scheduleId === schedule.id)
-        );
-        playerStats = await Promise.all(playersForSchedule.map(player => api.getPlayerStats(player.id, schedule.id)));
+        // Use the new, more efficient API call
+        allStatsForSchedule = await api.getScheduleStats(schedule.id);
     } finally {
         showLoading(false);
     }
+
+    const playersForSchedule = allStatsForSchedule.map(ps => players[ps.playerId]);
 
     if (playersForSchedule.length === 0) {
         statsBody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No players are assigned to this schedule.</td></tr>';
     } else {
         playersForSchedule.sort((a, b) => a.user.name.localeCompare(b.user.name)).forEach(player => {
-            const statsData = playerStats.find(ps => ps.playerId === player.id);
+            if (!player) return;
+            const statsData = allStatsForSchedule.find(ps => ps.playerId === player.id);
             const stats = getDerivedStats(statsData ? statsData.stats : []);
             const availability = player.availability?.find(a => a.scheduleId === schedule.id)?.type || 'N/A';
 
@@ -288,15 +288,15 @@ export const showPlayerStatsModal = async (player) => {
     showLoading(true);
     let allPlayerStats = [];
     try {
-        const scheduleIds = player.availability?.map(a => a.scheduleId) || [];
-        const playerStatsPromises = scheduleIds.map(scheduleId => api.getPlayerStats(player.id, scheduleId));
-        allPlayerStats = await Promise.all(playerStatsPromises);
+        // Use the new, more efficient API call
+        allPlayerStats = await api.getPlayerStats(player.id);
     } finally {
         showLoading(false);
     }
 
     allPlayerStats.forEach(statData => {
         const schedule = schedules[statData.scheduleId];
+        if (!schedule) return;
         const history = statData.stats || [];
         const stats = getDerivedStats(history);
         const totalBenched = history.filter(h => h.status === 'benched').length;

@@ -1,14 +1,15 @@
 package com.example.mytennisteam
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.GridLayoutManager
@@ -22,6 +23,7 @@ class ScheduleDetailFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val homeViewModel: HomeViewModel by activityViewModels()
+    private val loadingViewModel: LoadingViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,7 +47,7 @@ class ScheduleDetailFragment : Fragment() {
                 binding.generateRotationButton.setOnClickListener {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
-                        homeViewModel.generateRotation("Bearer $rawToken", schedule.id)
+                        homeViewModel.generateRotation("Bearer $rawToken", schedule.id, loadingViewModel)
                     }
                 }
             }
@@ -65,9 +67,19 @@ class ScheduleDetailFragment : Fragment() {
     }
 
     private fun updatePlayerList(recyclerView: RecyclerView, playerIds: List<String>, allPlayers: List<Player>, isBench: Boolean) {
-        val adapter = PlayerLineupAdapter(isBench) { playerToSwapOut ->
-            showSwapPlayerDialog(playerToSwapOut, isBench, allPlayers, playerIds)
-        }
+        val adapter = PlayerLineupAdapter(
+            isBench,
+            onSwapClicked = { playerToSwapOut ->
+                val rawToken = SessionManager.getAuthToken(requireContext())
+                val schedule = homeViewModel.selectedSchedule.value
+                if (rawToken != null && schedule != null) {
+                    showSwapPlayerDialog(playerToSwapOut, isBench, allPlayers, schedule)
+                }
+            },
+            onStatsClicked = { player ->
+                showPlayerAvailabilityDialog(player)
+            }
+        )
         recyclerView.adapter = adapter
         recyclerView.layoutManager = if (isBench) LinearLayoutManager(context) else GridLayoutManager(context, 2)
         
@@ -75,9 +87,40 @@ class ScheduleDetailFragment : Fragment() {
         adapter.submitList(players)
     }
 
-    private fun showSwapPlayerDialog(playerToSwapOut: Player, isBench: Boolean, allPlayers: List<Player>, currentListIds: List<String>) {
-        val schedule = homeViewModel.selectedSchedule.value ?: return
+    private fun showPlayerAvailabilityDialog(player: Player) {
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_player_availability, null)
+        val availabilityTitle = dialogView.findViewById<TextView>(R.id.availability_title)
+        val availabilityRecyclerView = dialogView.findViewById<RecyclerView>(R.id.availability_recycler_view)
+        val closeButton = dialogView.findViewById<Button>(R.id.close_button)
 
+        availabilityTitle.text = "Availability for ${player.user.name}"
+        val availabilityAdapter = AvailabilityAdapter()
+        availabilityRecyclerView.adapter = availabilityAdapter
+        availabilityRecyclerView.layoutManager = LinearLayoutManager(context)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        val allSchedules = homeViewModel.homeData.value?.schedules ?: emptyList()
+        val availability = player.availability.mapNotNull { availability ->
+            val schedule = allSchedules.find { it.id == availability.scheduleId }
+            if (schedule != null) {
+                Pair("${schedule.name} (${schedule.day} at ${schedule.time})", availability.type)
+            } else {
+                null
+            }
+        }
+        availabilityAdapter.submitList(availability)
+
+        dialog.show()
+    }
+
+    private fun showSwapPlayerDialog(playerToSwapOut: Player, isBench: Boolean, allPlayers: List<Player>, schedule: Schedule) {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_swap_player, null)
         val title = dialogView.findViewById<TextView>(R.id.swap_title_text_view)
         val subtitle = dialogView.findViewById<TextView>(R.id.swap_subtitle_text_view)
@@ -105,7 +148,7 @@ class ScheduleDetailFragment : Fragment() {
                 if (playerToSwapIn != null) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
-                        homeViewModel.swapPlayer("Bearer $rawToken", schedule.id, playerToSwapIn.id, playerToSwapOut.id)
+                        homeViewModel.swapPlayer("Bearer $rawToken", schedule.id, playerToSwapIn.id, playerToSwapOut.id, loadingViewModel)
                     }
                 } else {
                     Toast.makeText(context, "Please select a player to swap with.", Toast.LENGTH_SHORT).show()

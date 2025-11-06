@@ -61,7 +61,7 @@ app.use('/api/courts', courtRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/schedules', scheduleRoutes);
-app.use('/api/playerstats', playerStatRoutes);
+app.use('/api/stats', playerStatRoutes);
 
 const startServer = async () => {
     try {
@@ -86,7 +86,7 @@ const startServer = async () => {
         console.log('MongoDB connected successfully.');
 
         // --- Start Server ---
-        const PORT = 3000;
+        const PORT = process.env.BACKEND_PORT || process.env.PORT || 3000;
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });

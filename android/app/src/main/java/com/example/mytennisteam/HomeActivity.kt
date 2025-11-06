@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.example.mytennisteam.databinding.ActivityHomeBinding
 
@@ -12,8 +13,8 @@ class HomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomeBinding
     private val homeViewModel: HomeViewModel by viewModels()
+    private val loadingViewModel: LoadingViewModel by viewModels()
 
-    // Create and cache fragment instances
     private val groupsFragment = GroupsFragment()
     private val courtsFragment = CourtsFragment()
     private val schedulesFragment = SchedulesFragment()
@@ -29,7 +30,6 @@ class HomeActivity : AppCompatActivity() {
         setupBottomNavigation()
 
         if (savedInstanceState == null) {
-            // Add all fragments initially, but show only the active one
             supportFragmentManager.beginTransaction()
                 .add(R.id.fragment_container, playersFragment, "4").hide(playersFragment)
                 .add(R.id.fragment_container, schedulesFragment, "3").hide(schedulesFragment)
@@ -39,19 +39,23 @@ class HomeActivity : AppCompatActivity() {
             fetchInitialData()
         }
 
-        observeViewModel()
+        observeViewModels()
     }
 
     private fun setupToolbar() {
         setSupportActionBar(binding.appBar.toolbar)
-        supportActionBar?.setDisplayShowTitleEnabled(false) // Hide the default title
+        supportActionBar?.setDisplayShowTitleEnabled(false)
 
         binding.appBar.logoutButton.setOnClickListener {
-            SessionManager.clearAuthToken(this)
-            val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
+            logout()
         }
+    }
+
+    private fun logout() {
+        SessionManager.clearAuthToken(this)
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
     }
 
     private fun setupBottomNavigation() {
@@ -75,14 +79,23 @@ class HomeActivity : AppCompatActivity() {
             finish()
             return
         }
-        homeViewModel.fetchInitialGroups("Bearer $rawToken")
+        homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
     }
 
-    private fun observeViewModel() {
+    private fun observeViewModels() {
         homeViewModel.homeData.observe(this) { data ->
             if (data != null) {
                 binding.appBar.toolbarSubtitle.text = data.selectedGroup.name
             }
+        }
+
+        homeViewModel.forceLogout.observe(this, EventObserver {
+            logout()
+            Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
+        })
+
+        loadingViewModel.isLoading.observe(this) { isLoading ->
+            binding.loadingOverlay.root.isVisible = isLoading
         }
     }
 }

@@ -19,6 +19,7 @@ class CourtsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val homeViewModel: HomeViewModel by activityViewModels()
+    private val loadingViewModel: LoadingViewModel by activityViewModels()
     private lateinit var courtAdapter: CourtAdapter
 
     override fun onCreateView(
@@ -89,7 +90,7 @@ class CourtsFragment : Fragment() {
                 if (courtName.isNotBlank()) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
-                        homeViewModel.createCourt("Bearer $rawToken", courtName, currentGroup.id)
+                        homeViewModel.createCourt("Bearer $rawToken", courtName, currentGroup.id, loadingViewModel)
                         dialog.dismiss()
                     }
                 } else {
@@ -122,7 +123,7 @@ class CourtsFragment : Fragment() {
                     if (newName != court.name) {
                         val rawToken = SessionManager.getAuthToken(requireContext())
                         if (rawToken != null) {
-                            homeViewModel.updateCourt("Bearer $rawToken", court.id, newName, court.groupid)
+                            homeViewModel.updateCourt("Bearer $rawToken", court.id, newName, court.groupid, loadingViewModel)
                         }
                     }
                     dialog.dismiss()
@@ -141,7 +142,7 @@ class CourtsFragment : Fragment() {
             .setPositiveButton("Delete") { _, _ ->
                 val rawToken = SessionManager.getAuthToken(requireContext())
                 if (rawToken != null) {
-                    homeViewModel.deleteCourt("Bearer $rawToken", court.id)
+                    homeViewModel.deleteCourt("Bearer $rawToken", court.id, loadingViewModel)
                 }
             }
             .setNegativeButton("Cancel", null)

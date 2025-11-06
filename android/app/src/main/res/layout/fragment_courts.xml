@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/transparent"
     tools:context=".CourtsFragment">
 
     <androidx.recyclerview.widget.RecyclerView
@@ -11,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="88dp" />
+        android:paddingBottom="88dp"/>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_court"
@@ -21,6 +22,6 @@
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
         app:tint="@color/white"
-        android:contentDescription="Add new court" />
+        android:contentDescription="Create New Court" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

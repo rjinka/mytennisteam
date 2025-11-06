@@ -122,4 +122,16 @@ interface ApiService {
         @Path("id") scheduleId: String,
         @Body body: SwapPlayerRequest
     )
+
+    @GET("/api/stats/player/{playerId}")
+    suspend fun getPlayerStats(
+        @Header("Authorization") token: String,
+        @Path("playerId") playerId: String
+    ): List<PlayerStat>
+
+    @GET("/api/stats/schedule/{scheduleId}")
+    suspend fun getScheduleStats(
+        @Header("Authorization") token: String,
+        @Path("scheduleId") scheduleId: String
+    ): List<ScheduleStatResponse>
 }

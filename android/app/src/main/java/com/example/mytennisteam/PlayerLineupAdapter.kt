@@ -11,7 +11,8 @@ import com.example.mytennisteam.databinding.ItemPlayerLineupBinding
 
 class PlayerLineupAdapter(
     private val isBench: Boolean,
-    private val onSwapClicked: (Player) -> Unit
+    private val onSwapClicked: (Player) -> Unit,
+    private val onStatsClicked: (Player) -> Unit
 ) : ListAdapter<Player, PlayerLineupAdapter.PlayerViewHolder>(PlayerDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlayerViewHolder {
@@ -21,13 +22,14 @@ class PlayerLineupAdapter(
 
     override fun onBindViewHolder(holder: PlayerViewHolder, position: Int) {
         val player = getItem(position)
-        holder.bind(player, isBench, onSwapClicked)
+        holder.bind(player, isBench, onSwapClicked, onStatsClicked)
     }
 
     class PlayerViewHolder(private val binding: ItemPlayerLineupBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(player: Player, isBench: Boolean, onSwapClicked: (Player) -> Unit) {
+        fun bind(player: Player, isBench: Boolean, onSwapClicked: (Player) -> Unit, onStatsClicked: (Player) -> Unit) {
             binding.playerNameTextView.text = player.user.name
             binding.swapButton.setOnClickListener { onSwapClicked(player) }
+            binding.statsButton.setOnClickListener { onStatsClicked(player) }
 
             val backgroundColor = if (isBench) Color.parseColor("#FFEBEE") else Color.parseColor("#E8F5E9")
             (binding.root as CardView).setCardBackgroundColor(backgroundColor)

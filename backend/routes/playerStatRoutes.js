@@ -6,15 +6,15 @@ import Group from '../models/groupModel.js';
 
 const router = express.Router();
 
-// @route   GET /api/playerstats/:playerId/:scheduleId
-// @desc    Get player stats for a schedule
-// @access  Private
-router.get('/:playerId/:scheduleId', protect, async (req, res) => {
+// @route GET /api/stats/player/:playerId
+// @desc get player stats for all schedules he is part of
+// @access private
+router.get('/player/:playerId', protect, async (req, res) => {
     try {
-        const playerStat = await PlayerStat.findOne({ playerId: req.params.playerId, scheduleId: req.params.scheduleId });
+        const playerStat = await PlayerStat.find({ playerId: req.params.playerId });
         if (!playerStat) {
-            // It's common for stats not to exist yet, so return an empty object instead of 404.
-            return res.json({ playerId: req.params.playerId, scheduleId: req.params.scheduleId, stats: [] });
+            // no stats exist for a player
+            return res.json({ playerId: req.params.playerId, stats: [] });
         }
         res.json(playerStat);
     } catch (error) {
@@ -22,6 +22,24 @@ router.get('/:playerId/:scheduleId', protect, async (req, res) => {
         res.status(500).json({ msg: 'Server Error' });
     }
 });
+
+// @route GET /api/stats/schedule/:scheduleId
+// @desc get stats for a schedule
+// @access private
+router.get('/schedule/:scheduleId', protect, async (req, res) => {
+    try {
+        const playerStat = await PlayerStat.find({ scheduleId: req.params.scheduleId });
+        if (!playerStat) {
+            // no stats exist for a schedule
+            return res.json({ stats: [] });
+        }
+        res.json(playerStat);
+    } catch (error) {
+        console.error('Error fetching schedule stats:', err);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
 
 // @route   POST /api/playerstats
 // @desc    Create or update a player stat entry

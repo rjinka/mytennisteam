@@ -10,7 +10,8 @@ import com.example.mytennisteam.databinding.ItemScheduleBinding
 class ScheduleAdapter(
     private val onItemClicked: (Schedule) -> Unit,
     private val onEditClicked: (Schedule) -> Unit,
-    private val onDeleteClicked: (Schedule) -> Unit
+    private val onDeleteClicked: (Schedule) -> Unit,
+    private val onStatsClicked: (Schedule) -> Unit
 ) : ListAdapter<Schedule, ScheduleAdapter.ScheduleViewHolder>(ScheduleDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScheduleViewHolder {
@@ -20,14 +21,13 @@ class ScheduleAdapter(
 
     override fun onBindViewHolder(holder: ScheduleViewHolder, position: Int) {
         val schedule = getItem(position)
-        holder.bind(schedule, onItemClicked, onEditClicked, onDeleteClicked)
+        holder.bind(schedule, onItemClicked, onEditClicked, onDeleteClicked, onStatsClicked)
     }
 
     class ScheduleViewHolder(private val binding: ItemScheduleBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(schedule: Schedule, onItemClicked: (Schedule) -> Unit, onEditClicked: (Schedule) -> Unit, onDeleteClicked: (Schedule) -> Unit) {
+        fun bind(schedule: Schedule, onItemClicked: (Schedule) -> Unit, onEditClicked: (Schedule) -> Unit, onDeleteClicked: (Schedule) -> Unit, onStatsClicked: (Schedule) -> Unit) {
             binding.scheduleNameTextView.text = schedule.name
-            binding.scheduleDayTextView.text = getDayString(schedule.day)
-            binding.scheduleTimeTextView.text = schedule.time
+            binding.scheduleDayTimeTextView.text = "${getDayString(schedule.day)} ${schedule.time}"
 
             itemView.setOnClickListener {
                 onItemClicked(schedule)
@@ -39,6 +39,10 @@ class ScheduleAdapter(
 
             binding.deleteScheduleButton.setOnClickListener {
                 onDeleteClicked(schedule)
+            }
+
+            binding.statsButton.setOnClickListener {
+                onStatsClicked(schedule)
             }
         }
 

@@ -59,6 +59,14 @@ data class Court(
     val groupid: String
 )
 
+// Data class for the main screen's entire state
+data class HomeData(
+    val selectedGroup: Group,
+    val schedules: List<Schedule>,
+    val players: List<Player>,
+    val courts: List<Court>
+)
+
 // --- API Request/Response Models ---
 
 data class AuthRequest(val token: String)

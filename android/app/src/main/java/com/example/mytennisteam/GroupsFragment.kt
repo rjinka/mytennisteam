@@ -5,12 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.example.mytennisteam.databinding.FragmentGroupsBinding
-import com.google.android.material.textfield.TextInputLayout
 
 class GroupsFragment : Fragment() {
 
@@ -18,7 +18,7 @@ class GroupsFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val homeViewModel: HomeViewModel by activityViewModels()
-
+    private val loadingViewModel: LoadingViewModel by activityViewModels()
     private lateinit var groupAdapter: GroupAdapter
 
     override fun onCreateView(
@@ -32,24 +32,24 @@ class GroupsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupRecyclerViews()
+        setupRecyclerView()
         observeViewModel()
 
         binding.fabAddGroup.setOnClickListener {
-            showCreateGroupDialog()
+            showCreateOrEditGroupDialog(null)
         }
     }
 
-    private fun setupRecyclerViews() {
+    private fun setupRecyclerView() {
         groupAdapter = GroupAdapter(
             onGroupSelected = { group ->
                 val rawToken = SessionManager.getAuthToken(requireContext())
                 if (rawToken != null) {
-                    homeViewModel.loadDataForGroup("Bearer $rawToken", group)
+                    homeViewModel.loadDataForGroup("Bearer $rawToken", group, loadingViewModel)
                 }
             },
             onEditClicked = { group ->
-                showEditGroupDialog(group)
+                showCreateOrEditGroupDialog(group)
             },
             onDeleteClicked = { group ->
                 showDeleteGroupConfirmation(group)
@@ -57,8 +57,7 @@ class GroupsFragment : Fragment() {
         )
         binding.groupsRecyclerView.apply {
             adapter = groupAdapter
-            layoutManager = LinearLayoutManager(context)
-            isNestedScrollingEnabled = false
+            layoutManager = GridLayoutManager(context, 2)
         }
     }
 
@@ -74,77 +73,48 @@ class GroupsFragment : Fragment() {
         }
     }
 
-    private fun showCreateGroupDialog() {
-        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_group, null)
-        val textInputLayout = dialogView.findViewById<TextInputLayout>(R.id.new_group_name_input_layout)
-        val groupNameEditText = dialogView.findViewById<EditText>(R.id.new_group_name_edit_text)
+    private fun showCreateOrEditGroupDialog(group: Group?) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_create_group, null as ViewGroup?)
+        val groupNameEditText = dialogView.findViewById<EditText>(R.id.group_name_edit_text)
+        if (group != null) {
+            groupNameEditText.setText(group.name)
+        }
 
+        val dialogTitle = if (group == null) "Create New Group" else "Edit Group Name"
         val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Create New Group")
+            .setTitle(dialogTitle)
             .setView(dialogView)
-            .setPositiveButton("Create", null) 
-            .setNegativeButton("Cancel", null)
-            .create()
-
-        dialog.setOnShowListener { _ ->
-            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener { 
+            .setPositiveButton(if (group == null) "Create" else "Save") { _, _ ->
                 val groupName = groupNameEditText.text.toString().trim()
-                if (groupName.isNotBlank()) {
+                if (groupName.isNotEmpty()) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
-                        homeViewModel.createGroup("Bearer $rawToken", groupName)
-                        dialog.dismiss()
+                        val token = "Bearer $rawToken"
+                        if (group == null) {
+                            homeViewModel.createGroup(token, groupName, loadingViewModel)
+                        } else {
+                            homeViewModel.updateGroup(token, group.id, groupName, loadingViewModel)
+                        }
+                    } else {
+                        Toast.makeText(requireContext(), "Authentication error", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    textInputLayout.error = "Required field"
+                    Toast.makeText(requireContext(), "Group name cannot be empty", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
-        dialog.show()
-    }
-
-    private fun showEditGroupDialog(group: Group) {
-        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_group, null)
-        val textInputLayout = dialogView.findViewById<TextInputLayout>(R.id.new_group_name_input_layout)
-        val newGroupNameEditText = dialogView.findViewById<EditText>(R.id.new_group_name_edit_text)
-        newGroupNameEditText.setText(group.name)
-
-        val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Edit Group Name")
-            .setView(dialogView)
-            .setPositiveButton("Save", null)
             .setNegativeButton("Cancel", null)
             .create()
-
-        dialog.setOnShowListener { _ ->
-            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positiveButton.setOnClickListener { 
-                val newName = newGroupNameEditText.text.toString().trim()
-                if (newName.isNotBlank()) {
-                    if (newName != group.name) {
-                        val rawToken = SessionManager.getAuthToken(requireContext())
-                        if (rawToken != null) {
-                            homeViewModel.updateGroup("Bearer $rawToken", group.id, newName)
-                        }
-                    }
-                    dialog.dismiss()
-                } else {
-                    textInputLayout.error = "Required field"
-                }
-            }
-        }
         dialog.show()
     }
 
     private fun showDeleteGroupConfirmation(group: Group) {
         AlertDialog.Builder(requireContext())
             .setTitle("Delete Group")
-            .setMessage("Are you sure you want to delete '${group.name}'? This action cannot be undone.")
+            .setMessage("Are you sure you want to delete '${group.name}'? All associated data will be lost.")
             .setPositiveButton("Delete") { _, _ ->
                 val rawToken = SessionManager.getAuthToken(requireContext())
                 if (rawToken != null) {
-                    homeViewModel.deleteGroup("Bearer $rawToken", group.id)
+                    homeViewModel.deleteGroup("Bearer $rawToken", group.id, loadingViewModel)
                 }
             }
             .setNegativeButton("Cancel", null)

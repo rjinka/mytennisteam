@@ -7,9 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
@@ -17,6 +19,7 @@ import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.mytennisteam.databinding.FragmentPlayersBinding
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -27,6 +30,7 @@ class PlayersFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val homeViewModel: HomeViewModel by activityViewModels()
+    private val loadingViewModel: LoadingViewModel by activityViewModels()
     private lateinit var playerAdapter: PlayerAdapter
     private var allPlayers: List<Player> = emptyList()
 
@@ -57,12 +61,67 @@ class PlayersFragment : Fragment() {
             },
             onDeleteClicked = { player ->
                 showDeletePlayerConfirmation(player)
+            },
+            onStatsClicked = { player ->
+                showPlayerStatsDialog(player)
             }
         )
         binding.playersRecyclerView.apply {
             adapter = playerAdapter
             layoutManager = LinearLayoutManager(context)
         }
+    }
+
+    private fun showPlayerStatsDialog(player: Player) {
+        val rawToken = SessionManager.getAuthToken(requireContext())
+        if (rawToken == null) {
+            Toast.makeText(context, "Authentication error", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        homeViewModel.fetchPlayerStats("Bearer $rawToken", player.id, loadingViewModel)
+
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_player_stats, null)
+        val statsTitle = dialogView.findViewById<TextView>(R.id.stats_title)
+        val statsRecyclerView = dialogView.findViewById<RecyclerView>(R.id.stats_recycler_view)
+        val closeButton = dialogView.findViewById<Button>(R.id.close_button)
+
+        statsTitle.text = "Stats for ${player.user.name}"
+        val statsAdapter = StatsAdapter()
+        statsRecyclerView.adapter = statsAdapter
+        statsRecyclerView.layoutManager = LinearLayoutManager(context)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        homeViewModel.playerStats.observe(viewLifecycleOwner) { stats ->
+            if (stats != null) {
+                val allSchedules = homeViewModel.homeData.value?.schedules ?: emptyList()
+                val formattedStats = stats.mapNotNull { scheduleStat ->
+                    val schedule = allSchedules.find { it.id == scheduleStat.scheduleId }
+                    if (schedule != null) {
+                        val totalPlayed = scheduleStat.stats.count { it.status == "played" }
+                        val totalBenched = scheduleStat.stats.count { it.status == "benched" }
+                        FormattedPlayerStat(
+                            scheduleName = "${schedule.name} (${schedule.day} at ${schedule.time})",
+                            totalPlayed = totalPlayed,
+                            totalBenched = totalBenched,
+                            history = scheduleStat.stats
+                        )
+                    } else {
+                        null
+                    }
+                }
+                statsAdapter.submitList(formattedStats)
+            }
+        }
+
+        dialog.show()
     }
 
     private fun observeViewModel() {
@@ -91,7 +150,40 @@ class PlayersFragment : Fragment() {
     }
 
     private fun showInvitePlayerDialog() {
-        // ... (Implementation remains the same) ...
+        val currentGroup = homeViewModel.homeData.value?.selectedGroup
+        if (currentGroup == null) {
+            Toast.makeText(context, "Please select a group first", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_invite_player, null)
+        val emailInputLayout = dialogView.findViewById<TextInputLayout>(R.id.player_email_input_layout)
+        val emailEditText = dialogView.findViewById<EditText>(R.id.player_email_edit_text)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Invite Player")
+            .setView(dialogView)
+            .setPositiveButton("Send Invite", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialog.setOnShowListener { _ ->
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener { 
+                val email = emailEditText.text.toString().trim()
+                if (email.isNotBlank() && Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    val rawToken = SessionManager.getAuthToken(requireContext())
+                    if (rawToken != null) {
+                        homeViewModel.invitePlayer("Bearer $rawToken", currentGroup.id, email, loadingViewModel)
+                        Toast.makeText(context, "Invitation sent to $email", Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                    }
+                } else {
+                    emailInputLayout.error = "Invalid email address"
+                }
+            }
+        }
+        dialog.show()
     }
 
     private fun showEditPlayerDialog(player: Player) {
@@ -138,7 +230,7 @@ class PlayersFragment : Fragment() {
                 if (newName.isNotBlank()) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
-                        homeViewModel.updatePlayer("Bearer $rawToken", player.id, newName, newAvailability)
+                        homeViewModel.updatePlayer("Bearer $rawToken", player.id, newName, newAvailability, loadingViewModel)
                     }
                 }
             }
@@ -153,7 +245,7 @@ class PlayersFragment : Fragment() {
             .setPositiveButton("Delete") { _, _ ->
                 val rawToken = SessionManager.getAuthToken(requireContext())
                 if (rawToken != null) {
-                    homeViewModel.deletePlayer("Bearer $rawToken", player.id)
+                    homeViewModel.deletePlayer("Bearer $rawToken", player.id, loadingViewModel)
                 }
             }
             .setNegativeButton("Cancel", null)
