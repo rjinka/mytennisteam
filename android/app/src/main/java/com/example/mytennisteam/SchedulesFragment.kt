@@ -61,6 +61,10 @@ class SchedulesFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
+        val currentUserId = SessionManager.getUserId(requireContext())
+        val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+        val groupAdmins = homeViewModel.homeData.value?.selectedGroup?.admins ?: emptyList()
+
         scheduleAdapter = ScheduleAdapter(
             onItemClicked = { schedule ->
                 val rawToken = SessionManager.getAuthToken(requireContext())
@@ -76,7 +80,10 @@ class SchedulesFragment : Fragment() {
             },
             onStatsClicked = { schedule ->
                 showScheduleStatsDialog(schedule)
-            }
+            },
+            currentUserId = currentUserId,
+            isSuperAdmin = isSuperAdmin,
+            groupAdmins = groupAdmins
         )
         binding.schedulesRecyclerView.apply {
             adapter = scheduleAdapter
@@ -86,14 +93,27 @@ class SchedulesFragment : Fragment() {
 
     private fun observeViewModel() {
         homeViewModel.homeData.observe(viewLifecycleOwner) { data ->
-            data?.schedules?.let { scheduleAdapter.submitList(it) }
+            if (data != null) {
+                scheduleAdapter.submitList(data.schedules)
+
+                val currentUserId = SessionManager.getUserId(requireContext())
+                val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+                val isGroupAdmin = data.selectedGroup.admins.contains(currentUserId)
+
+                val canManageSchedules = isSuperAdmin || isGroupAdmin
+                binding.fabAddSchedule.visibility = if (canManageSchedules) View.VISIBLE else View.GONE
+            }
         }
 
         homeViewModel.selectedSchedule.observe(viewLifecycleOwner) { schedule ->
             val isScheduleSelected = schedule != null
             binding.scheduleDetailContainer.isVisible = isScheduleSelected
             binding.schedulesRecyclerView.isVisible = !isScheduleSelected
-            binding.fabAddSchedule.isVisible = !isScheduleSelected
+
+            val currentUserId = SessionManager.getUserId(requireContext())
+            val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+            val isGroupAdmin = homeViewModel.homeData.value?.selectedGroup?.admins?.contains(currentUserId) == true
+            binding.fabAddSchedule.isVisible = isSuperAdmin || isGroupAdmin
         }
     }
 
@@ -283,7 +303,6 @@ class SchedulesFragment : Fragment() {
                         val availability = player.availability.find { it.scheduleId == schedule.id }?.type ?: "N/A"
                         val timesPlayed = stat.stats.count { it.status == "played" }
                         val timesOnBench = stat.stats.count { it.status == "benched" }
-                        val lastPlayed = stat.stats.filter { it.status == "played" }.maxByOrNull { it.week }?.date ?: "N/A"
                         val isPlayerOut = availability.equals("out", ignoreCase = true)
 
                         FormattedScheduleStat(
@@ -291,7 +310,6 @@ class SchedulesFragment : Fragment() {
                             availability = availability,
                             timesPlayed = timesPlayed,
                             timesOnBench = timesOnBench,
-                            lastPlayed = lastPlayed,
                             isPlayerOut = isPlayerOut
                         )
                     }

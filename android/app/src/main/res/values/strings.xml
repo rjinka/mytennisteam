@@ -1,9 +1,16 @@
 <resources>
     <string name="app_name">MyTennisTeam</string>
+    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID</string>
     <string name="title_groups">Groups</string>
+    <string name="title_courts">Courts</string>
     <string name="title_schedules">Schedules</string>
     <string name="title_players">Players</string>
-    <string name="title_courts">Courts</string>
+
+    <string-array name="availability_options">
+        <item>Rotation</item>
+        <item>Permanent</item>
+        <item>Backup</item>
+    </string-array>
 
     <string-array name="days_of_week">
         <item>Sunday</item>
@@ -28,9 +35,4 @@
         <item>Doubles</item>
     </string-array>
 
-    <string-array name="availability_options">
-        <item>Permanent</item>
-        <item>Rotation</item>
-        <item>Backup</item>
-    </string-array>
 </resources>

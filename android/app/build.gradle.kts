@@ -70,4 +70,7 @@ dependencies {
 
     // Glide
     implementation("com.github.bumptech.glide:glide:5.0.5")
+
+    // Swipe to Refresh
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01")
 }

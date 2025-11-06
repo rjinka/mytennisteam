@@ -94,6 +94,20 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
     selection.selectedSchedule = null;
     
     // Fetch data specific to the selected group
+    // --- Tab Visibility Logic ---
+    const courtManagementTabBtn = document.getElementById('courtManagementTabBtn');
+    const isAdmin = isCurrentUserAdminOfSelectedGroup();
+    if (courtManagementTabBtn) {
+        courtManagementTabBtn.style.display = isAdmin ? '' : 'none';
+
+        // If the courts tab is active but should be hidden, switch to the groups tab.
+        if (!isAdmin && courtManagementTabBtn.classList.contains('active')) {
+            document.getElementById('groupManagementTabBtn').click();
+        }
+    }
+    // --- End Tab Visibility Logic ---
+
+
     if (groupId) {
         const [schedulesData, playersData, courtsData] = await Promise.all([
             api.getSchedules(groupId),
@@ -480,8 +494,8 @@ async function initializeApp() {
 }
 
 async function handleInvitationToken(params) {
-    const token = params.get('join_token');
-    if (token) {
+    const join_token = params.get('join_token');
+    if (join_token) {
         try {
             // First, ensure user is logged in
             if (!localStorage.getItem('token')) {
@@ -489,7 +503,7 @@ async function handleInvitationToken(params) {
                 // After login, this function will be called again.
                 return;
             }
-            const { msg } = await api.acceptInvitation(token);
+            const { msg } = await api.acceptInvitation(join_token);
             showMessageBox('Success!', msg, reloadData);
             // Clean the token from the URL
             sessionStorage.removeItem('join_token'); // Clean up session storage on success

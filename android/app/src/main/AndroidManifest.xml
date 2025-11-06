@@ -28,8 +28,17 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- TODO: Replace with your actual domain -->
-                <data android:scheme="https" android:host="www.mytennisteam.com" android:pathPrefix="/join" />
+                <!-- Production Link -->
+                <data android:scheme="https" />
+                <data android:host="mytennisteam.com" />
+
+                <!-- 2. Production Link with 'www' (Best Practice) -->
+                <data android:scheme="https" />
+                <data android:host="www.mytennisteam.com" />
+
+                <!-- 3. Local Development Link (for Emulator) -->
+                <data android:scheme="http" />
+                <data android:host="10.0.2.2" />
             </intent-filter>
 
         </activity>

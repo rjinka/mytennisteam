@@ -25,7 +25,6 @@ class ScheduleStatsAdapter : ListAdapter<FormattedScheduleStat, ScheduleStatsAda
             binding.availabilityTextView.text = stat.availability
             binding.timesPlayedTextView.text = stat.timesPlayed.toString()
             binding.timesOnBenchTextView.text = stat.timesOnBench.toString()
-            binding.lastPlayedTextView.text = stat.lastPlayed
 
             if (stat.isPlayerOut) {
                 binding.root.setBackgroundColor(Color.parseColor("#FFEBEE"))
@@ -49,6 +48,5 @@ data class FormattedScheduleStat(
     val availability: String,
     val timesPlayed: Int,
     val timesOnBench: Int,
-    val lastPlayed: String,
     val isPlayerOut: Boolean
 )

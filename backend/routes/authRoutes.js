@@ -95,7 +95,7 @@ router.post('/google/mobile', async (req, res) => {
         const appToken = jwt.sign(payload, config.jwt_secret, { expiresIn: '1d' });
 
         // Return your app's token in the response body
-        res.status(200).json({ token: appToken });
+        res.status(200).json({ token: appToken, user : { id: user.id, name: user.name, isSuperAdmin: user.isSuperAdmin } });
     } catch (error) {
         console.error('Error in Google mobile auth:', error);
         res.status(401).json({ msg: 'Authentication failed. Invalid token.' });

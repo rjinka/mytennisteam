@@ -11,7 +11,7 @@ const invitationSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    token: {
+    join_token: {
         type: String,
         required: true,
         unique: true,

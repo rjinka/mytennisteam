@@ -202,8 +202,8 @@ router.post('/:groupId/invite', protect, async (req, res) => {
             groupId: group.id, // Use the custom id for the ref
         });
 
-        const inviteUrl = `${process.env.FRONTEND_URL}?join_token=${invitation.token}`;
-        await sendEmail({ email, subject: `Invitation to join ${group.name}`, message: `Please click this link to join the group: <a href="${inviteUrl}">${inviteUrl}</a>` });
+        const inviteUrl = `${process.env.FRONTEND_URL}?join_token=${invitation.join_token}`;
+        await sendEmail({ email, subject: `Invitation to join ${group.name}`, message: `Please click this link to join the group: <a href="${inviteUrl}">${group.name}</a>` });
 
         res.status(200).json({ msg: 'Invitation sent successfully!' });
     } catch (error) {

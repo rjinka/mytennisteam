@@ -60,6 +60,14 @@ class CourtsFragment : Fragment() {
         homeViewModel.homeData.observe(viewLifecycleOwner) { data ->
             if (data != null) {
                 courtAdapter.submitList(data.courts)
+
+                val currentUserId = SessionManager.getUserId(requireContext())
+                val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+                val isGroupAdmin = data.selectedGroup.admins.contains(currentUserId)
+
+                val canManageCourts = isSuperAdmin || isGroupAdmin
+                binding.fabAddCourt.visibility = if (canManageCourts) View.VISIBLE else View.GONE
+                (activity as? HomeActivity)?.setCourtsTabVisibility(canManageCourts)
             }
         }
     }

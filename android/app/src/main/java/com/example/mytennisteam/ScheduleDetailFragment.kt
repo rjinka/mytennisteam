@@ -67,6 +67,10 @@ class ScheduleDetailFragment : Fragment() {
     }
 
     private fun updatePlayerList(recyclerView: RecyclerView, playerIds: List<String>, allPlayers: List<Player>, isBench: Boolean) {
+        val currentUserId = SessionManager.getUserId(requireContext())
+        val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+        val groupAdmins = homeViewModel.homeData.value?.selectedGroup?.admins ?: emptyList()
+
         val adapter = PlayerLineupAdapter(
             isBench,
             onSwapClicked = { playerToSwapOut ->
@@ -78,7 +82,10 @@ class ScheduleDetailFragment : Fragment() {
             },
             onStatsClicked = { player ->
                 showPlayerAvailabilityDialog(player)
-            }
+            },
+            currentUserId = currentUserId,
+            isSuperAdmin = isSuperAdmin,
+            groupAdmins = groupAdmins
         )
         recyclerView.adapter = adapter
         recyclerView.layoutManager = if (isBench) LinearLayoutManager(context) else GridLayoutManager(context, 2)

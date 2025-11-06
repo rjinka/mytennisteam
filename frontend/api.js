@@ -288,8 +288,8 @@ export const invitePlayer = async (groupId, email) => {
     return response.json();
 };
 
-export const verifyInvitation = async (token) => {
-    const response = await fetch(`${API_BASE_URL}/invitations/verify/${token}`);
+export const verifyInvitation = async (join_token) => {
+    const response = await fetch(`${API_BASE_URL}/invitations/verify/${join_token}`);
     if (!response.ok) {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to verify invitation', response.status);
@@ -297,8 +297,8 @@ export const verifyInvitation = async (token) => {
     return response.json();
 };
 
-export const acceptInvitation = async (token) => {
-    const response = await fetch(`${API_BASE_URL}/invitations/accept/${token}`, { method: 'POST', headers: getAuthHeaders() });
+export const acceptInvitation = async (join_token) => {
+    const response = await fetch(`${API_BASE_URL}/invitations/accept/${join_token}`, { method: 'POST', headers: getAuthHeaders() });
     if (!response.ok) throw new ApiError('Failed to accept invitation', response.status);
     return response.json();
 };

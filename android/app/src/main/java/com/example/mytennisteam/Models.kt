@@ -69,8 +69,13 @@ data class HomeData(
 
 // --- API Request/Response Models ---
 
+data class UserPrincipal(
+    val id: String,
+    val isSuperAdmin: Boolean
+)
+
 data class AuthRequest(val token: String)
-data class AuthResponse(val token: String)
+data class AuthResponse(val token: String, val user: UserPrincipal)
 
 data class UpdateGroupRequest(val name: String)
 data class CreateGroupRequest(val name: String)

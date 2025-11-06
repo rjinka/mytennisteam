@@ -55,6 +55,10 @@ class PlayersFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
+        val currentUserId = SessionManager.getUserId(requireContext())
+        val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+        val groupAdmins = homeViewModel.homeData.value?.selectedGroup?.admins ?: emptyList()
+
         playerAdapter = PlayerAdapter(
             onEditClicked = { player ->
                 showEditPlayerDialog(player)
@@ -64,7 +68,10 @@ class PlayersFragment : Fragment() {
             },
             onStatsClicked = { player ->
                 showPlayerStatsDialog(player)
-            }
+            },
+            currentUserId = currentUserId,
+            isSuperAdmin = isSuperAdmin,
+            groupAdmins = groupAdmins
         )
         binding.playersRecyclerView.apply {
             adapter = playerAdapter
@@ -129,6 +136,15 @@ class PlayersFragment : Fragment() {
             if (data != null) {
                 allPlayers = data.players
                 playerAdapter.submitList(allPlayers)
+
+                val currentUserId = SessionManager.getUserId(requireContext())
+                playerAdapter.updateGroupAdmins(data.selectedGroup.admins)
+
+                val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+                val isGroupAdmin = data.selectedGroup.admins.contains(currentUserId)
+
+                val canManagePlayers = isSuperAdmin || isGroupAdmin
+                binding.fabAddPlayer.visibility = if (canManagePlayers) View.VISIBLE else View.GONE
             }
         }
     }

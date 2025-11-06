@@ -94,18 +94,17 @@ export const renderGroupsList = async () => {
         groupsList.appendChild(card);
     });
 
-    // The "Groups" tab is only visible to admins. Therefore, if this function is running,
-    // it's safe to assume the user should see the "Create New Group" button.
-    if (isCurrentUserAdminOfSelectedGroup() || Object.keys(groups).length > 0 || sortedGroups.length === 0) {
-        const createGroupBtn = document.createElement('button');
-        createGroupBtn.id = 'createGroupBtn';
-        createGroupBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer p-4 md:p-2';
-        createGroupBtn.textContent = 'Create New Group';
-        createGroupBtn.onclick = () => {
-            document.getElementById('createGroupModalOverlay').classList.add('show');
-        };
-        groupsList.appendChild(createGroupBtn);
-    }
+    
+    
+    const createGroupBtn = document.createElement('button');
+    createGroupBtn.id = 'createGroupBtn';
+    createGroupBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer p-4 md:p-2';
+    createGroupBtn.textContent = 'Create New Group';
+    createGroupBtn.onclick = () => {
+        document.getElementById('createGroupModalOverlay').classList.add('show');
+    };
+    groupsList.appendChild(createGroupBtn);
+    
     addEditGroupListeners();
     addRemoveGroupListeners();
 };
@@ -191,21 +190,29 @@ export const showScheduleDetails = async (schedule) => {
     addSwapButtonListenersForSchedule(schedule);
 };
 
-function renderPlayerList(container, playerIds, itemClass, action, emptyMessage) {
+function renderPlayerList(container, playerIds, itemClass, action, emptyMessage, schedule) {
     if (playerIds.length === 0) {
         container.innerHTML = `<p class="col-span-full text-center text-gray-500 p-4">${emptyMessage}</p>`;
         return;
     } 
 
+    const currentUser = parseJwt(localStorage.getItem('token'));
+    const isAdmin = isCurrentUserAdminOfSelectedGroup();
+
     playerIds.forEach(id => {
         const player = players[id];
         if (player) {
+            const isOwnCard = player.userId === currentUser.id;
+            const canSwap = isAdmin || isOwnCard;
+
             const playerDiv = document.createElement('div');
             playerDiv.className = `player-item ${itemClass} flex justify-between items-center`;
-            playerDiv.innerHTML = `
-                <span class="name-text">${player.user.name}</span>
-                <button class="action-btn" data-player-id="${player.id}" data-action="${action}">Swap</button>
-            `;
+            
+            const buttonHtml = canSwap 
+                ? `<button class="action-btn" data-player-id="${player.id}" data-action="${action}">Swap</button>`
+                : '';
+
+            playerDiv.innerHTML = `<span class="name-text">${player.user.name}</span>${buttonHtml}`;
             container.appendChild(playerDiv);
         }
     });

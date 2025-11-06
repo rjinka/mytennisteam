@@ -2,6 +2,7 @@ package com.example.mytennisteam
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -40,6 +41,10 @@ class HomeActivity : AppCompatActivity() {
         }
 
         observeViewModels()
+    }
+
+    fun setCourtsTabVisibility(isVisible: Boolean) {
+        binding.bottomNavigation.menu.findItem(R.id.navigation_courts).isVisible = isVisible
     }
 
     private fun setupToolbar() {
