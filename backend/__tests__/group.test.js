@@ -158,7 +158,7 @@ describe('Group Routes', () => {
       });
       const res = await request(app).delete('/api/groups/group1');
       expect(res.statusCode).toBe(200);
-      const deletedGroup = await Group.findById(group.id);
+      const deletedGroup = await Group.findOne({ id: group.id });
       expect(deletedGroup).toBeNull();
     });
   });
