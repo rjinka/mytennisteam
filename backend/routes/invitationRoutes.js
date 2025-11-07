@@ -37,16 +37,16 @@ router.post('/accept/:token', protect, async (req, res) => {
             return res.status(403).json({ msg: 'This invitation is for a different user.' });
         }
 
+        const group = await Group.findById(invitation.groupId);
+        if (!group) {
+            return res.status(404).json({ msg: 'Associated group not found.' });
+        }
+
         // Check if player already exists in the group
-        const playerExists = await Player.findOne({ groupid: invitation.groupId, name: req.user.name });
+        const playerExists = await Player.findOne({ groupid: group.id, userId: req.user.id });
         if (playerExists) {
             await invitation.deleteOne();
             return res.status(400).json({ msg: 'You are already a player in this group.' });
-        }
-
-        const group = await Group.findOne({ id: invitation.groupId });
-        if (!group) {
-            return res.status(404).json({ msg: 'Associated group not found.' });
         }
 
         // Create a new player
