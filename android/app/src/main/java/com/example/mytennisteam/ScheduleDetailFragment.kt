@@ -38,7 +38,15 @@ class ScheduleDetailFragment : Fragment() {
 
         homeViewModel.selectedSchedule.observe(viewLifecycleOwner) { schedule ->
             if (schedule != null) {
-                binding.lineupTitleTextView.text = "${schedule.name} Lineup (Week ${schedule.week})"
+                val frequencyText = when (schedule.frequency) {
+                    0 -> "None"
+                    1 -> "Day"
+                    2 -> "Week"
+                    3 -> "Bi-Week"
+                    4 -> "Month"
+                    else -> "Period"
+                }
+                binding.lineupTitleTextView.text = "${schedule.name} Lineup ($frequencyText ${schedule.week})"
                 val allPlayers = homeViewModel.homeData.value?.players ?: emptyList()
 
                 updatePlayerList(binding.playingPlayersRecyclerView, schedule.playingPlayersIds, allPlayers, isBench = false)
