@@ -22,7 +22,7 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
         }
         release {
-            buildConfigField("String", "BASE_URL", "\"https://your-production-url.com/\"")
+            buildConfigField("String", "BASE_URL", "\"https://auth.mytennisteam.com/\"")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

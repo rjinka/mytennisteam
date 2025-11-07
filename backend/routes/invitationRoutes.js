@@ -27,10 +27,10 @@ router.get('/verify/:join_token', protect, async (req, res) => {
 });
 
 // @desc    Accept an invitation
-// @route   POST /api/invitations/accept/:token
-router.post('/accept/:token', protect, async (req, res) => {
+// @route   POST /api/invitations/accept/:join_token
+router.post('/accept/:join_token', protect, async (req, res) => {
     try {
-        const invitation = await Invitation.findOne({ join_token: req.params.token, expires: { $gt: Date.now() } });
+        const invitation = await Invitation.findOne({ join_token: req.params.join_token, expires: { $gt: Date.now() } });
 
         if (!invitation) {
             return res.status(400).json({ msg: 'Invitation is invalid or has expired.' });
