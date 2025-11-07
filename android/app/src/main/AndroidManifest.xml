@@ -13,7 +13,6 @@
         android:roundIcon="@mipmap/my_tennis_team_logo_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyTennisTeam"
-        android:enableOnBackInvokedCallback="true"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
@@ -28,17 +27,20 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Production Link -->
+                <!-- 1. Production Link -->
                 <data android:scheme="https" />
                 <data android:host="mytennisteam.com" />
-
                 <!-- 2. Production Link with 'www' (Best Practice) -->
-                <data android:scheme="https" />
                 <data android:host="www.mytennisteam.com" />
 
-                <!-- 3. Local Development Link (for Emulator) -->
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="http" />
-                <data android:host="10.0.2.2" />
+                <!-- 3. Development link -->
+                <data android:host="192.168.86.33" android:port="5000" />
             </intent-filter>
 
         </activity>

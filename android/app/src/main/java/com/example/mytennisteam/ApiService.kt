@@ -101,8 +101,11 @@ interface ApiService {
         @Path("id") playerId: String
     )
 
-    @POST("/api/invitations/accept/{token}")
-    suspend fun acceptInvitation(@Path("token") token: String)
+    @POST("/api/invitations/accept/{join_token}")
+    suspend fun acceptInvitation(
+        @Header("Authorization") authToken: String,
+        @Path("join_token") joinToken: String
+    )
 
     @GET("/api/schedules/{id}/rotation-button-state")
     suspend fun getRotationButtonState(
