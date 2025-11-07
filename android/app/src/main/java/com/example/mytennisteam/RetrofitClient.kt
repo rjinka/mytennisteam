@@ -6,11 +6,16 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.example.mytennisteam.BuildConfig
 
+import androidx.annotation.VisibleForTesting
+
 object RetrofitClient {
 
     private const val BASE_URL = BuildConfig.BASE_URL
 
-    val instance: ApiService by lazy {
+    var instance: ApiService = createApiService()
+        @VisibleForTesting set
+
+    private fun createApiService(): ApiService {
         val okHttpClientBuilder = OkHttpClient.Builder()
 
         if (BuildConfig.DEBUG) {
@@ -28,6 +33,6 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-        retrofit.create(ApiService::class.java)
+        return retrofit.create(ApiService::class.java)
     }
 }

@@ -173,15 +173,6 @@ export const showScheduleDetails = async (schedule) => {
         generateBtn.style.display = buttonState.visible ? 'block' : 'none';
         generateBtn.textContent = buttonState.text;
         generateBtn.disabled = buttonState.disabled;
-
-        if (buttonState.resetRotationFlag) {
-            // The backend determined the rotation flag should be reset.
-            // We update it silently on the frontend and then on the backend.
-            schedule.isRotationGenerated = false;
-            await updateSchedule(schedule.id, { isRotationGenerated: false });
-            // Re-fetch the button state after the update
-            await showScheduleDetails(schedule);
-        }
     } catch (error) {
         console.error("Could not get rotation button state:", error);
         generateBtn.style.display = 'none';

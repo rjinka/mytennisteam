@@ -319,6 +319,8 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
         // Update schedule state
         schedule.lastGeneratedWeek = currentWeek;
         schedule.isRotationGenerated = true;
+        schedule.lastRotationGeneratedDate = today;
+
 
         if (schedule.recurring) {
             schedule.week += 1;
@@ -355,34 +357,53 @@ router.get('/:id/rotation-button-state', protect, async (req, res) => {
             return res.json({ visible: false });
         }
 
-        const currentDate = new Date();
-        const currentDayOfWeek = currentDate.getDay();
-        const scheduleDay = parseInt(schedule.day);
-        const isScheduleDayToday = (scheduleDay === currentDayOfWeek);
-
         let buttonState = {
             visible: true,
             text: 'Generate Rotation',
             disabled: false,
-            resetRotationFlag: false
         };
 
         if (schedule.isCompleted) {
             buttonState.text = 'Schedule Finished';
             buttonState.disabled = true;
-        } else if (!schedule.recurring) {
-            buttonState.text = 'Finish Schedule';
-        } else if (schedule.isRotationGenerated && !isScheduleDayToday) {
-            buttonState.resetRotationFlag = true;
-        } else if (schedule.isRotationGenerated && isScheduleDayToday) {
-            buttonState.text = 'Rotation Generated';
-            buttonState.disabled = true;
-        } else if (!schedule.isRotationGenerated && !isScheduleDayToday) {
-            buttonState.text = 'Rotation Generated';
-            buttonState.disabled = true;
-        } else if (!schedule.isRotationGenerated && isScheduleDayToday) {
-            buttonState.text = 'Generate Rotation';
+            return res.json(buttonState);
+        }
+
+        if (!schedule.isRotationGenerated) {
+            // If no rotation has ever been generated, the button should be enabled.
+            buttonState.text = !schedule.recurring ? 'Finish Schedule' : 'Generate Rotation';
             buttonState.disabled = false;
+        } else {
+            // A rotation has been generated, so calculate when the next one is due.
+            const lastDate = new Date(schedule.lastRotationGeneratedDate);
+            const nextAvailableDate = new Date(lastDate);
+            nextAvailableDate.setHours(0, 0, 0, 0); // Normalize to the start of the day
+
+            const frequency = parseInt(schedule.frequency);
+            switch (frequency) {
+                case 1: // Daily
+                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 1);
+                    break;
+                case 2: // Weekly
+                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 7);
+                    break;
+                case 3: // Bi-Weekly
+                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 14);
+                    break;
+                case 4: // Monthly
+                    nextAvailableDate.setMonth(nextAvailableDate.getMonth() + 1);
+                    break;
+                default: // Non-recurring or invalid frequency
+                    buttonState.text = 'Rotation Generated';
+                    buttonState.disabled = true;
+                    return res.json(buttonState);
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            buttonState.disabled = today < nextAvailableDate;
+            buttonState.text = buttonState.disabled ? 'Rotation Generated' : 'Generate Rotation';
         }
 
         res.json(buttonState);
