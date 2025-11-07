@@ -27,7 +27,7 @@ describe('Invitation Routes', () => {
     group = await Group.create({ id: 'group1', name: 'Test Group', createdBy: 'user1', admins: ['user1'] });
     invitation = await Invitation.create({
       email: 'test@example.com',
-      groupId: group._id,
+      groupId: group.id,
       join_token: 'test_token',
     });
   });
