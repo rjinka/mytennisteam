@@ -199,7 +199,7 @@ router.post('/:groupId/invite', protect, async (req, res) => {
         // Create invitation (this will be handled by the invitation model's defaults)
         const invitation = await Invitation.create({
             email: email,
-            groupId: group._id, // Use the ObjectId for the ref
+            groupId: group.id, // Use the ObjectId for the ref
         });
 
         const inviteUrl = `${process.env.FRONTEND_URL}?join_token=${invitation.join_token}`;

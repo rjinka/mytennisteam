@@ -12,11 +12,15 @@ const router = express.Router();
 // @route   GET /api/invitations/verify/:join_token
 router.get('/verify/:join_token', protect, async (req, res) => {
     try {
-        const invitation = await Invitation.findOne({ join_token: req.params.join_token, expires: { $gt: Date.now() } }).populate('groupId', 'name');
+        const invitation = await Invitation.findOne({ join_token: req.params.join_token, expires: { $gt: Date.now() } });
         if (!invitation) {
             return res.status(400).json({ msg: 'Invitation is invalid or has expired.' });
         }
-        res.json({ email: invitation.email, groupName: invitation.groupId.name });
+        const group = await Group.findOne({ id: invitation.groupId });
+        if (!group) {
+            return res.status(404).json({ msg: 'Associated group not found.' });
+        }
+        res.json({ email: invitation.email, groupName: group.name });
     } catch (error) {
         res.status(500).json({ msg: 'Server Error' });
     }
@@ -37,7 +41,7 @@ router.post('/accept/:token', protect, async (req, res) => {
             return res.status(403).json({ msg: 'This invitation is for a different user.' });
         }
 
-        const group = await Group.findById(invitation.groupId);
+        const group = await Group.findOne({ id: invitation.groupId });
         if (!group) {
             return res.status(404).json({ msg: 'Associated group not found.' });
         }

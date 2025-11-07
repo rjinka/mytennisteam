@@ -8,7 +8,7 @@ const invitationSchema = new mongoose.Schema({
         lowercase: true,
     },
     groupId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         required: true,
         ref: 'Group',
     },
