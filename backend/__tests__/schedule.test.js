@@ -88,4 +88,68 @@ describe('Schedule Routes', () => {
       expect(deletedSchedule).toBeNull();
     });
   });
+
+  describe('GET /api/schedules/:id/rotation-button-state', () => {
+    it('should return visible and enabled for admin if rotation not generated', async () => {
+      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
+        visible: true,
+        text: 'Finish Schedule',
+        disabled: false,
+      });
+    });
+
+    it('should return visible and disabled for admin if schedule is completed', async () => {
+      await Schedule.updateOne({ id: 'schedule1' }, { isCompleted: true });
+      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
+        visible: true,
+        text: 'Schedule Finished',
+        disabled: true,
+      });
+    });
+
+    it('should return visible and disabled if rotation generated and not due', async () => {
+      await Schedule.updateOne({ id: 'schedule1' }, {
+        isRotationGenerated: true,
+        lastRotationGeneratedDate: new Date(),
+        frequency: '2', // Weekly
+      });
+      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
+        visible: true,
+        text: 'Rotation Generated',
+        disabled: true,
+      });
+    });
+
+    it('should return visible and enabled if rotation generated and due', async () => {
+      const lastDate = new Date();
+      lastDate.setDate(lastDate.getDate() - 7);
+      await Schedule.updateOne({ id: 'schedule1' }, {
+        isRotationGenerated: true,
+        lastRotationGeneratedDate: lastDate,
+        frequency: '2', // Weekly
+      });
+      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
+        visible: true,
+        text: 'Generate Rotation',
+        disabled: false,
+      });
+    });
+
+    it('should return not visible for non-admin', async () => {
+      await Group.updateOne({ id: 'group1' }, { admins: [] });
+      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
+        visible: false,
+      });
+    });
+  });
 });
