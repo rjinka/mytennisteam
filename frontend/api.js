@@ -18,11 +18,11 @@ class ApiError extends Error {
     }
 }
 
-export const swapPlayers = async (scheduleId, playerBeingSwappedId, swapPartnerId, swapActionDirection) => {
+export const swapPlayers = async (scheduleId, playerInId, playerOutId) => {
     const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/swapPlayers`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ playerBeingSwappedId, swapPartnerId, swapActionDirection }),
+        body: JSON.stringify({ playerInId, playerOutId }),
     });
 
     if (!response.ok) {
@@ -55,6 +55,29 @@ export const updateSchedule = async (scheduleId, scheduleData) => {
     if (!response.ok) {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to update schedule', response.status);
+    }
+    return response.json();
+};
+
+export const generateRotation = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/generate-rotation`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to generate rotation', response.status);
+    }
+    return response.json();
+};
+
+export const getRotationButtonState = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/rotation-button-state`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to get button state', response.status);
     }
     return response.json();
 };
@@ -110,15 +133,6 @@ export const updateGroupAdmins = async (groupId, adminUserIds) => {
     return response.json();
 };
 
-export const getAdminGroups = async () => {
-    const response = await fetch(`${API_BASE_URL}/groups/admin`, {
-        method: 'GET',
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new ApiError('Failed to fetch groups', response.status);
-    return response.json();
-};
-
 export const getPlayerGroups = async () => {
     const response = await fetch(`${API_BASE_URL}/groups/player`, {
         method: 'GET',
@@ -140,21 +154,27 @@ export const getSchedules = async (groupId = '') => {
     }
     return response.json();
 };
-// Placeholder functions for other API calls used in the frontend context
-// These would typically be implemented to interact with your backend's respective routes.
-export const getPlayerStats = async (playerId, scheduleId) => {
-    const response = await fetch(`${API_BASE_URL}/playerstats/${playerId}/${scheduleId}`, {
+
+export const getScheduleStats = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/stats/schedule/${scheduleId}`, {
         headers: getAuthHeaders(),
     });
-    if (response.status === 404) {
-        // It's not an error if stats don't exist yet, just return an empty structure.
-        return { playerId, scheduleId, stats: [] };
-    }
     if (!response.ok) {
-        throw new ApiError('Failed to fetch player stats', response.status);
+        throw new ApiError('Failed to fetch schedule stats', response.status);
     }
     return response.json();
 };
+
+export const getPlayerStats = async (playerId) => {
+    const response = await fetch(`${API_BASE_URL}/stats/player/${playerId}`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        throw new ApiError('Failed to fetch all player stats', response.status);
+    }
+    return response.json();
+};
+
 export const createPlayerStat = async (statData) => {
     const response = await fetch(`${API_BASE_URL}/playerstats`, {
         method: 'POST',
@@ -268,8 +288,8 @@ export const invitePlayer = async (groupId, email) => {
     return response.json();
 };
 
-export const verifyInvitation = async (token) => {
-    const response = await fetch(`${API_BASE_URL}/invitations/verify/${token}`);
+export const verifyInvitation = async (join_token) => {
+    const response = await fetch(`${API_BASE_URL}/invitations/verify/${join_token}`);
     if (!response.ok) {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to verify invitation', response.status);
@@ -277,8 +297,8 @@ export const verifyInvitation = async (token) => {
     return response.json();
 };
 
-export const acceptInvitation = async (token) => {
-    const response = await fetch(`${API_BASE_URL}/invitations/accept/${token}`, { method: 'POST', headers: getAuthHeaders() });
+export const acceptInvitation = async (join_token) => {
+    const response = await fetch(`${API_BASE_URL}/invitations/accept/${join_token}`, { method: 'POST', headers: getAuthHeaders() });
     if (!response.ok) throw new ApiError('Failed to accept invitation', response.status);
     return response.json();
 };

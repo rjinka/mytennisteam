@@ -176,22 +176,22 @@ export const showScheduleStatsModal = async (schedule) => {
     statsBody.innerHTML = '';
 
     showLoading(true);
-    let playersForSchedule = [];
-    let playerStats = [];
+    let allStatsForSchedule = [];
     try {
-        playersForSchedule = Object.values(players).filter(p => 
-            p.availability?.some(a => a.scheduleId === schedule.id)
-        );
-        playerStats = await Promise.all(playersForSchedule.map(player => api.getPlayerStats(player.id, schedule.id)));
+        // Use the new, more efficient API call
+        allStatsForSchedule = await api.getScheduleStats(schedule.id);
     } finally {
         showLoading(false);
     }
+
+    const playersForSchedule = allStatsForSchedule.map(ps => players[ps.playerId]);
 
     if (playersForSchedule.length === 0) {
         statsBody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No players are assigned to this schedule.</td></tr>';
     } else {
         playersForSchedule.sort((a, b) => a.user.name.localeCompare(b.user.name)).forEach(player => {
-            const statsData = playerStats.find(ps => ps.playerId === player.id);
+            if (!player) return;
+            const statsData = allStatsForSchedule.find(ps => ps.playerId === player.id);
             const stats = getDerivedStats(statsData ? statsData.stats : []);
             const availability = player.availability?.find(a => a.scheduleId === schedule.id)?.type || 'N/A';
 
@@ -288,15 +288,15 @@ export const showPlayerStatsModal = async (player) => {
     showLoading(true);
     let allPlayerStats = [];
     try {
-        const scheduleIds = player.availability?.map(a => a.scheduleId) || [];
-        const playerStatsPromises = scheduleIds.map(scheduleId => api.getPlayerStats(player.id, scheduleId));
-        allPlayerStats = await Promise.all(playerStatsPromises);
+        // Use the new, more efficient API call
+        allPlayerStats = await api.getPlayerStats(player.id);
     } finally {
         showLoading(false);
     }
 
     allPlayerStats.forEach(statData => {
         const schedule = schedules[statData.scheduleId];
+        if (!schedule) return;
         const history = statData.stats || [];
         const stats = getDerivedStats(history);
         const totalBenched = history.filter(h => h.status === 'benched').length;
@@ -350,7 +350,7 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
     const swapMessage = document.getElementById('swapMessage');
     const confirmSwapBtn = document.getElementById('confirmSwapBtn');
     const swapWithBackupCheckbox = document.getElementById('swapWithBackupCheckbox');
-    const backupSwapContainer = document.getElementById('backupSwapContainer');
+    const backupSwapContainer = document.getElementById('backupSwapContainer'); // This container holds the backup player select dropdown
     const backupPlayerSelect = document.getElementById('backupPlayerSelect');
 
     const populateRegularSwaps = () => {
@@ -359,10 +359,12 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
         const playingIds = schedule.playingPlayersIds || [];
         const benchIds = schedule.benchPlayersIds || [];
 
+        // The player being swapped is either on the court or on the bench.
+        // The eligible partners are on the opposite list.
         if (direction === 'moveToBench') {
-            eligibleSwapPartners = Object.values(players).filter(p => benchIds.includes(p.id));
+            eligibleSwapPartners = benchIds.map(id => players[id]).filter(Boolean);
         } else {
-            eligibleSwapPartners = Object.values(players).filter(p => playingIds.includes(p.id) && p.id !== player.id);
+            eligibleSwapPartners = playingIds.map(id => players[id]).filter(p => p && p.id !== player.id);
         }
 
         if (eligibleSwapPartners.length === 0) {
@@ -399,9 +401,12 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
         const useBackup = e.target.checked;
         backupSwapContainer.style.display = useBackup ? 'flex' : 'none';
         swapPlayerSelect.style.display = useBackup ? 'none' : 'block';
-        confirmSwapBtn.disabled = true;
+        confirmSwapBtn.disabled = true; // Disable button until a selection is made
         if (useBackup) {
             populateBackupSwaps();
+            backupPlayerSelect.value = ''; // Reset selection
+        } else {
+            swapPlayerSelect.value = ''; // Reset selection
         }
     };
 

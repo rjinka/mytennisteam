@@ -19,6 +19,7 @@ const scheduleSchema = new mongoose.Schema({
     week: { type: Number, default: 1 },
     lastGeneratedWeek: { type: Number, default: 0 },
     isRotationGenerated: { type: Boolean, default: false },
+    lastRotationGeneratedDate: { type: Date },
     playingPlayersIds: [{ type: String }],
     benchPlayersIds: [{ type: String }],
     isCompleted: { type: Boolean, default: false },

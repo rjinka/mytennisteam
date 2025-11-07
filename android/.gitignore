@@ -1,0 +1,28 @@
+gitignore
+# Build files
+/build
+app/build
+/.outputs
+*.apk
+*.aab
+
+# IDE & Local Configuration
+/.idea
+/.gradle
+/local.properties
+*.iml
+
+# Secrets
+/app/src/main/res/values/secrets.xml
+
+# Keystore / Signing Keys
+*.jks
+*.keystore
+
+# Memory Dumps & Captures
+*.hprof
+/captures/
+
+# Logs
+logs
+*.log

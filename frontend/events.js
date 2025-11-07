@@ -1,6 +1,5 @@
 import { showEditCourtModal, showEditPlayerModal, showPlayerStatsModal, showSwapModalForSchedule, showEditScheduleModal, showScheduleStatsModal } from './modals.js';
 import * as app from './app.js';
-import { finalizeAndSaveRotation } from './rotation.js';
 import * as api from './api.js';
 import { showMessageBox, renderGroupsList, showLoading, renderCourtsList, showScheduleDetails } from './ui.js';
 
@@ -176,32 +175,28 @@ export function setupGlobalEventListeners() {
         document.getElementById('swapModalOverlay').classList.remove('show');
     };
     document.getElementById('confirmSwapBtn').onclick = async () => {
-        const selectedSwapPlayerId = document.getElementById('swapPlayerSelect').value;
-        if (!selectedSwapPlayerId || !app.ui.playerBeingSwapped) {
-            showMessageBox("Error", "Please select a player to swap with.");
-            return;
-        }
+        const swapWithBackup = document.getElementById('swapWithBackupCheckbox').checked;
+        const regularSwapPlayerId = document.getElementById('swapPlayerSelect').value;
+        const backupSwapPlayerId = document.getElementById('backupPlayerSelect').value;
 
-        const swapPartner = app.players[selectedSwapPlayerId];
-        if (!swapPartner) {
-            showMessageBox("Error", "Selected swap partner not found.");
+        const playerInId = app.ui.playerBeingSwapped?.id;
+        const playerOutId = swapWithBackup ? backupSwapPlayerId : regularSwapPlayerId;
+
+        if (!playerInId || !playerOutId) {
+            showMessageBox("Error", "Please select a player to swap with.");
             return;
         }
 
         showLoading(true);
         try {
             // Call the new API endpoint for swapping players
-            await api.swapPlayers(
-                app.selection.selectedSchedule.id, // Schedule ID
-                app.ui.playerBeingSwapped.id, // Player being swapped ID
-                swapPartner.id, // Swap partner ID
-                app.ui.swapActionDirection
-            );
+            const updatedSchedule = await api.swapPlayers(app.selection.selectedSchedule.id, playerInId, playerOutId);
+            app.schedules[updatedSchedule.id] = updatedSchedule; // Update local data
+            app.selection.selectedSchedule = updatedSchedule; // Keep the current schedule selected
             document.body.classList.remove('modal-open');
             document.getElementById('swapModalOverlay').classList.remove('show');
-            // After a successful swap, reload schedules and re-render the selected schedule's details
-            await app.loadSchedulesForGroup();
-            showScheduleDetails(app.selection.selectedSchedule);
+            // After a successful swap, just re-render the details for the updated schedule
+            showScheduleDetails(updatedSchedule);
         } catch (error) {
             console.error('Error during player swap:', error);
             showMessageBox("Error", error.message || "Failed to swap players.");
@@ -218,40 +213,21 @@ export function setupGlobalEventListeners() {
 
         showLoading(true);
         try {
-            // Handle one-time schedules
-            if (!app.selection.selectedSchedule.recurring) {
-                if (app.selection.selectedSchedule.isRotationGenerated) {
-                    showMessageBox("Schedule Finished", "This schedule has already been finished.");
-                    return;
-                }
-                await finalizeAndSaveRotation(app.selection.selectedSchedule);
-                app.selection.selectedSchedule.isRotationGenerated = true; // Mark as finished
-                const updatedSchedule = await api.updateSchedule(app.selection.selectedSchedule.id, app.selection.selectedSchedule);
-                app.schedules[updatedSchedule.id] = updatedSchedule;
-                app.selection.selectedSchedule = updatedSchedule;
-                showScheduleDetails(updatedSchedule);
+            if (app.selection.selectedSchedule.isCompleted) {
+                showMessageBox("Schedule Finished", "This schedule has completed its cycle and no more rotations can be generated.");
                 return;
             }
 
-            // Handle recurring schedules
-            if (app.selection.selectedSchedule.frequency > 0 && app.selection.selectedSchedule.recurrenceCount > 0 && app.selection.selectedSchedule.week > app.selection.selectedSchedule.recurrenceCount) {
-                showMessageBox("Schedule Finished", "This schedule has completed its recurring cycle and no more rotations can be generated.");
-                return;
-            }
+            // Call the new backend endpoint
+            const updatedSchedule = await api.generateRotation(app.selection.selectedSchedule.id);
 
-            await finalizeAndSaveRotation(app.selection.selectedSchedule);
-            app.selection.selectedSchedule.week = (app.selection.selectedSchedule.week || 0) + 1;
-            // The backend now handles lastGeneratedWeek, so we don't set it here.
-            app.selection.selectedSchedule.isRotationGenerated = true;
-            
-            const updatedSchedule = await api.updateSchedule(app.selection.selectedSchedule.id, app.selection.selectedSchedule);
+            // Update local state with the result from the backend
             app.schedules[updatedSchedule.id] = updatedSchedule;
             app.selection.selectedSchedule = updatedSchedule;
-            await app.reloadData();
             showScheduleDetails(updatedSchedule);
         } catch (error) {
             console.error('Error generating rotation:', error);
-            showMessageBox('Error', 'Failed to generate rotation.');
+            showMessageBox('Error', error.message || 'Failed to generate rotation.');
         } finally {
             showLoading(false);
         }

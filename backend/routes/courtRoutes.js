@@ -1,8 +1,8 @@
 import express from 'express';
 import Court from '../models/courtModel.js';
 import Player from '../models/playerModel.js';
-import { protect } from '../middleware/authMiddleware.js';
 import Group from '../models/groupModel.js';
+import { protect } from '../middleware/authMiddleware.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
@@ -57,8 +57,6 @@ router.post('/', protect, async (req, res) => {
     const { name, groupid } = req.body;
 
     try {
-        // Authorization check: Only group admins can create courts
-        const Group = (await import('../models/groupModel.js')).default;
         const group = await Group.findOne({ id: groupid });
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });

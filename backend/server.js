@@ -61,7 +61,7 @@ app.use('/api/courts', courtRoutes);
 app.use('/api/players', playerRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/schedules', scheduleRoutes);
-app.use('/api/playerstats', playerStatRoutes);
+app.use('/api/stats', playerStatRoutes);
 
 const startServer = async () => {
     try {
@@ -96,4 +96,9 @@ const startServer = async () => {
     }
 };
 
-startServer();
+// Start the server only if this file is run directly (not when imported for tests)
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+
+export { app, startServer };

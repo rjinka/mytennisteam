@@ -8,10 +8,11 @@ const invitationSchema = new mongoose.Schema({
         lowercase: true,
     },
     groupId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
+        ref: 'Group',
     },
-    token: {
+    join_token: {
         type: String,
         required: true,
         unique: true,

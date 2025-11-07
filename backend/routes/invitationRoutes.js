@@ -9,10 +9,10 @@ import { v4 as uuidv4 } from 'uuid';
 const router = express.Router();
 
 // @desc    Verify an invitation token
-// @route   GET /api/invitations/verify/:token
-router.get('/verify/:token', protect, async (req, res) => {
+// @route   GET /api/invitations/verify/:join_token
+router.get('/verify/:join_token', protect, async (req, res) => {
     try {
-        const invitation = await Invitation.findOne({ token: req.params.token, expires: { $gt: Date.now() } }).populate('groupId', 'name');
+        const invitation = await Invitation.findOne({ join_token: req.params.join_token, expires: { $gt: Date.now() } }).populate('groupId', 'name');
         if (!invitation) {
             return res.status(400).json({ msg: 'Invitation is invalid or has expired.' });
         }
@@ -26,7 +26,7 @@ router.get('/verify/:token', protect, async (req, res) => {
 // @route   POST /api/invitations/accept/:token
 router.post('/accept/:token', protect, async (req, res) => {
     try {
-        const invitation = await Invitation.findOne({ token: req.params.token, expires: { $gt: Date.now() } });
+        const invitation = await Invitation.findOne({ join_token: req.params.token, expires: { $gt: Date.now() } });
 
         if (!invitation) {
             return res.status(400).json({ msg: 'Invitation is invalid or has expired.' });
@@ -37,16 +37,16 @@ router.post('/accept/:token', protect, async (req, res) => {
             return res.status(403).json({ msg: 'This invitation is for a different user.' });
         }
 
+        const group = await Group.findById(invitation.groupId);
+        if (!group) {
+            return res.status(404).json({ msg: 'Associated group not found.' });
+        }
+
         // Check if player already exists in the group
-        const playerExists = await Player.findOne({ groupid: invitation.groupId, name: req.user.name });
+        const playerExists = await Player.findOne({ groupid: group.id, userId: req.user.id });
         if (playerExists) {
             await invitation.deleteOne();
             return res.status(400).json({ msg: 'You are already a player in this group.' });
-        }
-
-        const group = await Group.findOne({ id: invitation.groupId });
-        if (!group) {
-            return res.status(404).json({ msg: 'Associated group not found.' });
         }
 
         // Create a new player

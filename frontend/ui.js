@@ -1,10 +1,12 @@
-import { setCurrentGroup, loadSchedulesForGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup, parseJwt } from './app.js';
+import { setCurrentGroup, loadSchedulesForGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup, parseJwt, saveScheduleChanges } from './app.js';
 import { addEditGroupListeners, addRemoveGroupListeners, addScheduleActionListeners } from './events.js';
-import { showEditScheduleModal, populateScheduleCourtsDropdown } from './modals.js';
+import { showEditScheduleModal, populateScheduleCourtsDropdown, hideEditScheduleModal } from './modals.js';
 import { addSwapButtonListenersForSchedule } from './events.js';
 import { getDerivedStats } from './rotation.js';
 import { addNewPlayer, addRemovePlayerListeners, addEditPlayerListeners, addViewStatsListeners } from './events.js';
 import { addRemoveCourtListeners, addEditCourtListeners } from './events.js';
+import { getRotationButtonState, updateSchedule } from './api.js';
+
 
 const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -92,18 +94,17 @@ export const renderGroupsList = async () => {
         groupsList.appendChild(card);
     });
 
-    // The "Groups" tab is only visible to admins. Therefore, if this function is running,
-    // it's safe to assume the user should see the "Create New Group" button.
-    if (isCurrentUserAdminOfSelectedGroup() || Object.keys(groups).length > 0 || sortedGroups.length === 0) {
-        const createGroupBtn = document.createElement('button');
-        createGroupBtn.id = 'createGroupBtn';
-        createGroupBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer p-4 md:p-2';
-        createGroupBtn.textContent = 'Create New Group';
-        createGroupBtn.onclick = () => {
-            document.getElementById('createGroupModalOverlay').classList.add('show');
-        };
-        groupsList.appendChild(createGroupBtn);
-    }
+    
+    
+    const createGroupBtn = document.createElement('button');
+    createGroupBtn.id = 'createGroupBtn';
+    createGroupBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer p-4 md:p-2';
+    createGroupBtn.textContent = 'Create New Group';
+    createGroupBtn.onclick = () => {
+        document.getElementById('createGroupModalOverlay').classList.add('show');
+    };
+    groupsList.appendChild(createGroupBtn);
+    
     addEditGroupListeners();
     addRemoveGroupListeners();
 };
@@ -167,59 +168,42 @@ export const showScheduleDetails = async (schedule) => {
     }
 
     const generateBtn = document.getElementById('generateRotationBtn');
-    const currentDate = new Date();
-    const currentDayOfWeek = currentDate.getDay();
-    const scheduleDay = parseInt(schedule.day);
-
-    const isScheduleDayToday = (scheduleDay === currentDayOfWeek);
-    const isAdmin = isCurrentUserAdminOfSelectedGroup();
-    const hasRotationBeenGeneratedForCurrentPeriod = (schedule.lastGeneratedWeek === schedule.week);
-    const isRotationGenerated = schedule.isRotationGenerated;
-
-    generateBtn.style.display = 'none'; // Hide by default
-
-    if (isAdmin) {
-        generateBtn.style.display = 'block'; // Show for admins
-    }
-
-    if (schedule.isCompleted) {
-        generateBtn.textContent = 'Schedule Finished';
-        generateBtn.disabled = true;
-    } else if (!schedule.recurring) { // One-time schedule logic
-        generateBtn.textContent = 'Finish Schedule';
-        generateBtn.disabled = false;
-    } else if (isRotationGenerated && !isScheduleDayToday && isAdmin) { // Recurring schedule logic
-        schedule.isRotationGenerated = false;
-        await showScheduleDetails(schedule);
-    } else if (isScheduleDayToday && !isRotationGenerated && isAdmin) {
-        generateBtn.textContent = 'Generate Rotation';
-        generateBtn.disabled = false;
-    } else if (hasRotationBeenGeneratedForCurrentPeriod && isAdmin) {
-        generateBtn.textContent = 'Rotation Generated';
-        generateBtn.disabled = true;
-    } else if (isAdmin) {
-        generateBtn.textContent = 'Generate Rotation';
-        generateBtn.disabled = false;
+    try {
+        const buttonState = await getRotationButtonState(schedule.id);
+        generateBtn.style.display = buttonState.visible ? 'block' : 'none';
+        generateBtn.textContent = buttonState.text;
+        generateBtn.disabled = buttonState.disabled;
+    } catch (error) {
+        console.error("Could not get rotation button state:", error);
+        generateBtn.style.display = 'none';
     }
 
     addSwapButtonListenersForSchedule(schedule);
 };
 
-function renderPlayerList(container, playerIds, itemClass, action, emptyMessage) {
+function renderPlayerList(container, playerIds, itemClass, action, emptyMessage, schedule) {
     if (playerIds.length === 0) {
         container.innerHTML = `<p class="col-span-full text-center text-gray-500 p-4">${emptyMessage}</p>`;
         return;
     } 
 
+    const currentUser = parseJwt(localStorage.getItem('token'));
+    const isAdmin = isCurrentUserAdminOfSelectedGroup();
+
     playerIds.forEach(id => {
         const player = players[id];
         if (player) {
+            const isOwnCard = player.userId === currentUser.id;
+            const canSwap = isAdmin || isOwnCard;
+
             const playerDiv = document.createElement('div');
             playerDiv.className = `player-item ${itemClass} flex justify-between items-center`;
-            playerDiv.innerHTML = `
-                <span class="name-text">${player.user.name}</span>
-                <button class="action-btn" data-player-id="${player.id}" data-action="${action}">Swap</button>
-            `;
+            
+            const buttonHtml = canSwap 
+                ? `<button class="action-btn" data-player-id="${player.id}" data-action="${action}">Swap</button>`
+                : '';
+
+            playerDiv.innerHTML = `<span class="name-text">${player.user.name}</span>${buttonHtml}`;
             container.appendChild(playerDiv);
         }
     });
