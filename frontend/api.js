@@ -1,6 +1,6 @@
 // Use Vite's environment variables to set the API base URL.
 // import.meta.env.VITE_API_BASE_URL is replaced at build time.
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`;
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
