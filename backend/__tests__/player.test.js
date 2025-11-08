@@ -1,9 +1,10 @@
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 
+const userId = new mongoose.Types.ObjectId();
 // Mock middleware and config
 jest.unstable_mockModule('../middleware/authMiddleware.js', () => ({
   protect: (req, res, next) => {
-    req.user = { id: 'user1', isSuperAdmin: false };
+    req.user = { _id: userId, isSuperAdmin: false };
     next();
   },
 }));
@@ -11,6 +12,7 @@ jest.unstable_mockModule('../config.js', () => ({
   config: { jwt_secret: 'test-secret' },
 }));
 
+import mongoose from 'mongoose';
 // Dynamic imports after mocks
 const request = (await import('supertest')).default;
 const { app } = await import('../server.js');
@@ -23,12 +25,16 @@ describe('Player Routes', () => {
   let user, group, player, schedule;
 
   beforeEach(async () => {
-    user = await User.create({ id: 'user1', googleId: 'google123', name: 'Test User', email: 'test@example.com' });
-    group = await Group.create({ id: 'group1', name: 'Test Group', createdBy: 'user1', admins: ['user1'] });
-    player = await Player.create({ id: 'player1', userId: 'user1', groupid: 'group1' });
+    const groupId = new mongoose.Types.ObjectId();
+    const playerId = new mongoose.Types.ObjectId();
+    const scheduleId = new mongoose.Types.ObjectId();
+
+    user = await User.create({ _id: userId, googleId: 'google123', name: 'Test User', email: 'test@example.com' });
+    group = await Group.create({ _id: groupId, name: 'Test Group', createdBy: userId, admins: [userId] });
+    player = await Player.create({ _id: playerId, userId: userId, groupId: groupId });
     schedule = await Schedule.create({
-      id: 'schedule1',
-      groupid: 'group1',
+      _id: scheduleId,
+      groupId: groupId,
       name: 'Test Schedule',
       day: 'Monday',
       time: '18:00',
@@ -46,55 +52,55 @@ describe('Player Routes', () => {
 
   describe('GET /api/players/:groupid', () => {
     it('should get all players for a specific group', async () => {
-      const res = await request(app).get('/api/players/group1');
+      const res = await request(app).get(`/api/players/${group._id}`);
       expect(res.statusCode).toBe(200);
       expect(res.body.length).toBe(1);
-      expect(res.body[0].userId).toBe('user1');
+      expect(res.body[0].userId).toBe(user._id.toString());
     });
   });
 
   describe('PUT /api/players/:id', () => {
     it('should update a player\'s availability and schedule', async () => {
       const res = await request(app)
-        .put('/api/players/player1')
+        .put(`/api/players/${player._id}`)
         .send({
-          availability: [{ scheduleId: 'schedule1', available: true }],
+          availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
         });
 
       expect(res.statusCode).toBe(200);
 
-      const updatedSchedule = await Schedule.findOne({ id: 'schedule1' });
-      expect(updatedSchedule.playingPlayersIds).toContain('player1');
+      const updatedSchedule = await Schedule.findById(schedule._id);
+      expect(updatedSchedule.playingPlayersIds).toContainEqual(player._id);
     });
 
     it('should move a player to the bench if the schedule is full', async () => {
-        const player2 = await Player.create({ id: 'player2', userId: 'user2', groupid: 'group1' });
-        await schedule.updateOne({$set: {playingPlayersIds: ['player2'] }});
+        const player2 = await Player.create({ userId: new mongoose.Types.ObjectId(), groupId: group._id });
+        await schedule.updateOne({$set: {playingPlayersIds: [player2._id] }});
 
         const res = await request(app)
-        .put('/api/players/player1')
+        .put(`/api/players/${player._id}`)
         .send({
-          availability: [{ scheduleId: 'schedule1', available: true }],
+          availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
         });
 
       expect(res.statusCode).toBe(200);
 
-      const updatedSchedule = await Schedule.findOne({ id: 'schedule1' });
-      expect(updatedSchedule.benchPlayersIds).toContain('player1');
+      const updatedSchedule = await Schedule.findById(schedule._id);
+      expect(updatedSchedule.benchPlayersIds).toContainEqual(player._id);
     });
   });
 
   describe('DELETE /api/players/:id', () => {
     it('should delete a player if the user is an admin', async () => {
-      const res = await request(app).delete('/api/players/player1');
+      const res = await request(app).delete(`/api/players/${player._id}`);
       expect(res.statusCode).toBe(200);
-      const deletedPlayer = await Player.findOne({ id: 'player1' });
+      const deletedPlayer = await Player.findById(player._id);
       expect(deletedPlayer).toBeNull();
     });
 
     it('should return 403 if the user is not an admin', async () => {
-        await group.updateOne({$set: {admins: ['user2'] }});
-        const res = await request(app).delete('/api/players/player1');
+        await group.updateOne({$set: {admins: [new mongoose.Types.ObjectId()] }});
+        const res = await request(app).delete(`/api/players/${player._id}`);
         expect(res.statusCode).toBe(403);
     });
   });
