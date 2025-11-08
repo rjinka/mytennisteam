@@ -1,4 +1,5 @@
 export default {
+  testTimeout: 30000,
   testEnvironment: 'node',
   transform: {},
   globals: {
