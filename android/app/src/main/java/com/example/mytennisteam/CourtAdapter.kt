@@ -43,6 +43,6 @@ class CourtDiffCallback : DiffUtil.ItemCallback<Court>() {
     }
 
     override fun areContentsTheSame(oldItem: Court, newItem: Court): Boolean {
-        return oldItem.name == newItem.name && oldItem.groupid == newItem.groupid
+        return oldItem.name == newItem.name && oldItem.groupId == newItem.groupId
     }
 }

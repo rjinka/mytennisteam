@@ -179,19 +179,19 @@ export const showScheduleStatsModal = async (schedule) => {
     let allStatsForSchedule = [];
     try {
         // Use the new, more efficient API call
-        allStatsForSchedule = await api.getScheduleStats(schedule.id);
+        allStatsForSchedule = await api.getScheduleStats(schedule.id)
     } finally {
         showLoading(false);
     }
 
-    const playersForSchedule = allStatsForSchedule.map(ps => players[ps.playerId]);
+    const playersForSchedule = allStatsForSchedule.map(ps => players[ps.playerId.id]);
 
     if (playersForSchedule.length === 0) {
         statsBody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No players are assigned to this schedule.</td></tr>';
     } else {
         playersForSchedule.sort((a, b) => a.user.name.localeCompare(b.user.name)).forEach(player => {
             if (!player) return;
-            const statsData = allStatsForSchedule.find(ps => ps.playerId === player.id);
+            const statsData = allStatsForSchedule.find(ps => ps.playerId.id === player.id);
             const stats = getDerivedStats(statsData ? statsData.stats : []);
             const availability = player.availability?.find(a => a.scheduleId === schedule.id)?.type || 'N/A';
 
@@ -295,7 +295,7 @@ export const showPlayerStatsModal = async (player) => {
     }
 
     allPlayerStats.forEach(statData => {
-        const schedule = schedules[statData.scheduleId];
+        const schedule = schedules[statData.scheduleId.id];
         if (!schedule) return;
         const history = statData.stats || [];
         const stats = getDerivedStats(history);

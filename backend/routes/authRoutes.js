@@ -5,15 +5,14 @@ import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/userModel.js';
 import { config } from '../config.js';
-import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(config.google_client_id);
 
 async function verifyGoogleToken(token) {
     const ticket = await client.verifyIdToken({
         idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: config.google_client_id,
     });
     return ticket.getPayload();
 }
@@ -36,7 +35,6 @@ router.post('/google', async (req, res) => {
         if (!user) {
             user = new User({
                 googleId: googleUser.sub,
-                id: uuidv4(),
                 email: googleUser.email,
                 name: googleUser.name,
                 picture: googleUser.picture,
@@ -49,7 +47,7 @@ router.post('/google', async (req, res) => {
         await user.save();
 
         // Create your application's JWT
-        const payload = { id: user.id, name: user.name, isSuperAdmin: user.isSuperAdmin };
+        const payload = { id: user._id, name: user.name, isSuperAdmin: user.isSuperAdmin };
         const token = jwt.sign(payload, config.jwt_secret, { expiresIn: '1d' });
 
         // Redirect back to the frontend, passing the token as a query parameter
@@ -79,7 +77,6 @@ router.post('/google/mobile', async (req, res) => {
         if (!user) {
             user = new User({
                 googleId: googleUser.sub,
-                id: uuidv4(),
                 email: googleUser.email,
                 name: googleUser.name,
                 picture: googleUser.picture,
@@ -91,7 +88,7 @@ router.post('/google/mobile', async (req, res) => {
         await user.save();
 
         // Create and sign your application's JWT
-        const payload = { id: user.id, name: user.name, isSuperAdmin: user.isSuperAdmin };
+        const payload = { id: user._id, name: user.name, isSuperAdmin: user.isSuperAdmin };
         const appToken = jwt.sign(payload, config.jwt_secret, { expiresIn: '1d' });
 
         // Return your app's token in the response body

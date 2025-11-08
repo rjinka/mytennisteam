@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.mytennisteam.databinding.FragmentGroupsBinding
 
@@ -100,22 +101,42 @@ class GroupsFragment : Fragment() {
     }
 
     private fun showEditGroupDialog(group: Group) {
-        val editText = EditText(requireContext()).apply {
-            hint = "Group Name"
-            setText(group.name)
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_edit_group, null)
+        val groupNameEditText = dialogView.findViewById<EditText>(R.id.group_name_edit_text)
+        val adminsRecyclerView = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.admins_recycler_view)
+
+        groupNameEditText.setText(group.name)
+
+        val allPlayersInGroup = homeViewModel.homeData.value?.players ?: emptyList()
+        val currentAdmins = group.admins.toSet()
+
+        val adminAdapter = GroupAdminAdapter(allPlayersInGroup, currentAdmins)
+        adminsRecyclerView.apply {
+            adapter = adminAdapter
+            layoutManager = LinearLayoutManager(context)
         }
 
         AlertDialog.Builder(requireContext())
             .setTitle("Edit Group Name")
-            .setView(editText)
+            .setView(dialogView)
             .setPositiveButton("Save") { _, _ ->
-                val newGroupName = editText.text.toString()
+                val newGroupName = groupNameEditText.text.toString().trim()
+                val newAdminUserIds = adminAdapter.getSelectedAdminIds()
+
+                if (newAdminUserIds.isEmpty()) {
+                    Toast.makeText(context, "A group must have at least one admin.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
                 if (newGroupName.isNotBlank() && newGroupName != group.name) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
                         homeViewModel.updateGroup("Bearer $rawToken", group.id, newGroupName, loadingViewModel)
                     }
                 }
+
+                // TODO: Implement a ViewModel function to update admins
+                // homeViewModel.updateGroupAdmins("Bearer $rawToken", group.id, newAdminUserIds, loadingViewModel)
             }
             .setNegativeButton("Cancel", null)
             .show()

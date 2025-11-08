@@ -108,17 +108,17 @@ class PlayersFragment : Fragment() {
 
         homeViewModel.playerStats.observe(viewLifecycleOwner) { stats ->
             if (stats != null) {
-                val allSchedules = homeViewModel.homeData.value?.schedules ?: emptyList()
-                val formattedStats = stats.mapNotNull { scheduleStat ->
-                    val schedule = allSchedules.find { it.id == scheduleStat.scheduleId }
-                    if (schedule != null) {
-                        val totalPlayed = scheduleStat.stats.count { it.status == "played" }
-                        val totalBenched = scheduleStat.stats.count { it.status == "benched" }
+                val formattedStats = stats.map { playerStat ->
+                    // The scheduleId is already populated with the schedule object from the backend
+                    val schedule = playerStat.scheduleId
+                    if (schedule != null) { // Should always be true
+                        val totalPlayed = playerStat.stats.count { it.status == "played" }
+                        val totalBenched = playerStat.stats.count { it.status == "benched" }
                         FormattedPlayerStat(
-                            scheduleName = "${schedule.name} (${schedule.day} at ${schedule.time})",
+                            scheduleName = schedule.name, // The backend only sends name
                             totalPlayed = totalPlayed,
                             totalBenched = totalBenched,
-                            history = scheduleStat.stats
+                            history = playerStat.stats
                         )
                     } else {
                         null

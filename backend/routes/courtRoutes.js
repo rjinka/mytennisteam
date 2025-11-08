@@ -3,7 +3,6 @@ import Court from '../models/courtModel.js';
 import Player from '../models/playerModel.js';
 import Group from '../models/groupModel.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
@@ -15,11 +14,11 @@ router.get('/', protect, async (req, res) => {
         if (!req.user) return res.status(401).json({ msg: 'Not authorized' });
 
         // 1. Find all groups the user is a player in.
-        const playerEntries = await Player.find({ userId: req.user.id });
-        const groupIds = playerEntries.map(p => p.groupid);
+        const playerEntries = await Player.find({ userId: req.user._id });
+        const groupIds = playerEntries.map(p => p.groupId);
 
         // 2. Find all courts that belong to those groups.
-        const courts = await Court.find({ groupid: { $in: groupIds } });
+        const courts = await Court.find({ groupId: { $in: groupIds } });
 
         res.json(courts);
     } catch (error) {
@@ -28,24 +27,24 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// @route GET /api/courts/:groupid
+// @route GET /api/courts/:groupId
 // @desc Get all courts for a group
 // @access private
-router.get('/:groupid', protect, async( req, res) => {
+router.get('/:groupId', protect, async( req, res) => {
     try {
-        const { groupid } = req.params;
+        const { groupId } = req.params;
 
         // check if group exists
-        const group = await Group.findOne({ id: groupid });
+        const group = await Group.findById(groupId);
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
         }
         
         // Get all courts for a group
-        const courts = await Court.find({ groupid: groupid });
+        const courts = await Court.find({ groupId: groupId });
         res.json(courts);
         } catch (error) {
-        console.error(`Error fetching courts for group ${req.params.groupid}:`, error);
+        console.error(`Error fetching courts for group ${req.params.groupId}:`, error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
@@ -54,22 +53,21 @@ router.get('/:groupid', protect, async( req, res) => {
 // @route   POST /api/courts
 // @desc    Create a new court
 router.post('/', protect, async (req, res) => {
-    const { name, groupid } = req.body;
+    const { name, groupId } = req.body;
 
     try {
-        const group = await Group.findOne({ id: groupid });
+        const group = await Group.findById(groupId);
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
         }
 
-        if (!req.user.isSuperAdmin && !group.admins.includes(req.user.id)) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized to add courts to this group' });
         }
 
         const newCourt = new Court({
-            id: uuidv4(),
             name,
-            groupid
+            groupId
         });
 
         const court = await newCourt.save();
@@ -83,10 +81,10 @@ router.post('/', protect, async (req, res) => {
 // @route   PUT /api/courts/:id
 // @desc    Update a court
 router.put('/:id', protect, async (req, res) => {
-    const { name, groupid } = req.body;
+    const { name } = req.body;
 
     try {
-        const court = await Court.findOneAndUpdate({ id: req.params.id }, { $set: { name, groupid } }, { new: true });
+        const court = await Court.findByIdAndUpdate(req.params.id, { $set: { name } }, { new: true });
         if (!court) {
             return res.status(404).json({ msg: 'Court not found' });
         }
@@ -101,19 +99,19 @@ router.put('/:id', protect, async (req, res) => {
 // @desc    Delete a court
 router.delete('/:id', protect, async (req, res) => {
     try {
-        const court = await Court.findOne({ id: req.params.id });
+        const court = await Court.findById(req.params.id);
 
         if (!court) {
             return res.status(404).json({ msg: 'Court not found' });
         }
 
         // Authorization check: Only group admins can delete courts
-        const group = await Group.findOne({ id: court.groupid });
+        const group = await Group.findById(court.groupId);
         if (!group) {
-            return res.status(404).json({ msg: 'Group not found' });
+            // If group is not found, the court is orphaned. Allow deletion for cleanup.
         }
 
-        if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
+        if (!req.user.isSuperAdmin && (!group || !group.admins.some(adminId => adminId.equals(req.user._id)))) {
             return res.status(403).json({ msg: 'User not authorized to delete this court' });
         }
 
