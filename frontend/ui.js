@@ -216,7 +216,7 @@ export const renderSchedulesList = () => {
 
     // The selected group could be an admin group or a player group. Check both.
     const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupSchedules = Object.values(schedules).filter(s => s.groupid === selectedGroup?.id);
+    const groupSchedules = Object.values(schedules).filter(s => s.groupId === selectedGroup?.id);
 
     groupSchedules.forEach(schedule => {
         const day = weekdayNames[schedule.day];
@@ -280,7 +280,7 @@ export const renderCourtsList = () => {
 
     // The selected group could be an admin group or a player group. Check both.
     const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupCourts = Object.values(courts).filter(c => c.groupid === selectedGroup?.id);
+    const groupCourts = Object.values(courts).filter(c => c.groupId === selectedGroup?.id);
     groupCourts.forEach(court => {
         const card = document.createElement('div');
         card.className = 'player-item flex justify-between items-center text-sm p-3 md:flex-col md:justify-between md:p-2';
@@ -321,7 +321,7 @@ export const renderAllPlayers = () => {
     allPlayersGrid.innerHTML = '';
     // The selected group could be an admin group or a player group. Check both.
     const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupPlayers = Object.values(players).filter(p => p.groupid === selectedGroup?.id);
+    const groupPlayers = Object.values(players).filter(p => p.groupId === selectedGroup?.id);
     groupPlayers.sort((a, b) => a.user.name.localeCompare(b.user.name)).forEach(player => {
         const card = document.createElement('div');
         // Use the user's picture as a background image for the card

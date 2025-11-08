@@ -15,10 +15,10 @@ router.get('/', protect, async (req, res) => {
     try {
         // 1. Find all groups the user is a player in.
         const playerEntries = await Player.find({ userId: req.user.id });
-        const groupIds = playerEntries.map(p => p.groupid);
+        const groupIds = playerEntries.map(p => p.groupId);
 
         // 2. Find all schedules that belong to those groups.
-        const schedules = await Schedule.find({ groupid: { $in: groupIds } });
+        const schedules = await Schedule.find({ groupId: { $in: groupIds } });
 
         if (!schedules) {
             return res.json([]);
@@ -30,23 +30,23 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// @route GET /api/schedules/:groupid
+// @route GET /api/schedules/:groupId
 // @desc Get all schedules for a group
 // @access private
-router.get('/:groupid', protect, async( req, res) => {
+router.get('/:groupId', protect, async( req, res) => {
     try {
-        const { groupid } = req.params;
+        const { groupId } = req.params;
         
         // Authorization check: User must be a member of the group to view its courts.
-        const group = await Group.findOne({ id: groupid });
+        const group = await Group.findById(groupId);
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
         }
 
-        const schdeules = await Schedule.find({ groupid: groupid });
+        const schdeules = await Schedule.find({ groupId: group.id });
         res.json(schdeules);
     } catch (error) {
-        console.error(`Error fetching schedules for group ${req.params.groupid}:`, error);
+        console.error(`Error fetching schedules for group ${req.params.groupId}:`, error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
@@ -55,17 +55,15 @@ router.get('/:groupid', protect, async( req, res) => {
 // @desc    Create a new schedule
 router.post('/', protect, async (req, res) => {
     const newScheduleData = req.body;
-    // The 'name' field is now expected in newScheduleData
-    newScheduleData.id = uuidv4(); // Assign a unique ID on the backend
 
     try {
         // Authorization check: Only group admins can create a schedule
-        const group = await Group.findOne({ id: newScheduleData.groupid });
+        const group = await Group.findById(newScheduleData.groupId);
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
         }
 
-        if (!req.user.isSuperAdmin && !group.admins.includes(req.user.id)) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized to create a schedule for this group' });
         }
 
@@ -87,14 +85,14 @@ router.put('/:id', protect, async (req, res) => {
 
     try {
         // The 'name' field will be in updatedScheduleData
-        let schedule = await Schedule.findOne({id: scheduleId});
+        let schedule = await Schedule.findById(scheduleId);
         if (!schedule) {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
 
         // Authorization check: Only group admins can edit
-        const group = await Group.findOne({ id: schedule.groupid });
-        if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
+        const group = await Group.findById(schedule.groupId);
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized to edit this schedule' });
         }
 
@@ -115,7 +113,7 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         // Merge the existing schedule with the updated data
-        schedule = await Schedule.findOneAndUpdate({ id: scheduleId }, { $set: updatedScheduleData }, { new: true });
+        schedule = await Schedule.findByIdAndUpdate(scheduleId, updatedScheduleData, { new: true });
 
         res.status(200).json(schedule);
     } catch (error) {
@@ -128,29 +126,23 @@ router.put('/:id', protect, async (req, res) => {
 // @desc    Delete a schedule
 // @access  Public
 router.delete('/:id', protect, async (req, res) => {
-    // Import Player and PlayerStat models for cleanup
-    const Player = (await import('../models/playerModel.js')).default;
-    const PlayerStat = (await import('../models/playerStatModel.js')).default;
-
     try {
-        const schedule = await Schedule.findOne({id: req.params.id});
+        const schedule = await Schedule.findById(req.params.id);
         if (!schedule) {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
         // Authorization check: Only group admins can delete
-        const group = await Group.findOne({ id: schedule.groupid });
-        if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
+        const group = await Group.findById(schedule.groupId);
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized to delete this schedule' });
         }
 
-        const scheduleIdToDelete = schedule.id;
-
         // 1. Delete all PlayerStat documents associated with this schedule
-        await PlayerStat.deleteMany({ scheduleId: scheduleIdToDelete });
+        await PlayerStat.deleteMany({ scheduleId: schedule.id });
 
         // 2. Remove the scheduleId from all players' selectedScheduleList
         await Player.updateMany({}, {
-            $pull: { availability: { scheduleId: scheduleIdToDelete } }
+            $pull: { availability: { scheduleId: schedule.id } }
         });
         await schedule.deleteOne();
         res.json({ msg: 'Schedule removed' });
@@ -160,49 +152,49 @@ router.delete('/:id', protect, async (req, res) => {
     }
 });
 
-// @route   PUT /api/schedules/:id/swapPlayers
+// @route   PUT /api/schedules/:id/swap
 // @desc    Swap players between playing and bench for a specific schedule
-router.put('/:id/swapPlayers', protect, async (req, res) => {
+router.put('/:id/swap', protect, async (req, res) => {
     const scheduleId = req.params.id; // This 'id' comes from the URL parameter
     const { playerInId, playerOutId } = req.body;
 
     try {
-        let schedule = await Schedule.findOne({id: scheduleId});
+        let schedule = await Schedule.findById(scheduleId);
         if (!schedule) {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
         
-        const player1 = await Player.findOne({ id: playerInId });
-        const player2 = await Player.findOne({ id: playerOutId });
+        const player1 = await Player.findById(playerInId);
+        const player2 = await Player.findById(playerOutId)
 
         if (!player1 || !player2) {
             return res.status(404).json({ msg: 'One or both players not found.' });
         }
 
-        const p1Availability = player1.availability.find(a => a.scheduleId === scheduleId)?.type;
-        const p2Availability = player2.availability.find(a => a.scheduleId === scheduleId)?.type;
+        const p1Availability = player1.availability.find(a => a.scheduleId.equals(scheduleId))?.type;
+        const p2Availability = player2.availability.find(a => a.scheduleId.equals(scheduleId))?.type;
 
-        const p1IsPlaying = schedule.playingPlayersIds.includes(playerInId);
-        const p1IsBenched = schedule.benchPlayersIds.includes(playerInId);
-        const p2IsPlaying = schedule.playingPlayersIds.includes(playerOutId);
-        const p2IsBenched = schedule.benchPlayersIds.includes(playerOutId);
+        const p1IsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerInId));
+        const p1IsBenched = schedule.benchPlayersIds.some(id => id.equals(playerInId));
+        const p2IsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerOutId));
+        const p2IsBenched = schedule.benchPlayersIds.some(id => id.equals(playerOutId));
 
         // Case 1: Standard swap between a playing and a benched player
         if ((p1IsPlaying && p2IsBenched) || (p1IsBenched && p2IsPlaying)) {
-            schedule.playingPlayersIds = schedule.playingPlayersIds.map(id => (id === playerInId ? playerOutId : (id === playerOutId ? playerInId : id)));
-            schedule.benchPlayersIds = schedule.benchPlayersIds.map(id => (id === playerInId ? playerOutId : (id === playerOutId ? playerInId : id)));
+            schedule.playingPlayersIds = schedule.playingPlayersIds.map(id => (id.toString() === playerInId ? playerOutId : (id.toString() === playerOutId ? playerInId : id)));
+            schedule.benchPlayersIds = schedule.benchPlayersIds.map(id => (id.toString() === playerInId ? playerOutId : (id.toString() === playerOutId ? playerInId : id)));
         }
         // Case 2: A backup player (p2) is swapping in for a playing player (p1)
         else if (p1IsPlaying && p2Availability === 'Backup') {
             // Move p1 to bench, move p2 to playing
-            schedule.playingPlayersIds = schedule.playingPlayersIds.filter(id => id !== playerInId);
+            schedule.playingPlayersIds = schedule.playingPlayersIds.filter(id => id.toString() !== playerInId);
             schedule.playingPlayersIds.push(playerOutId);
             schedule.benchPlayersIds.push(playerInId);
         }
         // Case 3: A backup player (p1) is swapping in for a playing player (p2)
         else if (p2IsPlaying && p1Availability === 'Backup') {
             // Move p2 to bench, move p1 to playing
-            schedule.playingPlayersIds = schedule.playingPlayersIds.filter(id => id !== playerOutId);
+            schedule.playingPlayersIds = schedule.playingPlayersIds.filter(id => id.toString() !== playerOutId);
             schedule.playingPlayersIds.push(playerInId);
             schedule.benchPlayersIds.push(playerOutId);
         }
@@ -218,26 +210,27 @@ router.put('/:id/swapPlayers', protect, async (req, res) => {
     }
 });
 
-// @route   POST /api/schedules/:id/generate-rotation
+// @route   POST /api/schedules/:id/generate
 // @desc    Generates the player rotation for the next week/occurrence of a schedule
 // @access  Private (Admin only)
-router.post('/:id/generate-rotation', protect, async (req, res) => {
+router.post('/:scheduleId/generate', protect, async (req, res) => {
     try {
-        const schedule = await Schedule.findOne({ id: req.params.id });
+        const schedule = await Schedule.findById(req.params.scheduleId);
         if (!schedule) {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
 
         // Authorization check
-        const group = await Group.findOne({ id: schedule.groupid });
-        if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
+        const group = await Group.findById(schedule.groupId);
+
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized to generate rotation for this schedule' });
         }
 
         // --- Rotation Generation Logic ---
         const playersInGroup = await Player.find({ groupid: schedule.groupid });
         const availablePlayers = playersInGroup.filter(p =>
-            p.availability?.some(a => a.scheduleId === schedule.id && a.type !== 'Backup')
+            p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup')
         );
 
         if (availablePlayers.length <= schedule.maxPlayersCount) {
@@ -259,7 +252,7 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
             };
 
             const playersWithStats = availablePlayers.map(p => {
-                const statsDoc = playerStats.find(ps => ps && ps.playerId === p.id);
+                const statsDoc = playerStats.find(ps => ps && ps.playerId.equals(p.id));
                 return {
                     ...p.toObject(),
                     derivedStats: getDerivedStats(statsDoc ? statsDoc.stats : [])
@@ -267,11 +260,11 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
             });
 
             const permanentPlayers = playersWithStats.filter(p =>
-                p.availability?.find(a => a.scheduleId === schedule.id)?.type === 'Permanent'
+                p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent'
             );
 
             let playingLineup = [...permanentPlayers];
-            const rotationPlayers = playersWithStats.filter(p => !playingLineup.find(pl => pl.id === p.id));
+            const rotationPlayers = playersWithStats.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
 
             // Prioritize players who didn't play last time
             let mustPlay = rotationPlayers.filter(p => !p.derivedStats.playedLastTime);
@@ -285,7 +278,7 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
 
             // Fill remaining spots
             if (playingLineup.length < schedule.maxPlayersCount) {
-                let canPlay = rotationPlayers.filter(p => !playingLineup.find(pl => pl.id === p.id));
+                let canPlay = rotationPlayers.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
                 canPlay.sort((a, b) => {
                     if (b.derivedStats.weeksOnBench !== a.derivedStats.weeksOnBench) return b.derivedStats.weeksOnBench - a.derivedStats.weeksOnBench;
                     if (a.derivedStats.weeksPlayed !== b.derivedStats.weeksPlayed) return a.derivedStats.weeksPlayed - b.derivedStats.weeksPlayed;
@@ -294,8 +287,8 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
                 playingLineup.push(...canPlay);
             }
 
-            schedule.playingPlayersIds = playingLineup.slice(0, schedule.maxPlayersCount).map(p => p.id);
-            schedule.benchPlayersIds = availablePlayers.map(p => p.id).filter(id => !schedule.playingPlayersIds.includes(id));
+            schedule.playingPlayersIds = playingLineup.slice(0, schedule.maxPlayersCount).map(p => p._id);
+            schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
         }
 
         // --- Finalize Stats and Update Schedule State ---
@@ -306,7 +299,7 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
         const allPlayersForStatUpdate = [...schedule.playingPlayersIds, ...schedule.benchPlayersIds];
 
         for (const playerId of allPlayersForStatUpdate) {
-            const status = schedule.playingPlayersIds.includes(playerId) ? 'played' : 'benched';
+            const status = schedule.playingPlayersIds.some(pId => pId.equals(playerId)) ? 'played' : 'benched';
             await PlayerStat.findOneAndUpdate(
                 { playerId: playerId, scheduleId: schedule.id },
                 {
@@ -345,13 +338,13 @@ router.post('/:id/generate-rotation', protect, async (req, res) => {
 // @access  Private (Admin only)
 router.get('/:id/rotation-button-state', protect, async (req, res) => {
     try {
-        const schedule = await Schedule.findOne({ id: req.params.id });
+        const schedule = await Schedule.findById(req.params.id);
         if (!schedule) {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
 
-        const group = await Group.findOne({ id: schedule.groupid });
-        const isAdmin = req.user.isSuperAdmin || (group && group.admins.includes(req.user.id));
+        const group = await Group.findById(schedule.groupId)
+        const isAdmin = req.user.isSuperAdmin || (group && group.admins.some(adminId => adminId.equals(req.user._id)));
 
         if (!isAdmin) {
             return res.json({ visible: false });

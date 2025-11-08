@@ -13,6 +13,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
+data class HomeData(
+    val selectedGroup: Group,
+    val schedules: List<Schedule>,
+    val players: List<Player>,
+    val courts: List<Court>
+)
+
 class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val _allGroups = MutableLiveData<List<Group>>()
@@ -30,8 +37,8 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _playerStats = MutableLiveData<List<PlayerStat>?>()
     val playerStats: LiveData<List<PlayerStat>?> = _playerStats
 
-    private val _scheduleStats = MutableLiveData<List<ScheduleStatResponse>?>()
-    val scheduleStats: LiveData<List<ScheduleStatResponse>?> = _scheduleStats
+    private val _scheduleStats = MutableLiveData<List<ScheduleStat>?>()
+    val scheduleStats: LiveData<List<ScheduleStat>?> = _scheduleStats
 
     private val _forceLogout = MutableLiveData<Event<Unit>>()
     val forceLogout: LiveData<Event<Unit>> = _forceLogout
@@ -214,7 +221,7 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         viewModelScope.launch {
             loadingViewModel.showLoading()
             try {
-                RetrofitClient.instance.createCourt(token, CreateCourtRequest(name = courtName, groupid = groupId))
+                RetrofitClient.instance.createCourt(token, CreateCourtRequest(name = courtName, groupId = groupId))
                 _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it, loadingViewModel) }
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 401) {
@@ -231,7 +238,7 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         viewModelScope.launch {
             loadingViewModel.showLoading()
             try {
-                RetrofitClient.instance.updateCourt(token, courtId, UpdateCourtRequest(name = newName, groupid = groupId))
+                RetrofitClient.instance.updateCourt(token, courtId, UpdateCourtRequest(name = newName, groupId = groupId))
                 _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it, loadingViewModel) }
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 401) {

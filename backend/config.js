@@ -47,6 +47,9 @@ const initializeConfig = async () => {
         smtp_pass: isProduction
             ? await accessSecretVersion('smtp-pass', projectId)
             : process.env.EMAIL_PASS,
+        google_client_id: isProduction
+            ? await accessSecretVersion('google-client-id', projectId)
+            : process.env.GOOGLE_CLIENT_ID,
         smtp_from_email: process.env.EMAIL_FROM,
         smtp_from_name: process.env.EMAIL_FROM_NAME || 'My Tennis Team',
     };

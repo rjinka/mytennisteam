@@ -292,7 +292,7 @@ export const addEditGroupListeners = () => {
 
                 const groupAdminsList = document.getElementById('groupAdminsList');
                 groupAdminsList.innerHTML = '';
-                const groupPlayers = Object.values(app.players).filter(p => p.groupid === groupId);
+                const groupPlayers = Object.values(app.players).filter(p => p.groupId === groupId);
                 const currentAdmins = app.ui.groupBeingEdited.admins || [];
                 const currentUserId = app.parseJwt(localStorage.getItem('token')).id;
 
@@ -389,7 +389,6 @@ export const addEditPlayerListeners = () => {
             const playerIdToEdit = event.currentTarget.dataset.id;
             app.ui.playerBeingEdited = app.players[playerIdToEdit];
             if (app.ui.playerBeingEdited) {
-                app.ui.playerBeingEdited._originalSelectedScheduleList = app.ui.playerBeingEdited.selectedScheduleList || [];
                 showEditPlayerModal(app.ui.playerBeingEdited);
             }
         };

@@ -1,19 +1,15 @@
 import mongoose from 'mongoose';
-import { v4 as uuidv4 } from 'uuid';
 
 const playerStatSchema = new mongoose.Schema({
-    id: {
-        type: String,
-        default: uuidv4,
-        unique: true,
-    },
     playerId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
+        ref: 'Player',
     },
     scheduleId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
+        ref: 'Schedule',
     },
     stats: {
         type: [{ week: Number, status: String, date: String }],
@@ -21,7 +17,12 @@ const playerStatSchema = new mongoose.Schema({
     },
 }, {
     timestamps: true,
+    // Enable virtuals to be included in toJSON and toObject outputs
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
+
+playerStatSchema.virtual('id').get(function() { return this._id.toHexString(); });
 
 const PlayerStat = mongoose.model('PlayerStat', playerStatSchema);
 

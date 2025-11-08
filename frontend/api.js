@@ -19,7 +19,7 @@ class ApiError extends Error {
 }
 
 export const swapPlayers = async (scheduleId, playerInId, playerOutId) => {
-    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/swapPlayers`, {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/swap`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ playerInId, playerOutId }),
@@ -60,7 +60,7 @@ export const updateSchedule = async (scheduleId, scheduleData) => {
 };
 
 export const generateRotation = async (scheduleId) => {
-    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/generate-rotation`, {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
     });

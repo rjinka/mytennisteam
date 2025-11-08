@@ -1,108 +1,49 @@
 import express from 'express';
-import PlayerStat from '../models/playerStatModel.js';
 import { protect } from '../middleware/authMiddleware.js';
-import Schedule from '../models/scheduleModel.js';
-import Group from '../models/groupModel.js';
+import PlayerStat from '../models/playerStatModel.js';
+import Player from '../models/playerModel.js';
 
 const router = express.Router();
 
-// @route GET /api/stats/player/:playerId
-// @desc get player stats for all schedules he is part of
-// @access private
+// @route   GET /api/stats/player/:playerId
+// @desc    Get all stats for a specific player
+// @access  Private
 router.get('/player/:playerId', protect, async (req, res) => {
     try {
-        const playerStat = await PlayerStat.find({ playerId: req.params.playerId });
-        if (!playerStat) {
-            // no stats exist for a player
+        const player = await Player.findById(req.params.playerId);
+        if (!player) {
+            return res.status(404).json({ msg: 'Player not found' });
+        }
+
+        const stats = await PlayerStat.find({ playerId: req.params.playerId }).populate('scheduleId', 'name');
+        if (!stats) {
             return res.json({ playerId: req.params.playerId, stats: [] });
         }
-        res.json(playerStat);
+        res.json(stats);
     } catch (error) {
         console.error('Error fetching player stats:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
 
-// @route GET /api/stats/schedule/:scheduleId
-// @desc get stats for a schedule
-// @access private
+// @route   GET /api/stats/schedule/:scheduleId
+// @desc    Get all stats for a specific schedule
+// @access  Private
 router.get('/schedule/:scheduleId', protect, async (req, res) => {
     try {
-        const playerStat = await PlayerStat.find({ scheduleId: req.params.scheduleId });
-        if (!playerStat) {
+        const stats = await PlayerStat.find({ scheduleId: req.params.scheduleId })
+            .populate({
+                path: 'playerId',
+                populate: { path: 'user', select: 'name picture' }
+            });
+         if (!stats) {
             // no stats exist for a schedule
             return res.json({ stats: [] });
         }
-        res.json(playerStat);
+
+        res.json(stats);
     } catch (error) {
-        console.error('Error fetching schedule stats:', err);
-        res.status(500).json({ msg: 'Server Error' });
-    }
-});
-
-
-// @route   POST /api/playerstats
-// @desc    Create or update a player stat entry
-// @access  Private (Admin only)
-router.post('/', protect, async (req, res) => {
-    const { playerId, scheduleId, stats } = req.body;
-
-    try {
-        // Authorization check: Only group admins can create/update stats
-        const schedule = await Schedule.findOne({ id: scheduleId });
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
-        const group = await Group.findOne({ id: schedule.groupid });
-        if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
-            return res.status(403).json({ msg: 'User not authorized to modify stats for this schedule' });
-        }
-
-        // Use findOneAndUpdate with upsert:true to create if not exists, or update if it does.
-        const updatedPlayerStat = await PlayerStat.findOneAndUpdate(
-            { playerId, scheduleId },
-            { $set: { stats } },
-            { new: true, upsert: true, setDefaultsOnInsert: true }
-        );
-
-        res.status(200).json(updatedPlayerStat);
-    } catch (error) {
-        console.error('Error creating/updating player stat:', error);
-        res.status(500).json({ msg: 'Server Error' });
-    }
-});
-
-// @route   PUT /api/playerstats/:id
-// @desc    Update a player stat
-// @access  Private (Admin only)
-router.put('/:id', protect, async (req, res) => {
-    const { stats } = req.body;
-
-    try {
-        const playerStat = await PlayerStat.findOne({ id: req.params.id });
-        if (!playerStat) {
-            return res.status(404).json({ msg: 'Player stats not found' });
-        }
-
-        // Authorization check
-        const schedule = await Schedule.findOne({ id: playerStat.scheduleId });
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Associated schedule not found' });
-        }
-        const group = await Group.findOne({ id: schedule.groupid });
-        if (!req.user.isSuperAdmin && (!group || !group.admins.includes(req.user.id))) {
-            return res.status(403).json({ msg: 'User not authorized to modify stats for this schedule' });
-        }
-
-        const updatedPlayerStat = await PlayerStat.findOneAndUpdate(
-            { id: req.params.id },
-            { $set: { stats: stats } },
-            { new: true }
-        );
-
-        res.json(updatedPlayerStat);
-    } catch (error) {
-        console.error('Error updating player stat:', error);
+        console.error('Error fetching schedule stats:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });

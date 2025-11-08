@@ -8,7 +8,7 @@ const invitationSchema = new mongoose.Schema({
         lowercase: true,
     },
     groupId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'Group',
     },
@@ -22,7 +22,14 @@ const invitationSchema = new mongoose.Schema({
         type: Date,
         default: () => Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     },
+}, {
+    timestamps: true,
+    // Enable virtuals to be included in toJSON and toObject outputs
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
+
+invitationSchema.virtual('id').get(function() { return this._id.toHexString(); });
 
 const Invitation = mongoose.model('Invitation', invitationSchema);
 

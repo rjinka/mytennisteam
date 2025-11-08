@@ -1,11 +1,6 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-    id: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     googleId: {
         type: String,
         required: true,
@@ -32,7 +27,12 @@ const userSchema = new mongoose.Schema({
     },
 }, {
     timestamps: true,
+    // Enable virtuals to be included in toJSON and toObject outputs
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
+
+userSchema.virtual('id').get(function() { return this._id.toHexString(); });
 
 const User = mongoose.model('User', userSchema);
 

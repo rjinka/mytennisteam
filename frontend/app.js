@@ -130,7 +130,7 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
     renderAllPlayers();
 
     if (group && !isInitialLoad) { // Only proceed if a valid group is selected
-        const groupSchedules = Object.values(schedules).filter(s => s.groupid === group.id);
+        const groupSchedules = Object.values(schedules).filter(s => s.groupId === group.id);
         if (groupSchedules.length > 0) {
             showScheduleDetails(groupSchedules[0]);
         }
@@ -153,7 +153,7 @@ async function refreshDataForCurrentGroup() {
 
 export async function loadSchedulesForGroup() {
     const allSchedules = await api.getSchedules(selection.currentGroupId);
-    const groupSchedules = allSchedules.filter(s => s.groupid === selection.currentGroupId) || [];
+    const groupSchedules = allSchedules.filter(s => s.groupId === selection.currentGroupId) || [];
     schedules = groupSchedules.reduce((acc, schedule) => {
         acc[schedule.id] = schedule; // Assuming schedule has a unique '_id'
         return acc;
@@ -168,7 +168,7 @@ export async function loadSchedulesForGroup() {
 export async function loadCourtsForGroup() {
     try {
         const allCourts = await api.getCourts(selection.currentGroupId);
-        const groupCourts = allCourts.filter(c => c.groupid === selection.currentGroupId) || [];
+        const groupCourts = allCourts.filter(c => c.groupId === selection.currentGroupId) || [];
         courts = groupCourts.reduce((acc, court) => {
             acc[court.id] = court; // Assuming court has a unique '_id'
             return acc;
@@ -221,7 +221,7 @@ export async function createNewCourt() {
         showMessageBox('Error', 'Please enter a court name.');
         return;
     }
-    const newCourt = { name: courtName, groupid: selection.currentGroupId };
+    const newCourt = { name: courtName, groupId: selection.currentGroupId };
     showLoading(true);
     try {
         await api.createCourt(newCourt);
@@ -271,7 +271,7 @@ export async function createNewSchedule() {
     const maxPlayersCount = selectedCourts.reduce((sum, court) => {
         return sum + (court.gameType === '0' ? 2 : 4);
     }, 0);
-    const newSchedule = { name, groupid: selection.currentGroupId, courts: selectedCourts, day, time, duration, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
+    const newSchedule = { name, groupId: selection.currentGroupId, courts: selectedCourts, day, time, duration, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
 
     showLoading(true);
     try {
