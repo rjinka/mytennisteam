@@ -53,6 +53,15 @@ export async function reloadData() {
     }
 }
 
+async function setVersion() {
+    try {
+        const { version } = await api.getVersion();
+        document.getElementById('version-display').textContent = `v${version}`;
+    } catch (error) {
+        console.error('Failed to set version:', error);
+    }
+}
+
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
         const token = localStorage.getItem('token');
@@ -469,6 +478,7 @@ export function parseJwt (token) {
 
 async function initializeApp() {
     try {
+        await setVersion();
         // Hide sign-in and show main app
         document.getElementById('signInContainer').style.display = 'none';
         const mainContainer = document.getElementById('mainContainer');

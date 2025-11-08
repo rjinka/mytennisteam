@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as api from '../api.js';
 
 // Mock fetch
@@ -43,7 +43,7 @@ describe('api.js', () => {
             const result = await api.swapPlayers(scheduleId, playerInId, playerOutId);
 
             expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining(`/schedules/${scheduleId}/swapPlayers`),
+                `http://localhost:3000/api/schedules/${scheduleId}/swap`,
                 expect.objectContaining({
                     method: 'PUT',
                     headers: {
@@ -80,7 +80,7 @@ describe('api.js', () => {
             const result = await api.createSchedule(scheduleData);
 
             expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('/schedules'),
+                `http://localhost:3000/api/schedules`,
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify(scheduleData),
@@ -102,7 +102,7 @@ describe('api.js', () => {
             const result = await api.getPlayerGroups();
 
             expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('/groups/player'),
+                `http://localhost:3000/api/groups/player`,
                 expect.objectContaining({
                     method: 'GET',
                 })

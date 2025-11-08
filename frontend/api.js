@@ -1,6 +1,8 @@
 // Use Vite's environment variables to set the API base URL.
 // import.meta.env.VITE_API_BASE_URL is replaced at build time.
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const API_BASE_URL = process.env.NODE_ENV === 'test'
+  ? `${process.env.VITE_API_BASE_URL}/api`
+  : `${import.meta.env.VITE_API_BASE_URL}/api`;
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -42,6 +44,14 @@ export const createSchedule = async (scheduleData) => {
     if (!response.ok) {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to create schedule', response.status);
+    }
+    return response.json();
+};
+
+export const getVersion = async () => {
+    const response = await fetch(`${API_BASE_URL}/version`);
+    if (!response.ok) {
+        throw new ApiError('Failed to fetch version', response.status);
     }
     return response.json();
 };
