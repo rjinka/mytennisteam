@@ -108,22 +108,20 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 val courts: List<Court>
 
                 coroutineScope {
-                    val schedulesDeferred = async(Dispatchers.IO) { RetrofitClient.instance.getSchedules(token, group.id) }
-                    val playersDeferred = async(Dispatchers.IO) { RetrofitClient.instance.getPlayers(token, group.id) }
-                    val courtsDeferred = async(Dispatchers.IO) { RetrofitClient.instance.getCourts(token, group.id) }
+                    val schedulesDeferred = async { RetrofitClient.instance.getSchedules(token, group.id) }
+                    val playersDeferred = async { RetrofitClient.instance.getPlayers(token, group.id) }
+                    val courtsDeferred = async { RetrofitClient.instance.getCourts(token, group.id) }
 
                     schedules = schedulesDeferred.await()
                     players = playersDeferred.await()
                     courts = courtsDeferred.await()
                 }
 
-                withContext(Dispatchers.Main) {
-                    _homeData.value = HomeData(group, schedules, players, courts)
-                    savedStateHandle[SELECTED_GROUP_ID_KEY] = group.id
-                    _selectedSchedule.value?.let {
-                        val updatedSchedule = schedules.find { s -> s.id == it.id }
-                        _selectedSchedule.value = updatedSchedule
-                    }
+                _homeData.value = HomeData(group, schedules, players, courts)
+                savedStateHandle[SELECTED_GROUP_ID_KEY] = group.id
+                _selectedSchedule.value?.let {
+                    val updatedSchedule = schedules.find { s -> s.id == it.id }
+                    _selectedSchedule.value = updatedSchedule
                 }
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 401) {
