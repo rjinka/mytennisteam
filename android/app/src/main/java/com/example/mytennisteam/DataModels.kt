@@ -130,3 +130,5 @@ data class ScheduleCourtInfo(@SerializedName("courtId") val courtId: String, @Se
 data class SwapPlayerRequest(val playerInId: String, val playerOutId: String)
 
 data class RotationButtonState(val visible: Boolean, val text: String, val disabled: Boolean)
+
+data class JoinGroupResponse(val message: String)

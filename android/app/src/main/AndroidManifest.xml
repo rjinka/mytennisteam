@@ -21,7 +21,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
+        </activity>
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
             <!-- Deep Link Intent Filter -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -32,7 +36,6 @@
                 <data android:host="mytennisteam.com" />
                 <!-- 2. Production Link with 'www' (Best Practice) -->
                 <data android:host="www.mytennisteam.com" />
-
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -42,10 +45,7 @@
                 <!-- 3. Development link -->
                 <data android:host="192.168.86.33" android:port="5000" />
             </intent-filter>
-
         </activity>
-        <activity
-            android:name=".HomeActivity" />
     </application>
 
 </manifest>
