@@ -55,10 +55,12 @@ export async function reloadData() {
 
 async function setVersion() {
     try {
-        const { version } = await api.getVersion();
-        document.getElementById('version-display').textContent = `v${version}`;
+        const feVersion = `FE: v${process.env.APP_VERSION}`;
+        const beVersion = await api.getVersion().then(res => `BE: v${res.version}`).catch(() => 'BE: unknown');
+        document.getElementById('version-display').textContent = `${feVersion} | ${beVersion}`;
     } catch (error) {
         console.error('Failed to set version:', error);
+        document.getElementById('version-display').textContent = 'FE: unknown | BE: unknown';
     }
 }
 
