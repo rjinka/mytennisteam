@@ -7,29 +7,30 @@ class ModelsTest {
 
     @Test
     fun testGroup() {
-        val group = Group("1", "Group 1", "owner1", emptyList())
+        val group = Group("1", "Group 1", emptyList())
         assertEquals("1", group.id)
         assertEquals("Group 1", group.name)
-        assertEquals("owner1", group.createdBy)
         assertEquals(emptyList<String>(), group.admins)
     }
 
     @Test
     fun testPlayer() {
-        val user = User("Test User", "picture")
-        val player = Player("1", user, "userId", "groupId", emptyList())
+        val user = User("userId", "Test User", "picture")
+        val player = Player("1", "userId", "groupId", user, emptyList())
         assertEquals("1", player.id)
         assertEquals(user, player.user)
         assertEquals("userId", player.userId)
-        assertEquals("groupId", player.groupid)
+        assertEquals("groupId", player.groupId)
         assertEquals(emptyList<PlayerAvailability>(), player.availability)
     }
 
     @Test
     fun testUser() {
-        val user = User("Test User", "picture")
+        val user = User("id", "Test User", "picture", true)
+        assertEquals("id", user.id)
         assertEquals("Test User", user.name)
         assertEquals("picture", user.picture)
+        assertEquals(true, user.isSuperAdmin)
     }
 
     @Test
@@ -41,30 +42,25 @@ class ModelsTest {
 
     @Test
     fun testSchedule() {
-        val schedule = Schedule("1", "Schedule 1", "groupId", emptyList(), "Monday", "10:00", 1.5, "Singles", false, 0, 0, 4, 1, 0, false, emptyList(), emptyList(), false)
+        val schedule = Schedule("1", "Schedule 1", "groupId", "Monday", "10:00", 1.5, false, 0, 0, emptyList(), 1, emptyList(), emptyList())
         assertEquals("1", schedule.id)
         assertEquals("Schedule 1", schedule.name)
-        assertEquals("groupId", schedule.groupid)
-        assertEquals(emptyList<ScheduleCourt>(), schedule.courts)
+        assertEquals("groupId", schedule.groupId)
         assertEquals("Monday", schedule.day)
         assertEquals("10:00", schedule.time)
         assertEquals(1.5, schedule.duration, 0.0)
-        assertEquals("Singles", schedule.gameType)
         assertEquals(false, schedule.recurring)
         assertEquals(0, schedule.frequency)
         assertEquals(0, schedule.recurrenceCount)
-        assertEquals(4, schedule.maxPlayersCount)
+        assertEquals(emptyList<ScheduleCourtInfo>(), schedule.courts)
         assertEquals(1, schedule.week)
-        assertEquals(0, schedule.lastGeneratedWeek)
-        assertEquals(false, schedule.isRotationGenerated)
         assertEquals(emptyList<String>(), schedule.playingPlayersIds)
         assertEquals(emptyList<String>(), schedule.benchPlayersIds)
-        assertEquals(false, schedule.isCompleted)
     }
 
     @Test
-    fun testScheduleCourt() {
-        val scheduleCourt = ScheduleCourt("courtId", "Doubles")
+    fun testScheduleCourtInfo() {
+        val scheduleCourt = ScheduleCourtInfo("courtId", "Doubles")
         assertEquals("courtId", scheduleCourt.courtId)
         assertEquals("Doubles", scheduleCourt.gameType)
     }
@@ -74,24 +70,7 @@ class ModelsTest {
         val court = Court("1", "Court 1", "groupId")
         assertEquals("1", court.id)
         assertEquals("Court 1", court.name)
-        assertEquals("groupId", court.groupid)
-    }
-
-    @Test
-    fun testHomeData() {
-        val group = Group("1", "Group 1", "owner1", emptyList())
-        val homeData = HomeData(group, emptyList(), emptyList(), emptyList())
-        assertEquals(group, homeData.selectedGroup)
-        assertEquals(emptyList<Schedule>(), homeData.schedules)
-        assertEquals(emptyList<Player>(), homeData.players)
-        assertEquals(emptyList<Court>(), homeData.courts)
-    }
-
-    @Test
-    fun testUserPrincipal() {
-        val userPrincipal = UserPrincipal("1", true)
-        assertEquals("1", userPrincipal.id)
-        assertEquals(true, userPrincipal.isSuperAdmin)
+        assertEquals("groupId", court.groupId)
     }
 
     @Test
@@ -102,10 +81,10 @@ class ModelsTest {
 
     @Test
     fun testAuthResponse() {
-        val userPrincipal = UserPrincipal("1", true)
-        val authResponse = AuthResponse("token", userPrincipal)
+        val user = User("1", "test", "pic", true)
+        val authResponse = AuthResponse("token", user)
         assertEquals("token", authResponse.token)
-        assertEquals(userPrincipal, authResponse.user)
+        assertEquals(user, authResponse.user)
     }
 
     @Test
@@ -124,25 +103,25 @@ class ModelsTest {
     fun testCreateCourtRequest() {
         val createCourtRequest = CreateCourtRequest("New Court", "groupId")
         assertEquals("New Court", createCourtRequest.name)
-        assertEquals("groupId", createCourtRequest.groupid)
+        assertEquals("groupId", createCourtRequest.groupId)
     }
 
     @Test
     fun testUpdateCourtRequest() {
         val updateCourtRequest = UpdateCourtRequest("New Name", "groupId")
         assertEquals("New Name", updateCourtRequest.name)
-        assertEquals("groupId", updateCourtRequest.groupid)
+        assertEquals("groupId", updateCourtRequest.groupId)
     }
 
     @Test
     fun testCreateScheduleRequest() {
-        val createScheduleRequest = CreateScheduleRequest("New Schedule", "groupId", "Monday", "10:00", 1.5, emptyList(), false, 0, 0, 4)
+        val createScheduleRequest = CreateScheduleRequest("New Schedule", "groupId", emptyList(), "Monday", "10:00", 1.5, false, 0, 0, 4)
         assertEquals("New Schedule", createScheduleRequest.name)
-        assertEquals("groupId", createScheduleRequest.groupid)
+        assertEquals("groupId", createScheduleRequest.groupId)
         assertEquals("Monday", createScheduleRequest.day)
         assertEquals("10:00", createScheduleRequest.time)
         assertEquals(1.5, createScheduleRequest.duration, 0.0)
-        assertEquals(emptyList<ScheduleCourt>(), createScheduleRequest.courts)
+        assertEquals(emptyList<ScheduleCourtInfo>(), createScheduleRequest.courts)
         assertEquals(false, createScheduleRequest.recurring)
         assertEquals(0, createScheduleRequest.frequency)
         assertEquals(0, createScheduleRequest.recurrenceCount)
@@ -151,12 +130,13 @@ class ModelsTest {
 
     @Test
     fun testUpdateScheduleRequest() {
-        val updateScheduleRequest = UpdateScheduleRequest("New Name", "Monday", "10:00", 1.5, emptyList(), false, 0, 0, 4)
+        val updateScheduleRequest = UpdateScheduleRequest("New Name", "groupId", emptyList(), "Monday", "10:00", 1.5, false, 0, 0, 4)
         assertEquals("New Name", updateScheduleRequest.name)
+        assertEquals("groupId", updateScheduleRequest.groupId)
+        assertEquals(emptyList<ScheduleCourtInfo>(), updateScheduleRequest.courts)
         assertEquals("Monday", updateScheduleRequest.day)
         assertEquals("10:00", updateScheduleRequest.time)
         assertEquals(1.5, updateScheduleRequest.duration, 0.0)
-        assertEquals(emptyList<ScheduleCourt>(), updateScheduleRequest.courts)
         assertEquals(false, updateScheduleRequest.recurring)
         assertEquals(0, updateScheduleRequest.frequency)
         assertEquals(0, updateScheduleRequest.recurrenceCount)
@@ -185,9 +165,9 @@ class ModelsTest {
 
     @Test
     fun testRotationButtonState() {
-        val rotationButtonState = RotationButtonState(true, false, "Generate Rotation")
+        val rotationButtonState = RotationButtonState(true, "Generate Rotation", false)
         assertEquals(true, rotationButtonState.visible)
-        assertEquals(false, rotationButtonState.disabled)
         assertEquals("Generate Rotation", rotationButtonState.text)
+        assertEquals(false, rotationButtonState.disabled)
     }
 }

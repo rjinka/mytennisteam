@@ -4,18 +4,18 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnitRunner
-import kotlinx.coroutines.test.runBlockingTest
-import org.junit.Assert.assertEquals
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -27,7 +27,7 @@ class HomeViewModelTest {
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
 
-    private val testDispatcher = TestCoroutineDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Mock
     private lateinit var apiService: ApiService
@@ -44,12 +44,11 @@ class HomeViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
-        testDispatcher.cleanupTestCoroutines()
     }
 
     @Test
-    fun `fetchInitialGroups success`() = testDispatcher.runBlockingTest {
-        val groups = listOf(Group("1", "Group 1", "owner1", emptyList()))
+    fun `fetchInitialGroups success`() = runTest {
+        val groups = listOf(Group("1", "Group 1", emptyList()))
         whenever(apiService.getGroups(any())).thenReturn(groups)
         val loadingViewModel = mock<LoadingViewModel>()
 
@@ -59,7 +58,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `fetchInitialGroups failure`() = testDispatcher.runBlockingTest {
+    fun `fetchInitialGroups failure`() = runTest {
         val exception = RuntimeException("Network error")
         whenever(apiService.getGroups(any())).thenThrow(exception)
         val loadingViewModel = mock<LoadingViewModel>()
