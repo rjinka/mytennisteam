@@ -1,12 +1,15 @@
-name: Increment Version
+name: Increment Frontend Version
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'frontend/**'
 
 jobs:
-  increment_version:
+  increment_frontend_version:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -19,8 +22,8 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Increment version
+      - name: Increment frontend version
         run: |
-          cd backend
-          npm version minor -m "Chore: auto-increment minor version to %s [skip ci]"
+          cd frontend
+          npm version minor -m "Chore(frontend): auto-increment minor version to %s [skip ci]"
           git push
