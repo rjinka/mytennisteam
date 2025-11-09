@@ -1,0 +1,48 @@
+name: Increment Android Version
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'android/**'
+
+jobs:
+  increment_version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Check for manual version bump
+        id: check_version
+        run: |
+          # Get the last commit message
+          commit_message=$(git log -1 --pretty=%B)
+
+          # Check if the commit message contains "bump version"
+          if [[ "$commit_message" == *"bump version"* ]]; then
+            echo "manual_bump=true" >> $GITHUB_OUTPUT
+          else
+            echo "manual_bump=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Increment version
+        if: steps.check_version.outputs.manual_bump == 'false'
+        run: |
+          cd android
+          ./gradlew incrementVersion
+          git add version.properties
+          # Read the new version from the properties file
+          new_version=$(grep "VERSION_NAME" version.properties | sed 's/VERSION_NAME=//')
+          git commit -m "Chore: auto-increment android version to $new_version [skip ci]"
+          git push

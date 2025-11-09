@@ -11,11 +11,42 @@ android {
         applicationId = "com.example.mytennisteam"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        val versionPropsFile = file("../version.properties")
+        val versionProps = java.util.Properties()
+        versionProps.load(java.io.FileInputStream(versionPropsFile))
+        versionCode = versionProps["VERSION_CODE"].toString().toInt()
+        versionName = versionProps["VERSION_NAME"].toString()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+tasks.register("incrementVersion") {
+    doLast {
+        val versionPropsFile = file("../version.properties")
+        if (versionPropsFile.canRead()) {
+            val versionProps = java.util.Properties()
+            versionProps.load(java.io.FileInputStream(versionPropsFile))
+
+            var versionCode = versionProps["VERSION_CODE"].toString().toInt()
+            var versionName = versionProps["VERSION_NAME"].toString()
+
+            val (major, minor) = versionName.split(".").map { it.toInt() }
+
+            val newMinor = minor + 1
+            val newVersionName = "$major.$newMinor"
+            val newVersionCode = versionCode + 1
+
+            versionProps["VERSION_CODE"] = newVersionCode.toString()
+            versionProps["VERSION_NAME"] = newVersionName
+
+            versionProps.store(java.io.FileOutputStream(versionPropsFile), null)
+
+            println("Incremented version to $newVersionName ($newVersionCode)")
+        } else {
+            throw GradleException("Could not read version.properties!")
+        }
+    }
+}
 
     buildTypes {
         debug {
