@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mytennisteam"
+    namespace = "dev.ramjin.mytennisteam"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.mytennisteam"
+        applicationId = "dev.ramjin.mytennisteam"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
