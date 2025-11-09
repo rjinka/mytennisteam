@@ -1,5 +1,5 @@
 import { setCurrentGroup, loadSchedulesForGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup, parseJwt, saveScheduleChanges } from './app.js';
-import { addEditGroupListeners, addRemoveGroupListeners, addScheduleActionListeners } from './events.js';
+import { addEditGroupListeners, addRemoveGroupListeners, addShareGroupListeners, addScheduleActionListeners } from './events.js';
 import { showEditScheduleModal, populateScheduleCourtsDropdown, hideEditScheduleModal } from './modals.js';
 import { addSwapButtonListenersForSchedule } from './events.js';
 import { getDerivedStats } from './rotation.js';
@@ -76,6 +76,9 @@ export const renderGroupsList = async () => {
                 <button data-id="${group.id}" class="edit-group-btn text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100" title="Edit Group">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg>
                 </button>
+                <button data-id="${group.id}" class="share-group-btn text-green-600 hover:text-green-800 p-1 rounded-full hover:bg-green-100" title="Share Group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
+                </button>
                 <button data-id="${group.id}" class="remove-group-btn text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100" title="Delete Group">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
@@ -107,6 +110,7 @@ export const renderGroupsList = async () => {
     
     addEditGroupListeners();
     addRemoveGroupListeners();
+    addShareGroupListeners();
 };
 
 export const showScheduleDetails = async (schedule) => {
@@ -216,7 +220,7 @@ export const renderSchedulesList = () => {
 
     // The selected group could be an admin group or a player group. Check both.
     const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupSchedules = Object.values(schedules).filter(s => s.groupid === selectedGroup?.id);
+    const groupSchedules = Object.values(schedules).filter(s => s.groupId === selectedGroup?.id);
 
     groupSchedules.forEach(schedule => {
         const day = weekdayNames[schedule.day];
@@ -280,7 +284,7 @@ export const renderCourtsList = () => {
 
     // The selected group could be an admin group or a player group. Check both.
     const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupCourts = Object.values(courts).filter(c => c.groupid === selectedGroup?.id);
+    const groupCourts = Object.values(courts).filter(c => c.groupId === selectedGroup?.id);
     groupCourts.forEach(court => {
         const card = document.createElement('div');
         card.className = 'player-item flex justify-between items-center text-sm p-3 md:flex-col md:justify-between md:p-2';
@@ -321,7 +325,7 @@ export const renderAllPlayers = () => {
     allPlayersGrid.innerHTML = '';
     // The selected group could be an admin group or a player group. Check both.
     const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupPlayers = Object.values(players).filter(p => p.groupid === selectedGroup?.id);
+    const groupPlayers = Object.values(players).filter(p => p.groupId === selectedGroup?.id);
     groupPlayers.sort((a, b) => a.user.name.localeCompare(b.user.name)).forEach(player => {
         const card = document.createElement('div');
         // Use the user's picture as a background image for the card

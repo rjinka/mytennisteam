@@ -9,6 +9,7 @@ import playerRoutes from './routes/playerRoutes.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
 import invitationRoutes from './routes/invitationRoutes.js';
 import playerStatRoutes from './routes/playerStatRoutes.js';
+import versionRoutes from './routes/versionRoutes.js';
 
 console.log(`Running in ${process.env.NODE_ENV || 'development'} mode.`);
 
@@ -56,6 +57,7 @@ app.get('/', (req, res) => {
 });
 
 // --- Protected API Routes (after CORS) ---
+app.use('/api/version', versionRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/courts', courtRoutes);
 app.use('/api/players', playerRoutes);
@@ -86,7 +88,7 @@ const startServer = async () => {
         console.log('MongoDB connected successfully.');
 
         // --- Start Server ---
-        const PORT = process.env.BACKEND_PORT || process.env.PORT || 3000;
+        const PORT = 3000;
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });

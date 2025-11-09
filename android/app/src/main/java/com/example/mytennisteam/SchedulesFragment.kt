@@ -205,14 +205,14 @@ class SchedulesFragment : Fragment() {
                     val gameTypeLayout = courtView.findViewById<TextInputLayout>(R.id.game_type_layout)
                     val gameTypeSpinner = courtView.findViewById<AutoCompleteTextView>(R.id.game_type_spinner)
                     if (checkBox.isChecked) {
-                        if (gameTypeSpinner.text.toString().isBlank()) {
+                        if (gameTypeSpinner.text.toString().isBlank() || !gameTypes.contains(gameTypeSpinner.text.toString())) {
                             gameTypeLayout.error = "Required"
                             isValid = false
                             null
                         } else {
                             gameTypeLayout.error = null
                             val gameTypeIndex = gameTypes.indexOf(gameTypeSpinner.text.toString()).toString()
-                            ScheduleCourt(courtId = checkBox.tag.toString(), gameType = gameTypeIndex)
+                            ScheduleCourtInfo(courtId = checkBox.tag.toString(), gameType = gameTypeIndex)
                         }
                     } else null
                 }.toList()
@@ -238,10 +238,30 @@ class SchedulesFragment : Fragment() {
                 if (rawToken != null) {
                     val token = "Bearer $rawToken"
                     if (schedule == null) {
-                        val request = CreateScheduleRequest(name, currentGroup.id, daysOfWeek.indexOf(day).toString(), time, duration, selectedCourts, isRecurring, recurrenceOptions.indexOf(recurrence), recurrenceCount, maxPlayers)
+                        val request = CreateScheduleRequest(
+                            name = name,
+                            groupId = currentGroup.id,
+                            day = daysOfWeek.indexOf(day).toString(),
+                            time = time,
+                            duration = duration,
+                            courts = selectedCourts,
+                            recurring = isRecurring,
+                            frequency = recurrenceOptions.indexOf(recurrence),
+                            recurrenceCount = recurrenceCount,
+                            maxPlayersCount = maxPlayers)
                         homeViewModel.createSchedule(token, request, loadingViewModel)
                     } else {
-                        val request = UpdateScheduleRequest(name, daysOfWeek.indexOf(day).toString(), time, duration, selectedCourts, isRecurring, recurrenceOptions.indexOf(recurrence), recurrenceCount, maxPlayers)
+                        val request = UpdateScheduleRequest(
+                            name = name,
+                            groupId = currentGroup.id,
+                            day = daysOfWeek.indexOf(day).toString(),
+                            time = time,
+                            duration = duration,
+                            courts = selectedCourts,
+                            recurring = isRecurring,
+                            frequency = recurrenceOptions.indexOf(recurrence),
+                            recurrenceCount = recurrenceCount,
+                            maxPlayersCount = maxPlayers)
                         homeViewModel.updateSchedule(token, schedule.id, request, loadingViewModel)
                     }
                     dialog.dismiss()
@@ -290,29 +310,26 @@ class SchedulesFragment : Fragment() {
 
         closeButton.setOnClickListener {
             dialog.dismiss()
+            homeViewModel.scheduleStats.removeObservers(viewLifecycleOwner)
         }
 
         homeViewModel.scheduleStats.observe(viewLifecycleOwner) { stats ->
             if (stats != null) {
-                val allPlayers = homeViewModel.homeData.value?.players ?: emptyList()
-                val formattedStats = stats.mapNotNull { stat ->
-                    val player = allPlayers.find { it.id == stat.playerId }
-                    if (player == null) {
-                        null
-                    } else {
-                        val availability = player.availability.find { it.scheduleId == schedule.id }?.type ?: "N/A"
-                        val timesPlayed = stat.stats.count { it.status == "played" }
-                        val timesOnBench = stat.stats.count { it.status == "benched" }
-                        val isPlayerOut = availability.equals("out", ignoreCase = true)
+                val formattedStats = stats.mapNotNull { scheduleStat ->
+                    // The playerId is already populated with the player object from the backend
+                    val player = scheduleStat.playerId
+                    val availability = player.availability.find { it.scheduleId == schedule.id }?.type ?: "N/A"
+                    val timesPlayed = scheduleStat.stats.count { it.status == "played" }
+                    val timesOnBench = scheduleStat.stats.count { it.status == "benched" }
+                    val isPlayerOut = availability.equals("out", ignoreCase = true)
 
-                        FormattedScheduleStat(
-                            playerName = player.user.name,
-                            availability = availability,
-                            timesPlayed = timesPlayed,
-                            timesOnBench = timesOnBench,
-                            isPlayerOut = isPlayerOut
-                        )
-                    }
+                    FormattedScheduleStat(
+                        playerName = player.user.name,
+                        availability = availability,
+                        timesPlayed = timesPlayed,
+                        timesOnBench = timesOnBench,
+                        isPlayerOut = isPlayerOut
+                    )
                 }
                 statsAdapter.submitList(formattedStats)
             }

@@ -14,6 +14,7 @@ import com.google.android.material.card.MaterialCardView
 class GroupAdapter(
     private val onGroupSelected: (Group) -> Unit,
     private val onEditClicked: (Group) -> Unit,
+    private val onShareClicked: (Group) -> Unit,
     private val onDeleteClicked: (Group) -> Unit,
     private val currentUserId: String?,
     private val isSuperAdmin: Boolean
@@ -28,7 +29,7 @@ class GroupAdapter(
 
     override fun onBindViewHolder(holder: GroupViewHolder, position: Int) {
         val group = getItem(position)
-        holder.bind(group, position == selectedPosition, onGroupSelected, onEditClicked, onDeleteClicked, currentUserId, isSuperAdmin)
+        holder.bind(group, position == selectedPosition, onGroupSelected, onEditClicked, onShareClicked, onDeleteClicked, currentUserId, isSuperAdmin)
     }
 
     fun setSelectedGroup(group: Group) {
@@ -46,6 +47,7 @@ class GroupAdapter(
             isSelected: Boolean,
             onGroupSelected: (Group) -> Unit,
             onEditClicked: (Group) -> Unit,
+            onShareClicked: (Group) -> Unit,
             onDeleteClicked: (Group) -> Unit,
             currentUserId: String?,
             isSuperAdmin: Boolean
@@ -58,10 +60,12 @@ class GroupAdapter(
                 card.setCardBackgroundColor(ContextCompat.getColor(itemView.context, R.color.selected_group_color))
                 binding.groupNameTextView.setTextColor(Color.WHITE)
                 binding.editGroupButton.setColorFilter(Color.WHITE)
+                binding.shareGroupButton.setColorFilter(Color.WHITE)
                 binding.deleteGroupButton.setColorFilter(Color.WHITE)
             } else {
                 card.setCardBackgroundColor(Color.WHITE)
                 binding.groupNameTextView.setTextColor(Color.BLACK)
+                binding.shareGroupButton.setColorFilter(ContextCompat.getColor(itemView.context, R.color.default_icon_tint))
                 binding.editGroupButton.setColorFilter(ContextCompat.getColor(itemView.context, R.color.default_icon_tint))
                 binding.deleteGroupButton.setColorFilter(ContextCompat.getColor(itemView.context, R.color.default_icon_tint))
             }
@@ -69,8 +73,10 @@ class GroupAdapter(
             val isGroupAdmin = group.admins.contains(currentUserId)
             val canEdit = isSuperAdmin || isGroupAdmin
             val canDelete = isSuperAdmin || isGroupAdmin
+            val canShare = isSuperAdmin || isGroupAdmin
 
             binding.editGroupButton.visibility = if (canEdit) View.VISIBLE else View.GONE
+            binding.shareGroupButton.visibility = if (canShare) View.VISIBLE else View.GONE
             binding.deleteGroupButton.visibility = if (canDelete) View.VISIBLE else View.GONE
 
             itemView.setOnClickListener {
@@ -79,6 +85,10 @@ class GroupAdapter(
 
             binding.editGroupButton.setOnClickListener {
                 onEditClicked(group)
+            }
+
+            binding.shareGroupButton.setOnClickListener {
+                onShareClicked(group)
             }
 
             binding.deleteGroupButton.setOnClickListener {

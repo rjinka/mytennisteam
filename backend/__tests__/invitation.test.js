@@ -1,9 +1,10 @@
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 
+const userId = new mongoose.Types.ObjectId();
 // Mock middleware and config
 jest.unstable_mockModule('../middleware/authMiddleware.js', () => ({
   protect: (req, res, next) => {
-    req.user = { id: 'user1', email: 'test@example.com', isSuperAdmin: false };
+    req.user = { _id: userId, email: 'test@example.com', isSuperAdmin: false };
     next();
   },
 }));
@@ -11,6 +12,7 @@ jest.unstable_mockModule('../config.js', () => ({
   config: { jwt_secret: 'test-secret' },
 }));
 
+import mongoose from 'mongoose';
 // Dynamic imports after mocks
 const request = (await import('supertest')).default;
 const { app } = await import('../server.js');
@@ -23,11 +25,13 @@ describe('Invitation Routes', () => {
   let user, group, invitation;
 
   beforeEach(async () => {
-    user = await User.create({ id: 'user1', googleId: 'google123', name: 'Test User', email: 'test@example.com' });
-    group = await Group.create({ id: 'group1', name: 'Test Group', createdBy: 'user1', admins: ['user1'] });
+    const groupId = new mongoose.Types.ObjectId();
+
+    user = await User.create({ _id: userId, googleId: 'google123', name: 'Test User', email: 'test@example.com' });
+    group = await Group.create({ _id: groupId, name: 'Test Group', createdBy: userId, admins: [userId] });
     invitation = await Invitation.create({
       email: 'test@example.com',
-      groupId: group.id,
+      groupId: groupId,
       join_token: 'test_token',
     });
   });
@@ -57,7 +61,7 @@ describe('Invitation Routes', () => {
     it('should allow a user to accept a valid invitation', async () => {
       const res = await request(app).post('/api/invitations/accept/test_token');
       expect(res.statusCode).toBe(200);
-      const player = await Player.findOne({ userId: 'user1', groupid: 'group1' });
+      const player = await Player.findOne({ userId: user._id, groupId: group._id });
       expect(player).not.toBeNull();
     });
 

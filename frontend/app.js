@@ -53,6 +53,24 @@ export async function reloadData() {
     }
 }
 
+async function setVersion() {
+    try {
+        const { version } = await api.getVersion();
+        document.getElementById('version-display').textContent = `v${version}`;
+    } catch (error) {
+        console.error('Failed to set version:', error);
+    }
+}
+
+export function copyToClipboard(text, successMessage) {
+    navigator.clipboard.writeText(text).then(() => {
+        showMessageBox('Success', successMessage);
+    }).catch(err => {
+        console.error('Could not copy text: ', err);
+        showMessageBox('Error', 'Failed to copy link.');
+    });
+}
+
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
         const token = localStorage.getItem('token');
@@ -130,7 +148,7 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
     renderAllPlayers();
 
     if (group && !isInitialLoad) { // Only proceed if a valid group is selected
-        const groupSchedules = Object.values(schedules).filter(s => s.groupid === group.id);
+        const groupSchedules = Object.values(schedules).filter(s => s.groupId === group.id);
         if (groupSchedules.length > 0) {
             showScheduleDetails(groupSchedules[0]);
         }
@@ -153,7 +171,7 @@ async function refreshDataForCurrentGroup() {
 
 export async function loadSchedulesForGroup() {
     const allSchedules = await api.getSchedules(selection.currentGroupId);
-    const groupSchedules = allSchedules.filter(s => s.groupid === selection.currentGroupId) || [];
+    const groupSchedules = allSchedules.filter(s => s.groupId === selection.currentGroupId) || [];
     schedules = groupSchedules.reduce((acc, schedule) => {
         acc[schedule.id] = schedule; // Assuming schedule has a unique '_id'
         return acc;
@@ -168,7 +186,7 @@ export async function loadSchedulesForGroup() {
 export async function loadCourtsForGroup() {
     try {
         const allCourts = await api.getCourts(selection.currentGroupId);
-        const groupCourts = allCourts.filter(c => c.groupid === selection.currentGroupId) || [];
+        const groupCourts = allCourts.filter(c => c.groupId === selection.currentGroupId) || [];
         courts = groupCourts.reduce((acc, court) => {
             acc[court.id] = court; // Assuming court has a unique '_id'
             return acc;
@@ -221,7 +239,7 @@ export async function createNewCourt() {
         showMessageBox('Error', 'Please enter a court name.');
         return;
     }
-    const newCourt = { name: courtName, groupid: selection.currentGroupId };
+    const newCourt = { name: courtName, groupId: selection.currentGroupId };
     showLoading(true);
     try {
         await api.createCourt(newCourt);
@@ -271,7 +289,7 @@ export async function createNewSchedule() {
     const maxPlayersCount = selectedCourts.reduce((sum, court) => {
         return sum + (court.gameType === '0' ? 2 : 4);
     }, 0);
-    const newSchedule = { name, groupid: selection.currentGroupId, courts: selectedCourts, day, time, duration, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
+    const newSchedule = { name, groupId: selection.currentGroupId, courts: selectedCourts, day, time, duration, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
 
     showLoading(true);
     try {
@@ -469,6 +487,7 @@ export function parseJwt (token) {
 
 async function initializeApp() {
     try {
+        await setVersion();
         // Hide sign-in and show main app
         document.getElementById('signInContainer').style.display = 'none';
         const mainContainer = document.getElementById('mainContainer');
@@ -516,6 +535,29 @@ async function handleInvitationToken(params) {
     }
 }
 
+async function handleGroupJoinToken(params) {
+    const groupId = params.get('groupId');
+    if (groupId) {
+        try {
+            // Ensure user is logged in
+            if (!localStorage.getItem('token')) {
+                // If not logged in, the normal sign-in flow will handle it.
+                // The groupId will be picked up from sessionStorage after redirect.
+                return;
+            }
+            const { msg } = await api.joinGroup(groupId);
+            showMessageBox('Group Joined', msg, reloadData);
+            // Clean the token from sessionStorage and URL
+            sessionStorage.removeItem('groupId');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) {
+            showMessageBox('Error', error.message || 'Could not join group.');
+            sessionStorage.removeItem('groupId');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+}
+
 // On page load, check for an existing token and initialize the app if found.
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -524,6 +566,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // If a join_token is present, store it in sessionStorage before it gets lost in the auth redirect.
     if (urlParams.has('join_token')) {
         sessionStorage.setItem('join_token', urlParams.get('join_token'));
+    }
+    // If a groupId is present, store it in sessionStorage.
+    if (urlParams.has('groupId')) {
+        sessionStorage.setItem('groupId', urlParams.get('groupId'));
     }
 
     if (tokenFromUrl) {
@@ -539,6 +585,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Pass the token to the handler and clear it from storage.
         urlParams.set('join_token', pendingJoinToken); // Temporarily add it back for the handler
         await handleInvitationToken(urlParams); // Pass the params object to the function
+    }
+
+    // After login, check sessionStorage for a pending group join.
+    const pendingGroupId = sessionStorage.getItem('groupId');
+    if (pendingGroupId) {
+        urlParams.set('groupId', pendingGroupId);
+        await handleGroupJoinToken(urlParams);
     }
 
     if (localStorage.getItem('token')) { // Now, check if the user is logged in

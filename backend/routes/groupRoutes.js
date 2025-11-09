@@ -1,5 +1,4 @@
 import express from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import Group from '../models/groupModel.js';
 import Player from '../models/playerModel.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -26,13 +25,13 @@ router.get('/player', protect, async (req, res) => {
         }
 
         // find list of all groups that players is a group admin
-        const adminGroups = await Group.find({ admins: req.user.id });
+        const adminGroups = await Group.find({ admins: req.user._id });
 
         // Find all player entries for the current user
-        const playerEntries = await Player.find({ userId: req.user.id });
-        const playerGroupIds = playerEntries.map(p => p.groupid);
+        const playerEntries = await Player.find({ userId: req.user._id });
+        const playerGroupIds = playerEntries.map(p => p.groupId);
         // Find all groups corresponding to these group IDs
-        const playerGroups = await Group.find({ id: { $in: playerGroupIds } });
+        const playerGroups = await Group.find({ _id: { $in: playerGroupIds } });
 
         // combine adminGroups and playerGroups but remove duplicates
         const combinedGroups = [...adminGroups, ...playerGroups];
@@ -56,19 +55,16 @@ router.post('/', protect, async (req, res) => {
             return res.status(400).json({ msg: 'Name is required' });
         }
         const newGroup = new Group({
-            id: uuidv4(),
             name,
-            createdBy: req.user.id,
-            admins: [req.user.id], // The creator is the first admin
+            createdBy: req.user._id,
+            admins: [req.user._id], // The creator is the first admin
         });
         const group = await newGroup.save();
 
         // Also create a Player entry for the admin in this new group
         const newPlayer = new Player({
-            id: uuidv4(),
-            userId: req.user.id,
-            groupid: group.id,
-            selectedScheduleList: [],
+            userId: req.user._id,
+            groupId: group._id,
         });
         await newPlayer.save();
 
@@ -85,10 +81,10 @@ router.post('/', protect, async (req, res) => {
 router.put('/:id', protect, async (req, res) => {
     const { name } = req.body;
     try {
-        let group = await Group.findOne({ id: req.params.id });
+        let group = await Group.findById(req.params.id);
         if (!group) return res.status(404).json({ msg: 'Group not found' });
 
-        if (!req.user.isSuperAdmin && !group.admins.includes(req.user.id)) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
@@ -107,11 +103,11 @@ router.put('/:id', protect, async (req, res) => {
 router.put('/:id/admins', protect, async (req, res) => {
     const { adminUserIds } = req.body;
     try {
-        let group = await Group.findOne({ id: req.params.id });
+        let group = await Group.findById(req.params.id);
         if (!group) return res.status(404).json({ msg: 'Group not found' });
 
         // Authorization: only an existing admin can change the admin list
-        if (!req.user.isSuperAdmin && !group.admins.includes(req.user.id)) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
@@ -135,30 +131,54 @@ router.put('/:id/admins', protect, async (req, res) => {
 // @access  Private
 router.delete('/:id', protect, async (req, res) => {
     try {
-        const group = await Group.findOne({ id: req.params.id });
+        const group = await Group.findById(req.params.id);
         if (!group) return res.status(404).json({ msg: 'Group not found' });
 
-        if (!req.user.isSuperAdmin && !group.admins.includes(req.user.id)) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
-        const groupId = group.id;
-
         // Find all schedules in the group to get their IDs for stat cleanup
-        const schedulesInGroup = await Schedule.find({ groupid: groupId });
-        const scheduleIdsInGroup = schedulesInGroup.map(s => s.id);
+        const schedulesInGroup = await Schedule.find({ groupId: group._id });
+        const scheduleIdsInGroup = schedulesInGroup.map(s => s._id);
 
         // Perform cascading deletes
         await PlayerStat.deleteMany({ scheduleId: { $in: scheduleIdsInGroup } });
-        await Schedule.deleteMany({ groupid: groupId });
-        await Player.deleteMany({ groupid: groupId });
-        await Court.deleteMany({ groupid: groupId });
+        await Schedule.deleteMany({ groupId: group._id });
+        await Player.deleteMany({ groupId: group._id });
+        await Court.deleteMany({ groupId: group._id });
         await Invitation.deleteMany({ groupId: group._id });
 
         await group.deleteOne();
         res.json({ msg: 'Group removed' });
     } catch (error) {
         console.error(error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
+// @route   POST /api/groups/:groupId/join
+// @desc    Join a group via a shared link
+// @access  Private
+router.post('/:groupId/join', protect, async (req, res) => {
+    const { groupId } = req.params;
+    const userId = req.user._id;
+
+    try {
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+
+        const existingPlayer = await Player.findOne({ userId: userId, groupId: groupId });
+        if (existingPlayer) {
+            return res.status(200).json({ msg: `You are already a member of ${group.name}.` });
+        }
+
+        await Player.create({ userId: userId, groupId: groupId });
+        res.status(200).json({ msg: `Welcome! You have successfully joined ${group.name}.` });
+    } catch (error) {
+        console.error('Error joining group:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
@@ -177,20 +197,20 @@ router.post('/:groupId/invite', protect, async (req, res) => {
     }
 
     try {
-        const group = await Group.findOne({ id: groupId });
+        const group = await Group.findById(groupId);
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
         }
 
         // Authorization: Only group admins or super admins can invite
-        if (!req.user.isSuperAdmin && !group.admins.includes(req.user.id)) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
             return res.status(403).json({ msg: 'You are not authorized to invite players to this group.' });
         }
 
         // Check if a user with this email already exists and is a player in the group
         const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
-            const playerExists = await Player.findOne({ userId: existingUser.id, groupid: group.id });
+            const playerExists = await Player.findOne({ userId: existingUser._id, groupId: group._id });
             if (playerExists) {
                 return res.status(400).json({ msg: 'This user is already a player in this group.' });
             }
@@ -198,8 +218,8 @@ router.post('/:groupId/invite', protect, async (req, res) => {
 
         // Create invitation (this will be handled by the invitation model's defaults)
         const invitation = await Invitation.create({
-            email: email,
-            groupId: group.id, // Use the ObjectId for the ref
+            email: email.toLowerCase(),
+            groupId: group._id, // Use the ObjectId for the ref
         });
 
         const inviteUrl = `${process.env.FRONTEND_URL}?join_token=${invitation.join_token}`;

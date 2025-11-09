@@ -13,6 +13,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
+data class HomeData(
+    val selectedGroup: Group,
+    val schedules: List<Schedule>,
+    val players: List<Player>,
+    val courts: List<Court>
+)
 class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val _allGroups = MutableLiveData<List<Group>>()
@@ -30,14 +36,20 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _playerStats = MutableLiveData<List<PlayerStat>?>()
     val playerStats: LiveData<List<PlayerStat>?> = _playerStats
 
-    private val _scheduleStats = MutableLiveData<List<ScheduleStatResponse>?>()
-    val scheduleStats: LiveData<List<ScheduleStatResponse>?> = _scheduleStats
+    private val _scheduleStats = MutableLiveData<List<ScheduleStat>?>()
+    val scheduleStats: LiveData<List<ScheduleStat>?> = _scheduleStats
 
     private val _forceLogout = MutableLiveData<Event<Unit>>()
     val forceLogout: LiveData<Event<Unit>> = _forceLogout
 
+    private val _joinGroupStatus = MutableLiveData<Event<String>>()
+    val joinGroupStatus: LiveData<Event<String>> = _joinGroupStatus
+
+    private val _acceptInvitationStatus = MutableLiveData<Event<String>>()
+    val acceptInvitationStatus: LiveData<Event<String>> = _acceptInvitationStatus
+
     companion object {
-        private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
+    private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
 
         fun provideFactory(
             owner: androidx.savedstate.SavedStateRegistryOwner,
@@ -214,7 +226,7 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         viewModelScope.launch {
             loadingViewModel.showLoading()
             try {
-                RetrofitClient.instance.createCourt(token, CreateCourtRequest(name = courtName, groupid = groupId))
+                RetrofitClient.instance.createCourt(token, CreateCourtRequest(name = courtName, groupId = groupId))
                 _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it, loadingViewModel) }
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 401) {
@@ -231,7 +243,7 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         viewModelScope.launch {
             loadingViewModel.showLoading()
             try {
-                RetrofitClient.instance.updateCourt(token, courtId, UpdateCourtRequest(name = newName, groupid = groupId))
+                RetrofitClient.instance.updateCourt(token, courtId, UpdateCourtRequest(name = newName, groupId = groupId))
                 _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it, loadingViewModel) }
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 401) {
@@ -413,6 +425,43 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                     _forceLogout.value = Event(Unit)
                 } else {
                     Log.e("HomeViewModel", "Failed to swap player", e)
+                }
+                loadingViewModel.hideLoading()
+            }
+        }
+    }
+
+    fun joinGroup(token: String, groupId: String, loadingViewModel: LoadingViewModel) {
+        viewModelScope.launch {
+            loadingViewModel.showLoading()
+            try {
+                val response = RetrofitClient.instance.joinGroup(token, groupId)
+                _joinGroupStatus.value =
+                    Event(response.message) // Assuming a simple response with a message
+                fetchInitialGroups(token, loadingViewModel) // Refresh data
+            } catch (e: Exception) {
+                val errorMessage = if (e is HttpException) e.response()?.errorBody()?.string()
+                    ?: "Failed to join group" else e.message ?: "An unknown error occurred"
+                _joinGroupStatus.value = Event(errorMessage)
+                loadingViewModel.hideLoading()
+            }
+            // loading is hidden in fetchInitialGroups on success
+        }
+    }
+
+    fun acceptInvitation(token: String, joinToken: String, loadingViewModel: LoadingViewModel) {
+        viewModelScope.launch {
+            loadingViewModel.showLoading()
+            try {
+                RetrofitClient.instance.acceptInvitation(token, joinToken)
+                _acceptInvitationStatus.value = Event("Invitation accepted successfully!")
+                fetchInitialGroups(token, loadingViewModel) // Refresh data
+            } catch (e: Exception) {
+                val errorMessage = if (e is HttpException) e.response()?.errorBody()?.string()
+                    ?: "Failed to accept invitation" else e.message ?: "An unknown error occurred"
+                _acceptInvitationStatus.value = Event(errorMessage)
+                if (e is HttpException && e.code() == 401) {
+                    _forceLogout.value = Event(Unit)
                 }
                 loadingViewModel.hideLoading()
             }

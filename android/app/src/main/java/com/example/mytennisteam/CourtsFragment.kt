@@ -106,7 +106,7 @@ class CourtsFragment : Fragment() {
                         if (court == null) {
                             homeViewModel.createCourt("Bearer $rawToken", courtName, currentGroup.id, loadingViewModel)
                         } else {
-                            homeViewModel.updateCourt("Bearer $rawToken", court.id, courtName, court.groupid, loadingViewModel)
+                            homeViewModel.updateCourt("Bearer $rawToken", court.id, courtName, court.groupId, loadingViewModel)
                         }
                         dialog.dismiss()
                     }

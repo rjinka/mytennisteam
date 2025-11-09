@@ -152,21 +152,23 @@ class ScheduleDetailFragment : Fragment() {
 
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, swapCandidates.map { it.user.name })
         spinner.setAdapter(adapter)
+        var selectedPlayer: Player? = null
+        spinner.setOnItemClickListener { _, _, position, _ ->
+            selectedPlayer = swapCandidates[position]
+        }
 
         AlertDialog.Builder(requireContext())
             .setTitle("Confirm Swap")
             .setView(dialogView)
             .setPositiveButton("Confirm Swap") { _, _ ->
-                val selectedPlayerName = spinner.text.toString()
-                val playerToSwapIn = swapCandidates.find { it.user.name == selectedPlayerName }
-
-                if (playerToSwapIn != null) {
+                val playerToSwapIn = selectedPlayer
+                if (playerToSwapIn != null && spinner.text.toString() == playerToSwapIn.user.name) {
                     val rawToken = SessionManager.getAuthToken(requireContext())
                     if (rawToken != null) {
                         homeViewModel.swapPlayer("Bearer $rawToken", schedule.id, playerToSwapIn.id, playerToSwapOut.id, loadingViewModel)
                     }
                 } else {
-                    Toast.makeText(context, "Please select a player to swap with.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Please select a player from the list to swap with.", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

@@ -292,7 +292,7 @@ export const addEditGroupListeners = () => {
 
                 const groupAdminsList = document.getElementById('groupAdminsList');
                 groupAdminsList.innerHTML = '';
-                const groupPlayers = Object.values(app.players).filter(p => p.groupid === groupId);
+                const groupPlayers = Object.values(app.players).filter(p => p.groupId === groupId);
                 const currentAdmins = app.ui.groupBeingEdited.admins || [];
                 const currentUserId = app.parseJwt(localStorage.getItem('token')).id;
 
@@ -321,6 +321,26 @@ export const addEditGroupListeners = () => {
                 document.body.classList.add('modal-open');
                 document.getElementById('editGroupModalOverlay').classList.add('show');
             }
+        };
+    });
+};
+
+export const addShareGroupListeners = () => {
+    document.querySelectorAll('.share-group-btn').forEach(button => {
+        button.onclick = (event) => {
+            const groupId = event.currentTarget.dataset.id;
+            const joinUrl = `${window.location.origin}/?groupId=${groupId}`;
+
+            // A simple modal to show the link and a copy button
+            const modalHtml = `
+                <div class="flex flex-col gap-4">
+                    <p class="text-gray-700">Share this link with others to let them join the group:</p>
+                    <input type="text" readonly value="${joinUrl}" class="input-field bg-gray-100" id="groupJoinLinkInput">
+                    <button id="copyGroupLinkBtn" class="btn btn-secondary">Copy Link</button>
+                </div>
+            `;
+            showMessageBox('Share Group', modalHtml);
+            document.getElementById('copyGroupLinkBtn').onclick = () => app.copyToClipboard(joinUrl, 'Link copied to clipboard!');
         };
     });
 };
@@ -389,7 +409,6 @@ export const addEditPlayerListeners = () => {
             const playerIdToEdit = event.currentTarget.dataset.id;
             app.ui.playerBeingEdited = app.players[playerIdToEdit];
             if (app.ui.playerBeingEdited) {
-                app.ui.playerBeingEdited._originalSelectedScheduleList = app.ui.playerBeingEdited.selectedScheduleList || [];
                 showEditPlayerModal(app.ui.playerBeingEdited);
             }
         };

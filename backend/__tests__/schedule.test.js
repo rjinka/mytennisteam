@@ -1,9 +1,10 @@
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 
+const userId = new mongoose.Types.ObjectId();
 // Mock middleware and config
 jest.unstable_mockModule('../middleware/authMiddleware.js', () => ({
   protect: (req, res, next) => {
-    req.user = { id: 'user1', isSuperAdmin: false };
+    req.user = { _id: userId, isSuperAdmin: false };
     next();
   },
 }));
@@ -11,6 +12,7 @@ jest.unstable_mockModule('../config.js', () => ({
   config: { jwt_secret: 'test-secret' },
 }));
 
+import mongoose from 'mongoose';
 // Dynamic imports after mocks
 const request = (await import('supertest')).default;
 const { app } = await import('../server.js');
@@ -23,13 +25,16 @@ describe('Schedule Routes', () => {
   let user, group, schedule;
 
   beforeEach(async () => {
-    user = await User.create({ id: 'user1', googleId: 'google123', name: 'Test User', email: 'test@example.com' });
-    group = await Group.create({ id: 'group1', name: 'Test Group', createdBy: 'user1', admins: ['user1'] });
-    await Player.create({ id: 'player1', userId: 'user1', groupid: 'group1' });
+    const groupId = new mongoose.Types.ObjectId();
+    const scheduleId = new mongoose.Types.ObjectId();
+
+    user = await User.create({ _id: userId, googleId: 'google123', name: 'Test User', email: 'test@example.com' });
+    group = await Group.create({ _id: groupId, name: 'Test Group', createdBy: userId, admins: [userId] });
+    await Player.create({ userId: userId, groupId: groupId });
     schedule = await Schedule.create({
-      id: 'schedule1',
+      _id: scheduleId,
       name: 'Test Schedule',
-      groupid: 'group1',
+      groupId: groupId,
       day: 'Monday',
       time: '18:00',
       duration: 90,
@@ -46,7 +51,7 @@ describe('Schedule Routes', () => {
 
   describe('GET /api/schedules/:groupid', () => {
     it('should get all schedules for a group', async () => {
-      const res = await request(app).get('/api/schedules/group1');
+      const res = await request(app).get(`/api/schedules/${group._id}`);
       expect(res.statusCode).toBe(200);
       expect(res.body.length).toBe(1);
       expect(res.body[0].name).toBe('Test Schedule');
@@ -59,7 +64,7 @@ describe('Schedule Routes', () => {
         .post('/api/schedules')
         .send({
           name: 'New Schedule',
-          groupid: 'group1',
+          groupId: group._id,
           day: 'Tuesday',
           time: '20:00',
           duration: 60,
@@ -73,7 +78,7 @@ describe('Schedule Routes', () => {
   describe('PUT /api/schedules/:id', () => {
     it('should update a schedule', async () => {
       const res = await request(app)
-        .put('/api/schedules/schedule1')
+        .put(`/api/schedules/${schedule._id}`)
         .send({ name: 'Updated Schedule' });
       expect(res.statusCode).toBe(200);
       expect(res.body.name).toBe('Updated Schedule');
@@ -82,16 +87,16 @@ describe('Schedule Routes', () => {
 
   describe('DELETE /api/schedules/:id', () => {
     it('should delete a schedule', async () => {
-      const res = await request(app).delete('/api/schedules/schedule1');
+      const res = await request(app).delete(`/api/schedules/${schedule._id}`);
       expect(res.statusCode).toBe(200);
-      const deletedSchedule = await Schedule.findOne({ id: 'schedule1' });
+      const deletedSchedule = await Schedule.findById(schedule._id);
       expect(deletedSchedule).toBeNull();
     });
   });
 
   describe('GET /api/schedules/:id/rotation-button-state', () => {
     it('should return visible and enabled for admin if rotation not generated', async () => {
-      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
         visible: true,
@@ -101,8 +106,8 @@ describe('Schedule Routes', () => {
     });
 
     it('should return visible and disabled for admin if schedule is completed', async () => {
-      await Schedule.updateOne({ id: 'schedule1' }, { isCompleted: true });
-      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      await schedule.updateOne({ isCompleted: true });
+      const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
         visible: true,
@@ -112,12 +117,12 @@ describe('Schedule Routes', () => {
     });
 
     it('should return visible and disabled if rotation generated and not due', async () => {
-      await Schedule.updateOne({ id: 'schedule1' }, {
+      await schedule.updateOne({
         isRotationGenerated: true,
         lastRotationGeneratedDate: new Date(),
         frequency: '2', // Weekly
       });
-      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
         visible: true,
@@ -129,12 +134,12 @@ describe('Schedule Routes', () => {
     it('should return visible and enabled if rotation generated and due', async () => {
       const lastDate = new Date();
       lastDate.setDate(lastDate.getDate() - 7);
-      await Schedule.updateOne({ id: 'schedule1' }, {
+      await schedule.updateOne({
         isRotationGenerated: true,
         lastRotationGeneratedDate: lastDate,
         frequency: '2', // Weekly
       });
-      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
         visible: true,
@@ -144,8 +149,8 @@ describe('Schedule Routes', () => {
     });
 
     it('should return not visible for non-admin', async () => {
-      await Group.updateOne({ id: 'group1' }, { admins: [] });
-      const res = await request(app).get('/api/schedules/schedule1/rotation-button-state');
+      await group.updateOne({ admins: [] });
+      const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
         visible: false,

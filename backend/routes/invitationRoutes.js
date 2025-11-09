@@ -1,68 +1,77 @@
 import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
 import Invitation from '../models/invitationModel.js';
 import Player from '../models/playerModel.js';
 import Group from '../models/groupModel.js';
-import { protect } from '../middleware/authMiddleware.js';
-import { v4 as uuidv4 } from 'uuid';
-
 
 const router = express.Router();
 
-// @desc    Verify an invitation token
 // @route   GET /api/invitations/verify/:join_token
-router.get('/verify/:join_token', protect, async (req, res) => {
+// @desc    Verify an invitation token and get group info
+// @access  Public
+router.get('/verify/:join_token', async (req, res) => {
     try {
-        const invitation = await Invitation.findOne({ join_token: req.params.join_token, expires: { $gt: Date.now() } });
+        const invitation = await Invitation.findOne({
+            join_token: req.params.join_token,
+            expires: { $gt: Date.now() }
+        });
+
         if (!invitation) {
             return res.status(400).json({ msg: 'Invitation is invalid or has expired.' });
         }
-        const group = await Group.findOne({ id: invitation.groupId });
+
+        const group = await Group.findById(invitation.groupId);
         if (!group) {
-            return res.status(404).json({ msg: 'Associated group not found.' });
+            return res.status(404).json({ msg: 'The associated group no longer exists.' });
         }
-        res.json({ email: invitation.email, groupName: group.name });
+
+        res.json({
+            email: invitation.email,
+            groupName: group.name,
+            groupId: group._id
+        });
     } catch (error) {
+        console.error('Error verifying invitation:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
 
-// @desc    Accept an invitation
-// @route   POST /api/invitations/accept/:token
-router.post('/accept/:token', protect, async (req, res) => {
+// @route   POST /api/invitations/accept/:join_token
+// @desc    Accept an invitation and become a player in the group
+// @access  Private
+router.post('/accept/:join_token', protect, async (req, res) => {
     try {
-        const invitation = await Invitation.findOne({ join_token: req.params.token, expires: { $gt: Date.now() } });
+        const invitation = await Invitation.findOne({
+            join_token: req.params.join_token,
+            expires: { $gt: Date.now() }
+        });
 
         if (!invitation) {
             return res.status(400).json({ msg: 'Invitation is invalid or has expired.' });
         }
 
-        // Check if the logged-in user's email matches the invitation email
-        if (req.user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-            return res.status(403).json({ msg: 'This invitation is for a different user.' });
+        // Security check: Ensure the logged-in user is the one who was invited
+        if (invitation.email.toLowerCase() !== req.user.email.toLowerCase()) {
+            return res.status(403).json({ msg: 'You are not authorized to accept this invitation.' });
         }
 
-        const group = await Group.findOne({ id: invitation.groupId });
-        if (!group) {
-            return res.status(404).json({ msg: 'Associated group not found.' });
+        // Check if user is already a player in this group
+        const existingPlayer = await Player.findOne({ userId: req.user._id, groupId: invitation.groupId });
+        if (existingPlayer) {
+            await invitation.deleteOne(); // Clean up the used invitation
+            return res.status(400).json({ msg: 'You are already a member of this group.' });
         }
 
-        // Check if player already exists in the group
-        const playerExists = await Player.findOne({ groupid: group.id, userId: req.user.id });
-        if (playerExists) {
-            await invitation.deleteOne();
-            return res.status(400).json({ msg: 'You are already a player in this group.' });
-        }
-
-        // Create a new player
+        // Create the new player record
         const newPlayer = new Player({
-            id: uuidv4(),
-            userId: req.user.id,
-            groupid: group.id,
+            userId: req.user._id,
+            groupId: invitation.groupId,
         });
         await newPlayer.save();
-        await invitation.deleteOne();
 
-        res.status(200).json({ msg: 'Invitation accepted! You are now a player in the group.' });
+        await invitation.deleteOne(); // The invitation is now used, delete it
+
+        res.status(200).json({ msg: 'Invitation accepted successfully! You are now a member of the group.' });
     } catch (error) {
         console.error('Error accepting invitation:', error);
         res.status(500).json({ msg: 'Server Error' });

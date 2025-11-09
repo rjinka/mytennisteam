@@ -1,12 +1,18 @@
 import mongoose from 'mongoose';
 
 const scheduleSchema = new mongoose.Schema({
-    id: { type: String, required: true, unique: true },
-    name: { type: String, required: true },
-    groupid: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
+    groupId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
+        ref: 'Group'
+    },
     courts: [{
         _id: false, // prevent mongoose from creating an _id for each court object
-        courtId: { type: String, required: true },
+        courtId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Court', required: true
+        },
         gameType: { type: String, required: true }
     }],
     day: { type: String, required: true },
@@ -20,12 +26,23 @@ const scheduleSchema = new mongoose.Schema({
     lastGeneratedWeek: { type: Number, default: 0 },
     isRotationGenerated: { type: Boolean, default: false },
     lastRotationGeneratedDate: { type: Date },
-    playingPlayersIds: [{ type: String }],
-    benchPlayersIds: [{ type: String }],
+    playingPlayersIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Player'
+    }],
+    benchPlayersIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Player'
+    }],
     isCompleted: { type: Boolean, default: false },
 }, {
     timestamps: true,
+    // Enable virtuals to be included in toJSON and toObject outputs
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
+
+scheduleSchema.virtual('id').get(function() { return this._id.toHexString(); });
 
 const Schedule = mongoose.model('Schedule', scheduleSchema);
 

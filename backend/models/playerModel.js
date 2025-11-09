@@ -1,22 +1,23 @@
 import mongoose from 'mongoose';
 
 const playerSchema = new mongoose.Schema({
-    id: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     userId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
         required: true,
     },
-    groupid: {
-        type: String,
+    groupId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Group',
         required: true,
     },
     availability: [{
         _id: false, // Don't create a separate _id for subdocuments
-        scheduleId: { type: String, required: true },
+        scheduleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Schedule',
+            required: true
+        },
         type: { type: String, enum: ['Permanent', 'Rotation', 'Backup'], default: 'Rotation', required: true }
     }],
     scheduleStats: {
@@ -26,19 +27,19 @@ const playerSchema = new mongoose.Schema({
     },
 }, {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
 });
 
 // Create a virtual property 'user' that links to the User model
 playerSchema.virtual('user', {
     ref: 'User',
     localField: 'userId',
-    foreignField: 'id',
+    foreignField: '_id',
     justOne: true
 });
 
-// Ensure virtual fields are included when converting to JSON
-playerSchema.set('toJSON', { virtuals: true });
-playerSchema.set('toObject', { virtuals: true });
+playerSchema.virtual('id').get(function() { return this._id.toHexString(); });
 
 const Player = mongoose.model('Player', playerSchema);
 

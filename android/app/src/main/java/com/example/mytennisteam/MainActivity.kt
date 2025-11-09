@@ -1,6 +1,7 @@
 package com.example.mytennisteam
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,9 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         // Check for existing session
         if (SessionManager.getAuthToken(this) != null) {
-            val intent = Intent(this, HomeActivity::class.java)
-            startActivity(intent)
-            finish()
+            startHomeActivity()
             return
         }
 
@@ -57,14 +56,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent) // Update the activity's intent
+
+        if (SessionManager.getAuthToken(this) != null) {
+            startHomeActivity()
+        }
+    }
+
+    private fun startHomeActivity() {
+        val intent = Intent(this, HomeActivity::class.java)
+        // Pass the original deep link data to HomeActivity if needed
+        if (getIntent().data != null) {
+            intent.data = getIntent().data
+        }
+        startActivity(intent)
+        finish()
+    }
+    
     private fun authenticateWithBackend(idToken: String) {
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.authenticateWithGoogle(AuthRequest(idToken))
                 SessionManager.saveAuthToken(this@MainActivity, response.token, response.user.id, response.user.isSuperAdmin)
-                val intent = Intent(this@MainActivity, HomeActivity::class.java)
-                startActivity(intent)
-                finish()
+                startHomeActivity()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Authentication failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }

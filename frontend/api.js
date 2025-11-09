@@ -1,6 +1,6 @@
 // Use Vite's environment variables to set the API base URL.
 // import.meta.env.VITE_API_BASE_URL is replaced at build time.
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api`;
 
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -19,7 +19,7 @@ class ApiError extends Error {
 }
 
 export const swapPlayers = async (scheduleId, playerInId, playerOutId) => {
-    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/swapPlayers`, {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/swap`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ playerInId, playerOutId }),
@@ -46,6 +46,14 @@ export const createSchedule = async (scheduleData) => {
     return response.json();
 };
 
+export const getVersion = async () => {
+    const response = await fetch(`${API_BASE_URL}/version`);
+    if (!response.ok) {
+        throw new ApiError('Failed to fetch version', response.status);
+    }
+    return response.json();
+};
+
 export const updateSchedule = async (scheduleId, scheduleData) => {
     const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}`, {
         method: 'PUT',
@@ -60,7 +68,7 @@ export const updateSchedule = async (scheduleId, scheduleData) => {
 };
 
 export const generateRotation = async (scheduleId) => {
-    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/generate-rotation`, {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
     });
@@ -300,6 +308,18 @@ export const verifyInvitation = async (join_token) => {
 export const acceptInvitation = async (join_token) => {
     const response = await fetch(`${API_BASE_URL}/invitations/accept/${join_token}`, { method: 'POST', headers: getAuthHeaders() });
     if (!response.ok) throw new ApiError('Failed to accept invitation', response.status);
+    return response.json();
+};
+
+export const joinGroup = async (groupId) => {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}/join`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to join group', response.status);
+    }
     return response.json();
 };
 

@@ -6,10 +6,12 @@ export default defineConfig(({ mode }) => {
         // The root should point to your frontend directory
         root: '.',
         server: {
+            host: true,
             port: 5000,
         },
         preview: {
             port: 5000,
+            host: '0.0.0.0',
         },
         build: {
             // The output directory for the build
