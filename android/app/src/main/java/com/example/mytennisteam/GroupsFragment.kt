@@ -132,15 +132,17 @@ class GroupsFragment : Fragment() {
                     return@setPositiveButton
                 }
 
-                if (newGroupName.isNotBlank() && newGroupName != group.name) {
-                    val rawToken = SessionManager.getAuthToken(requireContext())
-                    if (rawToken != null) {
+                val rawToken = SessionManager.getAuthToken(requireContext())
+                if (rawToken != null) {
+                    // Update name if it has changed
+                    if (newGroupName.isNotBlank() && newGroupName != group.name) {
                         homeViewModel.updateGroup("Bearer $rawToken", group.id, newGroupName, loadingViewModel)
                     }
+                    // Update admins if they have changed
+                    if (newAdminUserIds.toSet() != group.admins.toSet()) {
+                        homeViewModel.updateGroupAdmins("Bearer $rawToken", group.id, newAdminUserIds, loadingViewModel)
+                    }
                 }
-
-                // TODO: Implement a ViewModel function to update admins
-                // homeViewModel.updateGroupAdmins("Bearer $rawToken", group.id, newAdminUserIds, loadingViewModel)
             }
             .setNegativeButton("Cancel", null)
             .show()
