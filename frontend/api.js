@@ -46,6 +46,14 @@ export const createSchedule = async (scheduleData) => {
     return response.json();
 };
 
+export const getVersion = async () => {
+    const response = await fetch(`${API_BASE_URL}/version`);
+    if (!response.ok) {
+        throw new ApiError('Failed to fetch version', response.status);
+    }
+    return response.json();
+};
+
 export const updateSchedule = async (scheduleId, scheduleData) => {
     const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}`, {
         method: 'PUT',
