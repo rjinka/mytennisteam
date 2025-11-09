@@ -157,6 +157,32 @@ router.delete('/:id', protect, async (req, res) => {
     }
 });
 
+// @route   POST /api/groups/:groupId/join
+// @desc    Join a group via a shared link
+// @access  Private
+router.post('/:groupId/join', protect, async (req, res) => {
+    const { groupId } = req.params;
+    const userId = req.user._id;
+
+    try {
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found' });
+        }
+
+        const existingPlayer = await Player.findOne({ userId: userId, groupId: groupId });
+        if (existingPlayer) {
+            return res.status(200).json({ msg: `You are already a member of ${group.name}.` });
+        }
+
+        await Player.create({ userId: userId, groupId: groupId });
+        res.status(200).json({ msg: `Welcome! You have successfully joined ${group.name}.` });
+    } catch (error) {
+        console.error('Error joining group:', error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
 // @route   POST /api/groups/:groupId/invite
 // @desc    Invite a player to a group
 // @access  Private

@@ -18,7 +18,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var googleSignInClient: GoogleSignInClient
-    private var joinToken: String? = null
 
     private val googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -36,11 +35,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleIntent(intent) // Handle intent on initial creation
 
         // Check for existing session
         if (SessionManager.getAuthToken(this) != null) {
-            handleJoinTokenAndStartHomeActivity()
+            startHomeActivity()
             return
         }
 
@@ -61,42 +59,8 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent) // Update the activity's intent
-        if (intent != null) {
-            handleIntent(intent) // Handle intent if activity is already running
-        }
 
         if (SessionManager.getAuthToken(this) != null) {
-            handleJoinTokenAndStartHomeActivity()
-        }
-    }
-
-    private fun handleIntent(intent: Intent) {
-        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-            joinToken = intent.data?.getQueryParameter("join_token")
-        }
-    }
-    
-    private fun handleJoinTokenAndStartHomeActivity() {
-        val tokenToProcess = joinToken
-        joinToken = null // Consume the token
-
-        if (tokenToProcess != null) {
-            val authToken = SessionManager.getAuthToken(this)
-            if (authToken != null) {
-                lifecycleScope.launch {
-                    try {
-                        RetrofitClient.instance.acceptInvitation("Bearer $authToken", tokenToProcess)
-                        Toast.makeText(this@MainActivity, "Invitation accepted!", Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "Failed to accept invitation: ${e.message}", Toast.LENGTH_SHORT).show()
-                    } finally {
-                        startHomeActivity()
-                    }
-                }
-            } else {
-                 startHomeActivity()
-            }
-        } else {
             startHomeActivity()
         }
     }
@@ -116,7 +80,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.instance.authenticateWithGoogle(AuthRequest(idToken))
                 SessionManager.saveAuthToken(this@MainActivity, response.token, response.user.id, response.user.isSuperAdmin)
-                handleJoinTokenAndStartHomeActivity()
+                startHomeActivity()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Authentication failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }

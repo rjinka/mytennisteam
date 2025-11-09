@@ -1,5 +1,6 @@
 package com.example.mytennisteam
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -54,6 +55,9 @@ class GroupsFragment : Fragment() {
             },
             onEditClicked = { group ->
                 showEditGroupDialog(group)
+            },
+            onShareClicked = { group -> 
+                shareGroupLink(group) 
             },
             onDeleteClicked = { group ->
                 showDeleteGroupConfirmation(group)
@@ -141,6 +145,17 @@ class GroupsFragment : Fragment() {
             .setNegativeButton("Cancel", null)
             .show()
     }
+
+    private fun shareGroupLink(group: Group) {
+        val joinUrl = "${BuildConfig.WEB_APP_BASE_URL}/?groupId=${group.id}"
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, "Join my tennis group on MyTennisTeam: $joinUrl")
+            type = "text/plain"
+        }
+        startActivity(Intent.createChooser(shareIntent, "Share Group Link"))
+    }
+
 
     private fun showDeleteGroupConfirmation(group: Group) {
         AlertDialog.Builder(requireContext())

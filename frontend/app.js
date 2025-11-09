@@ -53,6 +53,15 @@ export async function reloadData() {
     }
 }
 
+export function copyToClipboard(text, successMessage) {
+    navigator.clipboard.writeText(text).then(() => {
+        showMessageBox('Success', successMessage);
+    }).catch(err => {
+        console.error('Could not copy text: ', err);
+        showMessageBox('Error', 'Failed to copy link.');
+    });
+}
+
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
         const token = localStorage.getItem('token');
@@ -516,6 +525,29 @@ async function handleInvitationToken(params) {
     }
 }
 
+async function handleGroupJoinToken(params) {
+    const groupId = params.get('groupId');
+    if (groupId) {
+        try {
+            // Ensure user is logged in
+            if (!localStorage.getItem('token')) {
+                // If not logged in, the normal sign-in flow will handle it.
+                // The groupId will be picked up from sessionStorage after redirect.
+                return;
+            }
+            const { msg } = await api.joinGroup(groupId);
+            showMessageBox('Group Joined', msg, reloadData);
+            // Clean the token from sessionStorage and URL
+            sessionStorage.removeItem('groupId');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (error) {
+            showMessageBox('Error', error.message || 'Could not join group.');
+            sessionStorage.removeItem('groupId');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
+}
+
 // On page load, check for an existing token and initialize the app if found.
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -524,6 +556,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // If a join_token is present, store it in sessionStorage before it gets lost in the auth redirect.
     if (urlParams.has('join_token')) {
         sessionStorage.setItem('join_token', urlParams.get('join_token'));
+    }
+    // If a groupId is present, store it in sessionStorage.
+    if (urlParams.has('groupId')) {
+        sessionStorage.setItem('groupId', urlParams.get('groupId'));
     }
 
     if (tokenFromUrl) {
@@ -539,6 +575,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Pass the token to the handler and clear it from storage.
         urlParams.set('join_token', pendingJoinToken); // Temporarily add it back for the handler
         await handleInvitationToken(urlParams); // Pass the params object to the function
+    }
+
+    // After login, check sessionStorage for a pending group join.
+    const pendingGroupId = sessionStorage.getItem('groupId');
+    if (pendingGroupId) {
+        urlParams.set('groupId', pendingGroupId);
+        await handleGroupJoinToken(urlParams);
     }
 
     if (localStorage.getItem('token')) { // Now, check if the user is logged in
