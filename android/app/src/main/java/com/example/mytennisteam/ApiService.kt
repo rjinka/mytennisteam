@@ -87,4 +87,10 @@ interface ApiService {
     @POST("api/invitations/accept/{join_token}")
     suspend fun acceptInvitation(@Header("Authorization") token: String, @Path("join_token") joinToken: String)
 
+    @POST("/api/groups/{groupId}/join")
+    suspend fun joinGroup(
+        @Header("Authorization") token: String,
+        @Path("groupId") groupId: String
+    ): JoinGroupResponse
+
 }

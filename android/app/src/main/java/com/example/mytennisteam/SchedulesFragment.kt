@@ -318,22 +318,18 @@ class SchedulesFragment : Fragment() {
                 val formattedStats = stats.mapNotNull { scheduleStat ->
                     // The playerId is already populated with the player object from the backend
                     val player = scheduleStat.playerId
-                    if (player == null) {
-                        null
-                    } else {
-                        val availability = player.availability.find { it.scheduleId == schedule.id }?.type ?: "N/A"
-                        val timesPlayed = scheduleStat.stats.count { it.status == "played" }
-                        val timesOnBench = scheduleStat.stats.count { it.status == "benched" }
-                        val isPlayerOut = availability.equals("out", ignoreCase = true)
+                    val availability = player.availability.find { it.scheduleId == schedule.id }?.type ?: "N/A"
+                    val timesPlayed = scheduleStat.stats.count { it.status == "played" }
+                    val timesOnBench = scheduleStat.stats.count { it.status == "benched" }
+                    val isPlayerOut = availability.equals("out", ignoreCase = true)
 
-                        FormattedScheduleStat(
-                            playerName = player.user.name,
-                            availability = availability,
-                            timesPlayed = timesPlayed,
-                            timesOnBench = timesOnBench,
-                            isPlayerOut = isPlayerOut
-                        )
-                    }
+                    FormattedScheduleStat(
+                        playerName = player.user.name,
+                        availability = availability,
+                        timesPlayed = timesPlayed,
+                        timesOnBench = timesOnBench,
+                        isPlayerOut = isPlayerOut
+                    )
                 }
                 statsAdapter.submitList(formattedStats)
             }

@@ -41,6 +41,13 @@ class HomeActivity : AppCompatActivity() {
         }
 
         observeViewModels()
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent) // Update the activity's intent
+        handleIntent(intent)
     }
 
     fun setCourtsTabVisibility(isVisible: Boolean) {
@@ -80,8 +87,8 @@ class HomeActivity : AppCompatActivity() {
     private fun fetchInitialData() {
         val rawToken = SessionManager.getAuthToken(this)
         if (rawToken == null) {
-            Toast.makeText(this, "Authentication token not found. Please log in again.", Toast.LENGTH_LONG).show()
-            finish()
+            // If no token, and we're in HomeActivity, we need to log in.
+            logout()
             return
         }
         homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
@@ -101,6 +108,39 @@ class HomeActivity : AppCompatActivity() {
 
         loadingViewModel.isLoading.observe(this) { isLoading ->
             binding.loadingOverlay.root.isVisible = isLoading
+        }
+
+        homeViewModel.joinGroupStatus.observe(this, EventObserver { message ->
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        })
+
+        homeViewModel.acceptInvitationStatus.observe(this, EventObserver { message ->
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        })
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val groupId = intent?.data?.getQueryParameter("groupId")
+        if (groupId != null) {
+            // If there's a groupId but no token, redirect to login.
+            // The login flow will bring the user back here, and fetchInitialData will run.
+            // The intent will be processed again after login.
+            if (SessionManager.getAuthToken(this) == null) {
+                return // fetchInitialData will handle the redirection to login
+            }
+            val rawToken = SessionManager.getAuthToken(this)
+            if (rawToken != null) {
+                homeViewModel.joinGroup("Bearer $rawToken", groupId, loadingViewModel)
+            }
+            intent.data = null // Clear the data to prevent re-processing on configuration change
+        }
+        val joinToken = intent?.data?.getQueryParameter("join_token")
+        if (joinToken != null) {
+            val rawToken = SessionManager.getAuthToken(this)
+            if (rawToken != null) {
+                homeViewModel.acceptInvitation("Bearer $rawToken", joinToken, loadingViewModel)
+            }
+            intent.data = null // Clear the data to prevent re-processing on configuration change
         }
     }
 }

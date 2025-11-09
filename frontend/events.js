@@ -325,6 +325,26 @@ export const addEditGroupListeners = () => {
     });
 };
 
+export const addShareGroupListeners = () => {
+    document.querySelectorAll('.share-group-btn').forEach(button => {
+        button.onclick = (event) => {
+            const groupId = event.currentTarget.dataset.id;
+            const joinUrl = `${window.location.origin}/?groupId=${groupId}`;
+
+            // A simple modal to show the link and a copy button
+            const modalHtml = `
+                <div class="flex flex-col gap-4">
+                    <p class="text-gray-700">Share this link with others to let them join the group:</p>
+                    <input type="text" readonly value="${joinUrl}" class="input-field bg-gray-100" id="groupJoinLinkInput">
+                    <button id="copyGroupLinkBtn" class="btn btn-secondary">Copy Link</button>
+                </div>
+            `;
+            showMessageBox('Share Group', modalHtml);
+            document.getElementById('copyGroupLinkBtn').onclick = () => app.copyToClipboard(joinUrl, 'Link copied to clipboard!');
+        };
+    });
+};
+
 export const addRemoveGroupListeners = () => {
     document.querySelectorAll('.remove-group-btn').forEach(button => {
         button.onclick = async (event) => {

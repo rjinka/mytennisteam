@@ -303,6 +303,18 @@ export const acceptInvitation = async (join_token) => {
     return response.json();
 };
 
+export const joinGroup = async (groupId) => {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}/join`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to join group', response.status);
+    }
+    return response.json();
+};
+
 export const authenticateWithGoogle = async (userData) => {
     const response = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
