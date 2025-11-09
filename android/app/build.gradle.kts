@@ -11,42 +11,12 @@ android {
         applicationId = "com.example.mytennisteam"
         minSdk = 24
         targetSdk = 36
-        val versionPropsFile = file("../version.properties")
-        val versionProps = java.util.Properties()
-        versionProps.load(java.io.FileInputStream(versionPropsFile))
-        versionCode = versionProps["VERSION_CODE"].toString().toInt()
-        versionName = versionProps["VERSION_NAME"].toString()
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-tasks.register("incrementVersion") {
-    doLast {
-        val versionPropsFile = file("../version.properties")
-        if (versionPropsFile.canRead()) {
-            val versionProps = java.util.Properties()
-            versionProps.load(java.io.FileInputStream(versionPropsFile))
-
-            var versionCode = versionProps["VERSION_CODE"].toString().toInt()
-            var versionName = versionProps["VERSION_NAME"].toString()
-
-            val (major, minor) = versionName.split(".").map { it.toInt() }
-
-            val newMinor = minor + 1
-            val newVersionName = "$major.$newMinor"
-            val newVersionCode = versionCode + 1
-
-            versionProps["VERSION_CODE"] = newVersionCode.toString()
-            versionProps["VERSION_NAME"] = newVersionName
-
-            versionProps.store(java.io.FileOutputStream(versionPropsFile), null)
-
-            println("Incremented version to $newVersionName ($newVersionCode)")
-        } else {
-            throw GradleException("Could not read version.properties!")
-        }
-    }
-}
 
     buildTypes {
         debug {
@@ -89,8 +59,8 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:5.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.12.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    testImplementation("org.mockito:mockito-core:5.20.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.1.0")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
@@ -109,5 +79,5 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:5.0.5")
 
     // Swipe to Refresh
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-alpha01")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-beta01")
 }
