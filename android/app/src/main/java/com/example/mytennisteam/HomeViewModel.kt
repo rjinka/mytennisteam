@@ -205,6 +205,25 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
+    fun updateGroupAdmins(token: String, groupId: String, adminUserIds: List<String>, loadingViewModel: LoadingViewModel) {
+        viewModelScope.launch {
+            loadingViewModel.showLoading()
+            try {
+                RetrofitClient.instance.updateGroupAdmins(token, groupId, UpdateGroupAdminsRequest(adminUserIds = adminUserIds))
+                fetchInitialGroups(token, loadingViewModel)
+            } catch (e: Exception) {
+                if (e is HttpException && e.code() == 401) {
+                    _forceLogout.value = Event(Unit)
+                } else {
+                    Log.e("HomeViewModel", "Failed to update group admins", e)
+                }
+                loadingViewModel.hideLoading() // Only hide loading on error, success will be handled by the calling function's refresh
+            } finally {
+                loadingViewModel.hideLoading()
+            }
+        }
+    }
+
     fun deleteGroup(token: String, groupId: String, loadingViewModel: LoadingViewModel) {
         viewModelScope.launch {
             loadingViewModel.showLoading()

@@ -30,6 +30,9 @@ interface ApiService {
     @POST("api/groups/{groupId}/invite")
     suspend fun invitePlayer(@Header("Authorization") token: String, @Path("groupId") groupId: String, @Body request: InvitePlayerRequest)
 
+    @PUT("api/groups/{id}/admins")
+    suspend fun updateGroupAdmins(@Header("Authorization") token: String, @Path("id") groupId: String, @Body request: UpdateGroupAdminsRequest)
+
     // --- Players ---
     @GET("api/players/{groupId}")
     suspend fun getPlayers(@Header("Authorization") token: String, @Path("groupId") groupId: String): List<Player>

@@ -132,3 +132,5 @@ data class SwapPlayerRequest(val playerInId: String, val playerOutId: String)
 data class RotationButtonState(val visible: Boolean, val text: String, val disabled: Boolean)
 
 data class JoinGroupResponse(val message: String)
+
+data class UpdateGroupAdminsRequest(val adminUserIds: List<String>)
