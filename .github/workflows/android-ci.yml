@@ -21,7 +21,7 @@ jobs:
         cache: 'gradle' # Cache Gradle dependencies for faster builds
 
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      run: chmod +x android/gradlew
 
     - name: Run tests
       run: cd android && ./gradlew test --stacktrace
