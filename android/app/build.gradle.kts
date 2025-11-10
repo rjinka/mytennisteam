@@ -35,6 +35,9 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        unitTests.all {
+            it.jvmArgs("-Xshare:off")
+        }
     }
 
     buildTypes {
