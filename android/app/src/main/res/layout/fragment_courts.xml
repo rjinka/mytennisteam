@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/transparent"
-    tools:context=".CourtsFragment">
+    tools:context="com.ramjin.mytennisteam.CourtsFragment">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/courts_recycler_view"

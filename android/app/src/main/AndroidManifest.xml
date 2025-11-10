@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="dev.ramjin.mytennisteam">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
         android:networkSecurityConfig="@xml/network_security_config"
-        tools:remove="android:dataExtractionRules"
         android:icon="@mipmap/my_tennis_team_logo"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/my_tennis_team_logo_round"
@@ -16,7 +14,7 @@
         android:theme="@style/Theme.MyTennisTeam"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="com.ramjin.mytennisteam.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,7 +22,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".HomeActivity"
+            android:name="com.ramjin.mytennisteam.HomeActivity"
             android:exported="true"
             android:launchMode="singleTask">
             <!-- Deep Link Intent Filter -->
