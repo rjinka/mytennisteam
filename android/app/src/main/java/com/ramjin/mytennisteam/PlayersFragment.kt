@@ -112,18 +112,14 @@ class PlayersFragment : Fragment() {
                 val formattedStats = stats.map { playerStat ->
                     // The scheduleId is already populated with the schedule object from the backend
                     val schedule = playerStat.scheduleId
-                    if (schedule != null) { // Should always be true
-                        val totalPlayed = playerStat.stats.count { it.status == "played" }
-                        val totalBenched = playerStat.stats.count { it.status == "benched" }
-                        FormattedPlayerStat(
-                            scheduleName = schedule.name, // The backend only sends name
-                            totalPlayed = totalPlayed,
-                            totalBenched = totalBenched,
-                            history = playerStat.stats
-                        )
-                    } else {
-                        null
-                    }
+                    val totalPlayed = playerStat.stats.count { it.status == "played" }
+                    val totalBenched = playerStat.stats.count { it.status == "benched" }
+                    FormattedPlayerStat(
+                        scheduleName = schedule.name, // The backend only sends name
+                        totalPlayed = totalPlayed,
+                        totalBenched = totalBenched,
+                        history = playerStat.stats
+                    )
                 }
                 statsAdapter.submitList(formattedStats)
             }
