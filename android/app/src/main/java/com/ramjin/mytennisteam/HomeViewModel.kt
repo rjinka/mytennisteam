@@ -1,15 +1,14 @@
 package com.ramjin.mytennisteam
 
-import android.os.Bundle
 import android.util.Log
-import androidx.lifecycle.AbstractSavedStateViewModelFactory
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.savedstate.SavedStateRegistryOwner
+import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -52,21 +51,17 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
 
     companion object {
     private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
-
-        fun provideFactory(
-            owner: SavedStateRegistryOwner,
-            defaultArgs: Bundle? = null
-        ): ViewModelProvider.Factory =
-            object : AbstractSavedStateViewModelFactory(owner, defaultArgs) {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(
-                    key: String,
-                    modelClass: Class<T>,
-                    handle: SavedStateHandle
-                ): T {
-                    return HomeViewModel(handle) as T
-                }
+        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(
+                modelClass: Class<T>,
+                extras: CreationExtras
+            ): T {
+                // Get the SavedStateHandle from the CreationExtras
+                val savedStateHandle = extras.createSavedStateHandle()
+                return HomeViewModel(savedStateHandle) as T
             }
+        }
     }
 
     fun onScheduleSelected(schedule: Schedule, token: String, loadingViewModel: LoadingViewModel) {

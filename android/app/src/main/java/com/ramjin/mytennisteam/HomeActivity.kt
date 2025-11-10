@@ -13,7 +13,7 @@ import com.ramjin.mytennisteam.databinding.ActivityHomeBinding
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHomeBinding
-    private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.provideFactory(this) }
+    private val homeViewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
     private val loadingViewModel: LoadingViewModel by viewModels()
 
     private val groupsFragment = GroupsFragment()
