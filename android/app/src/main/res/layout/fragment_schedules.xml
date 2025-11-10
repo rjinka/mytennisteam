@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/transparent"
-    tools:context=".SchedulesFragment">
+    tools:context="com.ramjin.mytennisteam.SchedulesFragment">
 
     <ImageView
         android:id="@+id/background_image_view"

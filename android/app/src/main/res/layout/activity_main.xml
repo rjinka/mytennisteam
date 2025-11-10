@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/tennis_court"
-    tools:context=".MainActivity">
+    tools:context="com.ramjin.mytennisteam.MainActivity">
 
     <View
         android:layout_width="match_parent"
