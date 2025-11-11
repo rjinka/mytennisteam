@@ -247,25 +247,43 @@ export const showEditPlayerModal = (player) => {
         const availabilityType = playerAvailability?.type || 'Rotation';
 
         const container = document.createElement('div');
-        container.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-50';
+        container.className = 'flex items-center justify-between p-2 rounded-md';
+
+        const isPlanning = schedule.status === 'PLANNING';
+        if (!isPlanning) {
+            container.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         const label = document.createElement('label');
-        label.className = 'flex items-center gap-2 cursor-pointer';
-        label.innerHTML = `
-            <input type="checkbox" value="${schedule.id}" class="schedule-checkbox form-checkbox h-4 w-4 text-blue-600" ${isChecked ? 'checked' : ''}>
-            <span>${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})</span>
-        `;
+        label.className = 'flex items-center gap-2';
+        if (isPlanning) {
+            label.classList.add('cursor-pointer');
+        }
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = schedule.id;
+        checkbox.className = 'schedule-checkbox form-checkbox h-4 w-4 text-blue-600';
+        checkbox.checked = isChecked;
+        checkbox.disabled = !isPlanning;
+
+        const span = document.createElement('span');
+        span.textContent = `${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})`;
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
 
         const select = document.createElement('select');
         select.className = 'availability-select input-field text-sm p-1 w-32';
         select.style.display = isChecked ? 'block' : 'none';
+        select.disabled = !isPlanning;
         select.innerHTML = `
             <option value="Rotation" ${availabilityType === 'Rotation' ? 'selected' : ''}>Rotation</option>
             <option value="Permanent" ${availabilityType === 'Permanent' ? 'selected' : ''}>Permanent</option>
             <option value="Backup" ${availabilityType === 'Backup' ? 'selected' : ''}>Backup</option>
         `;
 
-        label.querySelector('.schedule-checkbox').onchange = (e) => {
+        checkbox.onchange = (e) => {
             select.style.display = e.target.checked ? 'block' : 'none';
         };
 

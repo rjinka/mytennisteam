@@ -82,6 +82,11 @@ class SchedulesFragment : Fragment() {
             onStatsClicked = { schedule ->
                 showScheduleStatsDialog(schedule)
             },
+            onViewSignupsClicked = { schedule ->
+                val intent = Intent(requireContext(), ScheduleSignUpActivity::class.java)
+                intent.putExtra("scheduleId", schedule.id)
+                startActivity(intent)
+            },
             currentUserId = currentUserId,
             isSuperAdmin = isSuperAdmin,
             groupAdmins = groupAdmins

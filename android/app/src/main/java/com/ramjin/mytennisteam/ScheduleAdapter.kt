@@ -13,6 +13,7 @@ class ScheduleAdapter(
     private val onEditClicked: (Schedule) -> Unit,
     private val onDeleteClicked: (Schedule) -> Unit,
     private val onStatsClicked: (Schedule) -> Unit,
+    private val onViewSignupsClicked: (Schedule) -> Unit,
     private val currentUserId: String?,
     private val isSuperAdmin: Boolean,
     private val groupAdmins: List<String>
@@ -25,11 +26,11 @@ class ScheduleAdapter(
 
     override fun onBindViewHolder(holder: ScheduleViewHolder, position: Int) {
         val schedule = getItem(position)
-        holder.bind(schedule, onItemClicked, onEditClicked, onDeleteClicked, onStatsClicked, currentUserId, isSuperAdmin, groupAdmins)
+        holder.bind(schedule, onItemClicked, onEditClicked, onDeleteClicked, onStatsClicked, onViewSignupsClicked, currentUserId, isSuperAdmin, groupAdmins)
     }
 
     class ScheduleViewHolder(private val binding: ItemScheduleBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(schedule: Schedule, onItemClicked: (Schedule) -> Unit, onEditClicked: (Schedule) -> Unit, onDeleteClicked: (Schedule) -> Unit, onStatsClicked: (Schedule) -> Unit, currentUserId: String?, isSuperAdmin: Boolean, groupAdmins: List<String>) {
+        fun bind(schedule: Schedule, onItemClicked: (Schedule) -> Unit, onEditClicked: (Schedule) -> Unit, onDeleteClicked: (Schedule) -> Unit, onStatsClicked: (Schedule) -> Unit, onViewSignupsClicked: (Schedule) -> Unit, currentUserId: String?, isSuperAdmin: Boolean, groupAdmins: List<String>) {
             binding.scheduleNameTextView.text = schedule.name
             binding.scheduleDayTimeTextView.text = "${getDayString(schedule.day)} ${schedule.time}"
 
@@ -38,6 +39,7 @@ class ScheduleAdapter(
 
             binding.editScheduleButton.visibility = if (canManage) View.VISIBLE else View.GONE
             binding.deleteScheduleButton.visibility = if (canManage) View.VISIBLE else View.GONE
+            binding.viewSignupsButton.visibility = if (canManage && schedule.status == "PLANNING") View.VISIBLE else View.GONE
 
             itemView.setOnClickListener {
                 onItemClicked(schedule)
@@ -53,6 +55,10 @@ class ScheduleAdapter(
 
             binding.statsButton.setOnClickListener {
                 onStatsClicked(schedule)
+            }
+
+            binding.viewSignupsButton.setOnClickListener {
+                onViewSignupsClicked(schedule)
             }
         }
 

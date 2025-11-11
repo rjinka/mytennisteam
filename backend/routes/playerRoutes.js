@@ -38,6 +38,24 @@ router.put('/:id', protect, async (req, res) => {
             return res.status(403).json({ msg: 'User not authorized to edit this player' });
         }
 
+        // Check if any availability change is for an active or completed schedule
+        const oldAvailabilityMap = new Map(player.availability.map(a => [a.scheduleId.toString(), a.type]));
+        const newAvailabilityMap = new Map(availability.map(a => [a.scheduleId.toString(), a.type]));
+
+        const allScheduleIds = new Set([...oldAvailabilityMap.keys(), ...newAvailabilityMap.keys()]);
+
+        for (const scheduleId of allScheduleIds) {
+            const oldType = oldAvailabilityMap.get(scheduleId);
+            const newType = newAvailabilityMap.get(scheduleId);
+
+            if (oldType !== newType) { // Covers additions, removals, and type changes
+                const schedule = await Schedule.findById(scheduleId);
+                if (schedule && (schedule.status === 'ACTIVE' || schedule.status === 'COMPLETED')) {
+                    return res.status(400).json({ msg: `Cannot change availability for schedule "${schedule.name}" because it is active or completed.` });
+                }
+            }
+        }
+
         // --- Logic to update schedules based on new availability ---
         const oldAvailability = player.availability || [];
 

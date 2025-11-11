@@ -69,6 +69,12 @@ interface ApiService {
     @DELETE("api/schedules/{id}")
     suspend fun deleteSchedule(@Header("Authorization") token: String, @Path("id") scheduleId: String)
 
+    @GET("api/schedules/{scheduleId}/signups")
+    suspend fun getScheduleSignups(@Header("Authorization") token: String, @Path("scheduleId") scheduleId: String): List<ScheduleSignup>
+
+    @POST("api/schedules/{scheduleId}/complete-planning")
+    suspend fun completeSchedulePlanning(@Header("Authorization") token: String, @Path("scheduleId") scheduleId: String): Schedule
+
     // --- Rotation & Swapping ---
     @GET("api/schedules/{id}/rotation-button-state")
     suspend fun getRotationButtonState(@Header("Authorization") token: String, @Path("id") scheduleId: String): RotationButtonState

@@ -633,4 +633,35 @@ class HomeViewModelTest {
         verify(apiService).swapPlayers(any(), any(), any())
         verify(apiService).getSchedules(any(), any())
     }
+
+    @Test
+    fun `getScheduleSignups success`() = runTest {
+        val loadingViewModel = mock<LoadingViewModel>()
+        val signups = listOf(ScheduleSignup("p1", "Player 1", "Rotation"))
+        whenever(apiService.getScheduleSignups(any(), any())).thenReturn(signups)
+
+        viewModel.getScheduleSignups("token", "s1", loadingViewModel)
+
+        verify(apiService).getScheduleSignups(any(), any())
+        assertEquals(signups, viewModel.scheduleSignups.value)
+    }
+
+    @Test
+    fun `completeSchedulePlanning success`() = runTest {
+        val loadingViewModel = mock<LoadingViewModel>()
+        val group = Group("1", "Group 1", emptyList())
+        val homeData = HomeData(group, emptyList(), emptyList(), emptyList())
+        val schedule = Schedule("s1", "Schedule 1", "1", "Mon", "10", 1.0, false, 0, 0, emptyList(), 1, emptyList(), emptyList(), "ACTIVE")
+        (viewModel.homeData as MutableLiveData).value = homeData
+        whenever(apiService.completeSchedulePlanning(any(), any())).thenReturn(schedule)
+        whenever(apiService.getSchedules(any(), any())).thenReturn(listOf(schedule))
+        whenever(apiService.getPlayers(any(), any())).thenReturn(emptyList())
+        whenever(apiService.getCourts(any(), any())).thenReturn(emptyList())
+
+        viewModel.completeSchedulePlanning("token", "s1", loadingViewModel)
+
+        verify(apiService).completeSchedulePlanning(any(), any())
+        verify(apiService).getSchedules(any(), any())
+        assertEquals("ACTIVE", viewModel.homeData.value?.schedules?.first()?.status)
+    }
 }

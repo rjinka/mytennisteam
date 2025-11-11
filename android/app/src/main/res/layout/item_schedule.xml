@@ -96,6 +96,15 @@
                     app:tint="@android:color/white" />
 
                 <ImageButton
+                    android:id="@+id/view_signups_button"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="View Signups"
+                    android:src="@drawable/ic_people"
+                    app:tint="@android:color/white" />
+
+                <ImageButton
                     android:id="@+id/delete_schedule_button"
                     android:layout_width="48dp"
                     android:layout_height="48dp"

@@ -265,6 +265,8 @@ export const addScheduleActionListeners = () => {
                 showEditScheduleModal(schedule);
             } else if (action === 'stats') {
                 showScheduleStatsModal(schedule);
+            } else if (action === 'view-signups') {
+                window.location.href = `/signup.html?scheduleId=${schedule.id}`;
             } else if (action === 'delete') {
                 showLoading(true);
                 try {

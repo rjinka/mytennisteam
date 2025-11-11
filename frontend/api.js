@@ -46,6 +46,29 @@ export const createSchedule = async (scheduleData) => {
     return response.json();
 };
 
+export const getScheduleSignups = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/signups`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to fetch schedule signups', response.status);
+    }
+    return response.json();
+};
+
+export const completeSchedulePlanning = async (scheduleId) => {
+    const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}/complete-planning`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to complete schedule planning', response.status);
+    }
+    return response.json();
+};
+
 export const getVersion = async () => {
     const response = await fetch(`${API_BASE_URL}/version`);
     if (!response.ok) {

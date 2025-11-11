@@ -88,6 +88,16 @@ describe('Player Routes', () => {
       const updatedSchedule = await Schedule.findById(schedule._id);
       expect(updatedSchedule.benchPlayersIds).toContainEqual(player._id);
     });
+
+    it('should return 400 if trying to change availability for an active schedule', async () => {
+        await schedule.updateOne({ status: 'ACTIVE' });
+        const res = await request(app)
+            .put(`/api/players/${player._id}`)
+            .send({
+                availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
+            });
+        expect(res.statusCode).toBe(400);
+    });
   });
 
   describe('DELETE /api/players/:id', () => {
