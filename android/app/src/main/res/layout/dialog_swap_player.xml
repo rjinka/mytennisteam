@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -9,23 +10,51 @@
         android:id="@+id/swap_title_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"/>
+        android:text="Swap Player"
+        android:textAppearance="?attr/textAppearanceHeadline6" />
 
     <TextView
         android:id="@+id/swap_subtitle_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:layout_marginTop="8dp"
+        android:text="Select a player to swap with"
+        android:textAppearance="?attr/textAppearanceBody2" />
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/player_to_swap_layout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Select player to swap with">
+        android:hint="Player to Swap">
 
         <AutoCompleteTextView
             android:id="@+id/player_to_swap_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <CheckBox
+        android:id="@+id/swap_with_backup_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Swap with a backup player" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/backup_player_to_swap_layout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Backup Player"
+        android:visibility="gone">
+
+        <AutoCompleteTextView
+            android:id="@+id/backup_player_to_swap_spinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none" />
