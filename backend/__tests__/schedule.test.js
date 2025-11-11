@@ -117,7 +117,7 @@ describe('Schedule Routes', () => {
     it('should complete planning for a schedule and set status to ACTIVE', async () => {
         const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
         expect(res.statusCode).toBe(200);
-        expect(res.body.status).toBe('ACTIVE');
+        expect(res.body.status).toBe('COMPLETED');
         expect(res.body.isRotationGenerated).toBe(true);
     });
 
@@ -139,9 +139,9 @@ describe('Schedule Routes', () => {
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
-        visible: true,
-        text: 'Finish Schedule',
-        disabled: false,
+        visible: false,
+        text: 'Finish Planning',
+        disabled: true,
       });
     });
 
@@ -161,6 +161,7 @@ describe('Schedule Routes', () => {
         isRotationGenerated: true,
         lastRotationGeneratedDate: new Date(),
         frequency: '2', // Weekly
+        status: 'ACTIVE',
       });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);

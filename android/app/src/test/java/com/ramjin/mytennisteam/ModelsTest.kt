@@ -74,7 +74,8 @@ class ModelsTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         assertEquals("1", schedule.id)
         assertEquals("Schedule 1", schedule.name)
@@ -89,6 +90,7 @@ class ModelsTest {
         assertEquals(1, schedule.week)
         assertEquals(emptyList<String>(), schedule.playingPlayersIds)
         assertEquals(emptyList<String>(), schedule.benchPlayersIds)
+        assertEquals("PLANNING", schedule.status)
     }
 
     @Test
