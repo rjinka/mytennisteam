@@ -96,7 +96,7 @@ router.put('/:id', protect, async (req, res) => {
             return res.status(403).json({ msg: 'User not authorized to edit this schedule' });
         }
 
-        // --- Handle isCompleted logic ---
+        // --- Handle Schedule Complete logic ---
         const oldRecurrenceCount = schedule.recurrenceCount || 0;
         const newRecurrenceCount = updatedScheduleData.recurrenceCount;
 
@@ -105,11 +105,11 @@ router.put('/:id', protect, async (req, res) => {
         const isRecurringFinished = updatedScheduleData.recurring && updatedScheduleData.frequency > 0 && updatedScheduleData.week > updatedScheduleData.recurrenceCount;
 
         if (isOneTimeFinished || isRecurringFinished) {
-            updatedScheduleData.isCompleted = true;
+            updatedScheduleData.status = 'COMPLETED';
         }
         // If user extends a completed schedule, re-activate it
-        else if (schedule.isCompleted && newRecurrenceCount > oldRecurrenceCount) {
-            updatedScheduleData.isCompleted = false;
+        else if (schedule.status === 'COMPLETED' && newRecurrenceCount > oldRecurrenceCount) {
+            updatedScheduleData.status = 'ACTIVE';
         }
 
         // Merge the existing schedule with the updated data
@@ -267,10 +267,10 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
         if (schedule.recurring) {
             schedule.week += 1;
             if (schedule.frequency > 0 && schedule.week > schedule.recurrenceCount) {
-                schedule.isCompleted = true;
+                schedule.status = 'COMPLETED';
             }
         } else {
-            schedule.isCompleted = true; // One-time schedules are completed after one generation
+            schedule.status = 'COMPLETED'; // One-time schedules are completed after one generation
         }
 
 
@@ -449,10 +449,10 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
         if (schedule.recurring) {
             schedule.week += 1;
             if (schedule.frequency > 0 && schedule.week > schedule.recurrenceCount) {
-                schedule.isCompleted = true;
+                schedule.status = 'COMPLETED';
             }
         } else {
-            schedule.isCompleted = true; // One-time schedules are completed after one generation
+            schedule.status = 'COMPLETED'; // One-time schedules are completed after one generation
         }
 
         const updatedSchedule = await schedule.save();
@@ -487,7 +487,13 @@ router.get('/:id/rotation-button-state', protect, async (req, res) => {
             disabled: false,
         };
 
-        if (schedule.isCompleted) {
+        if (schedule.status === 'PLANNING') {
+            buttonState.text = 'Planning in Progress';
+            buttonState.disabled = true;
+            return res.json(buttonState);
+        }
+
+        if (schedule.status === 'COMPLETED') {
             buttonState.text = 'Schedule Finished';
             buttonState.disabled = true;
             return res.json(buttonState);

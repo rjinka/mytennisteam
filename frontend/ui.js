@@ -142,7 +142,7 @@ export const showScheduleDetails = async (schedule) => {
     if (schedule.status === 'PLANNING') {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Player lineup will be generated after planning is complete.</p>';
         benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">View sign-ups to manage this schedule.</p>';
-    } else if (schedule.isCompleted) {
+    } else if (schedule.status === 'COMPLETED') {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">This schedule has finished.</p>';
         benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No players on the bench.</p>';
     } else {
@@ -184,7 +184,6 @@ export const showScheduleDetails = async (schedule) => {
         recurrenceInfoContainer.style.display = 'none';
     }
 
-    const generateBtn = document.getElementById('generateRotationBtn');
     try {
         const buttonState = await getRotationButtonState(schedule.id);
         generateBtn.style.display = buttonState.visible ? 'block' : 'none';
