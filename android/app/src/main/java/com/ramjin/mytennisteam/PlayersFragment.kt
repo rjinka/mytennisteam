@@ -219,6 +219,11 @@ class PlayersFragment : Fragment() {
             checkBox.tag = schedule.id
             spinner.setAdapter(availabilityAdapter)
 
+            val isPlanning = schedule.status == "PLANNING"
+            checkBox.isEnabled = isPlanning
+            spinner.isEnabled = isPlanning
+            scheduleView.alpha = if (isPlanning) 1.0f else 0.5f
+
             player.availability.find { it.scheduleId == schedule.id }?.let {
                 checkBox.isChecked = true
                 spinner.setText(it.type, false)

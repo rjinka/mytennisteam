@@ -22,7 +22,7 @@ const Group = (await import('../models/groupModel.js')).default;
 const Player = (await import('../models/playerModel.js')).default;
 
 describe('Schedule Routes', () => {
-  let user, group, schedule;
+  let user, group, schedule, player;
 
   beforeEach(async () => {
     const groupId = new mongoose.Types.ObjectId();
@@ -30,7 +30,7 @@ describe('Schedule Routes', () => {
 
     user = await User.create({ _id: userId, googleId: 'google123', name: 'Test User', email: 'test@example.com' });
     group = await Group.create({ _id: groupId, name: 'Test Group', createdBy: userId, admins: [userId] });
-    await Player.create({ userId: userId, groupId: groupId });
+    player = await Player.create({ userId: userId, groupId: groupId });
     schedule = await Schedule.create({
       _id: scheduleId,
       name: 'Test Schedule',
@@ -59,7 +59,7 @@ describe('Schedule Routes', () => {
   });
 
   describe('POST /api/schedules', () => {
-    it('should create a new schedule', async () => {
+    it('should create a new schedule with PLANNING status', async () => {
       const res = await request(app)
         .post('/api/schedules')
         .send({
@@ -72,6 +72,8 @@ describe('Schedule Routes', () => {
         });
       expect(res.statusCode).toBe(201);
       expect(res.body.name).toBe('New Schedule');
+      const newSchedule = await Schedule.findOne({ name: 'New Schedule' });
+      expect(newSchedule.status).toBe('PLANNING');
     });
   });
 
@@ -94,19 +96,57 @@ describe('Schedule Routes', () => {
     });
   });
 
+  describe('GET /api/schedules/:scheduleId/signups', () => {
+    it('should get all signups for a schedule', async () => {
+        await Player.updateOne({ _id: player._id }, { $push: { availability: { scheduleId: schedule._id, type: 'Rotation' } } });
+        const res = await request(app).get(`/api/schedules/${schedule._id}/signups`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.length).toBe(1);
+        expect(res.body[0].playerName).toBe('Test User');
+        expect(res.body[0].availabilityType).toBe('Rotation');
+    });
+
+    it('should return 403 for non-admin', async () => {
+        await group.updateOne({ admins: [] });
+        const res = await request(app).get(`/api/schedules/${schedule._id}/signups`);
+        expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('POST /api/schedules/:scheduleId/complete-planning', () => {
+    it('should complete planning for a schedule and set status to ACTIVE', async () => {
+        const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
+        expect(res.statusCode).toBe(200);
+        expect(res.body.status).toBe('COMPLETED');
+        expect(res.body.isRotationGenerated).toBe(true);
+    });
+
+    it('should return 400 if schedule is not in PLANNING status', async () => {
+        await schedule.updateOne({ status: 'ACTIVE' });
+        const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
+        expect(res.statusCode).toBe(400);
+    });
+
+    it('should return 403 for non-admin', async () => {
+        await group.updateOne({ admins: [] });
+        const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
+        expect(res.statusCode).toBe(403);
+    });
+  });
+
   describe('GET /api/schedules/:id/rotation-button-state', () => {
     it('should return visible and enabled for admin if rotation not generated', async () => {
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
-        visible: true,
-        text: 'Finish Schedule',
-        disabled: false,
+        visible: false,
+        text: 'Finish Planning',
+        disabled: true,
       });
     });
 
     it('should return visible and disabled for admin if schedule is completed', async () => {
-      await schedule.updateOne({ isCompleted: true });
+      await schedule.updateOne({ status : 'COMPLETED' });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
@@ -121,6 +161,7 @@ describe('Schedule Routes', () => {
         isRotationGenerated: true,
         lastRotationGeneratedDate: new Date(),
         frequency: '2', // Weekly
+        status: 'ACTIVE',
       });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
@@ -138,6 +179,7 @@ describe('Schedule Routes', () => {
         isRotationGenerated: true,
         lastRotationGeneratedDate: lastDate,
         frequency: '2', // Weekly
+        status: 'ACTIVE',
       });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);

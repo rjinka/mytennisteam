@@ -41,6 +41,10 @@ class GroupsFragment : Fragment() {
         setupRecyclerView()
         observeViewModel()
 
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            refreshData()
+        }
+
         binding.fabAddGroup.setOnClickListener {
             showCreateGroupDialog()
         }
@@ -77,12 +81,23 @@ class GroupsFragment : Fragment() {
     private fun observeViewModel() {
         homeViewModel.allGroups.observe(viewLifecycleOwner) { groups ->
             groupAdapter.submitList(groups)
+            binding.swipeRefreshLayout.isRefreshing = false
         }
 
         homeViewModel.homeData.observe(viewLifecycleOwner) { data ->
             if (data != null) {
                 groupAdapter.setSelectedGroup(data.selectedGroup)
             }
+        }
+    }
+
+    private fun refreshData() {
+        val rawToken = SessionManager.getAuthToken(requireContext())
+        if (rawToken != null) {
+            homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
+        } else {
+            Toast.makeText(context, "Authentication error", Toast.LENGTH_SHORT).show()
+            binding.swipeRefreshLayout.isRefreshing = false
         }
     }
 

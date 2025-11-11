@@ -1,4 +1,4 @@
-import { setCurrentGroup, groups, courts, schedules, players, ui, playerGroups } from './app.js';
+import { setCurrentGroup, groups, courts, schedules, players, ui, playerGroups, isCurrentUserAdminOfSelectedGroup } from './app.js';
 import { getDerivedStats } from './rotation.js';
 import { showMessageBox, renderAllPlayers, showLoading } from './ui.js';
 import * as api from './api.js';
@@ -241,31 +241,50 @@ export const showEditPlayerModal = (player) => {
     document.getElementById('editPlayerNameInput').value = player.user.name;
     const modifyAvailableSchedulesList = document.getElementById('modifyAvailableSchedulesList');
     modifyAvailableSchedulesList.innerHTML = '';
+    const isAdmin = isCurrentUserAdminOfSelectedGroup();
     Object.values(schedules).forEach(schedule => {
         const playerAvailability = player.availability?.find(a => a.scheduleId === schedule.id);
         const isChecked = !!playerAvailability;
         const availabilityType = playerAvailability?.type || 'Rotation';
 
         const container = document.createElement('div');
-        container.className = 'flex items-center justify-between p-2 rounded-md hover:bg-gray-50';
+        container.className = 'flex items-center justify-between p-2 rounded-md';
+
+        const isPlanning = schedule.status === 'PLANNING';
+        if (!isPlanning && !isAdmin) {
+            container.classList.add('opacity-50', 'cursor-not-allowed');
+        }
 
         const label = document.createElement('label');
-        label.className = 'flex items-center gap-2 cursor-pointer';
-        label.innerHTML = `
-            <input type="checkbox" value="${schedule.id}" class="schedule-checkbox form-checkbox h-4 w-4 text-blue-600" ${isChecked ? 'checked' : ''}>
-            <span>${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})</span>
-        `;
+        label.className = 'flex items-center gap-2';
+        if (isPlanning || isAdmin) {
+            label.classList.add('cursor-pointer');
+        }
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = schedule.id;
+        checkbox.className = 'schedule-checkbox form-checkbox h-4 w-4 text-blue-600';
+        checkbox.checked = isChecked;
+        checkbox.disabled = !isPlanning && !isAdmin;
+
+        const span = document.createElement('span');
+        span.textContent = `${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})`;
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
 
         const select = document.createElement('select');
         select.className = 'availability-select input-field text-sm p-1 w-32';
         select.style.display = isChecked ? 'block' : 'none';
+        select.disabled = !isPlanning && !isAdmin;
         select.innerHTML = `
             <option value="Rotation" ${availabilityType === 'Rotation' ? 'selected' : ''}>Rotation</option>
             <option value="Permanent" ${availabilityType === 'Permanent' ? 'selected' : ''}>Permanent</option>
             <option value="Backup" ${availabilityType === 'Backup' ? 'selected' : ''}>Backup</option>
         `;
 
-        label.querySelector('.schedule-checkbox').onchange = (e) => {
+        checkbox.onchange = (e) => {
             select.style.display = e.target.checked ? 'block' : 'none';
         };
 
@@ -420,4 +439,45 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
     backupPlayerSelect.onchange = () => { confirmSwapBtn.disabled = !backupPlayerSelect.value; };
     document.body.classList.add('modal-open');
     document.getElementById('swapModalOverlay').classList.add('show');
+};
+
+export const showScheduleSignupsModal = async (schedule) => {
+    const modalOverlay = document.getElementById('scheduleSignupsModalOverlay');
+    const container = document.getElementById('scheduleSignupsContainer');
+    container.innerHTML = '';
+    showLoading(true);
+    try {
+        const signups = await api.getScheduleSignups(schedule.id);
+        if (signups.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No players have signed up for this schedule yet.</p>';
+        } else {
+            const table = document.createElement('table');
+            table.className = 'min-w-full bg-white';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border-b">Player Name</th>
+                        <th class="py-2 px-4 border-b">Availability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${signups.map(signup => `
+                        <tr>
+                            <td class="py-2 px-4 border-b">${signup.playerName}</td>
+                            <td class="py-2 px-4 border-b">${signup.availabilityType}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            container.appendChild(table);
+        }
+    } catch (error) {
+        console.error('Error loading signups:', error);
+        showMessageBox('Error', 'Failed to load signups.');
+    } finally {
+        showLoading(false);
+    }
+
+    document.body.classList.add('modal-open');
+    modalOverlay.classList.add('show');
 };

@@ -19,6 +19,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.ramjin.mytennisteam.adapter.ScheduleSignUpAdapter
 import com.ramjin.mytennisteam.databinding.FragmentSchedulesBinding
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -82,6 +83,9 @@ class SchedulesFragment : Fragment() {
             onStatsClicked = { schedule ->
                 showScheduleStatsDialog(schedule)
             },
+            onViewSignupsClicked = { schedule ->
+                showScheduleSignupsDialog(schedule)
+            },
             currentUserId = currentUserId,
             isSuperAdmin = isSuperAdmin,
             groupAdmins = groupAdmins
@@ -99,6 +103,7 @@ class SchedulesFragment : Fragment() {
 
                 val currentUserId = SessionManager.getUserId(requireContext())
                 val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+                scheduleAdapter.updateGroupAdmins(data.selectedGroup.admins)
                 val isGroupAdmin = data.selectedGroup.admins.contains(currentUserId)
 
                 val canManageSchedules = isSuperAdmin || isGroupAdmin
@@ -343,5 +348,57 @@ class SchedulesFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun showScheduleSignupsDialog(schedule: Schedule) {
+        val rawToken = SessionManager.getAuthToken(requireContext())
+        if (rawToken == null) {
+            Toast.makeText(context, "Authentication error", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val token = "Bearer $rawToken"
+
+        homeViewModel.getScheduleSignups(token, schedule.id, loadingViewModel)
+
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_schedule_signups, null)
+        val dialogTitle = dialogView.findViewById<TextView>(R.id.signups_title)
+        val signupsRecyclerView = dialogView.findViewById<RecyclerView>(R.id.signups_recycler_view)
+        val completeButton = dialogView.findViewById<Button>(R.id.complete_planning_button)
+        val deleteButton = dialogView.findViewById<Button>(R.id.delete_schedule_button)
+        val closeButton = dialogView.findViewById<Button>(R.id.close_button)
+
+        dialogTitle.text = "Sign-ups for ${schedule.name}"
+
+        val signUpAdapter = ScheduleSignUpAdapter()
+        signupsRecyclerView.adapter = signUpAdapter
+        signupsRecyclerView.layoutManager = LinearLayoutManager(context)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        homeViewModel.scheduleSignups.observe(viewLifecycleOwner) { signups ->
+            signUpAdapter.submitList(signups)
+        }
+
+        completeButton.setOnClickListener {
+            homeViewModel.completeSchedulePlanning(token, schedule.id, loadingViewModel)
+            dialog.dismiss()
+        }
+
+        deleteButton.setOnClickListener {
+            dialog.dismiss() // Dismiss the sign-up dialog first
+            showDeleteScheduleConfirmation(schedule)
+        }
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.setOnDismissListener {
+            homeViewModel.scheduleSignups.removeObservers(viewLifecycleOwner)
+        }
+
+        dialog.show()
     }
 }

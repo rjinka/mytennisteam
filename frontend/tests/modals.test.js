@@ -12,6 +12,7 @@ vi.mock('../app.js', () => ({
         currentGroupId: null,
     },
     setCurrentGroup: vi.fn(),
+    isCurrentUserAdminOfSelectedGroup: vi.fn(),
 }));
 
 describe('modals.js', () => {

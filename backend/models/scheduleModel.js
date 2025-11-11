@@ -34,7 +34,11 @@ const scheduleSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Player'
     }],
-    isCompleted: { type: Boolean, default: false },
+    status: {
+        type: String,
+        enum: ['PLANNING', 'ACTIVE', 'COMPLETED'],
+        default: 'PLANNING'
+    },
 }, {
     timestamps: true,
     // Enable virtuals to be included in toJSON and toObject outputs

@@ -68,6 +68,48 @@ describe('api.js', () => {
         });
     });
 
+    describe('getScheduleSignups', () => {
+        it('should make a GET request to fetch schedule signups', async () => {
+            const scheduleId = 'schedule1';
+            const responseData = [{ playerId: 'player1', playerName: 'Player 1', availabilityType: 'Rotation' }];
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(responseData),
+            });
+
+            const result = await api.getScheduleSignups(scheduleId);
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                `${BASE_URL}/schedules/${scheduleId}/signups`,
+                expect.objectContaining({ headers: expect.any(Object) })
+            );
+            expect(result).toEqual(responseData);
+        });
+    });
+
+    describe('completeSchedulePlanning', () => {
+        it('should make a POST request to complete schedule planning', async () => {
+            const scheduleId = 'schedule1';
+            const responseData = { success: true };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: () => Promise.resolve(responseData),
+            });
+
+            const result = await api.completeSchedulePlanning(scheduleId);
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                `${BASE_URL}/schedules/${scheduleId}/complete-planning`,
+                expect.objectContaining({
+                    method: 'POST',
+                })
+            );
+            expect(result).toEqual(responseData);
+        });
+    });
+
     describe('createSchedule', () => {
         it('should make a POST request to create a schedule', async () => {
             const scheduleData = { name: 'New Schedule' };

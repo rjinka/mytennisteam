@@ -49,6 +49,9 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _acceptInvitationStatus = MutableLiveData<Event<String>>()
     val acceptInvitationStatus: LiveData<Event<String>> = _acceptInvitationStatus
 
+    private val _scheduleSignups = MutableLiveData<List<ScheduleSignup>>()
+    val scheduleSignups: LiveData<List<ScheduleSignup>> = _scheduleSignups
+
     companion object {
     private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
@@ -476,6 +479,40 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 _acceptInvitationStatus.value = Event(errorMessage)
                 if (e is HttpException && e.code() == 401) {
                     _forceLogout.value = Event(Unit)
+                }
+                loadingViewModel.hideLoading()
+            }
+        }
+    }
+
+    fun getScheduleSignups(token: String, scheduleId: String, loadingViewModel: LoadingViewModel) {
+        viewModelScope.launch {
+            loadingViewModel.showLoading()
+            try {
+                _scheduleSignups.value = RetrofitClient.instance.getScheduleSignups(token, scheduleId)
+            } catch (e: Exception) {
+                if (e is HttpException && e.code() == 401) {
+                    _forceLogout.value = Event(Unit)
+                } else {
+                    Log.e("HomeViewModel", "Failed to fetch schedule signups", e)
+                }
+            } finally {
+                loadingViewModel.hideLoading()
+            }
+        }
+    }
+
+    fun completeSchedulePlanning(token: String, scheduleId: String, loadingViewModel: LoadingViewModel) {
+        viewModelScope.launch {
+            loadingViewModel.showLoading()
+            try {
+                RetrofitClient.instance.completeSchedulePlanning(token, scheduleId)
+                _homeData.value?.selectedGroup?.let { loadDataForGroup(token, it, loadingViewModel) }
+            } catch (e: Exception) {
+                if (e is HttpException && e.code() == 401) {
+                    _forceLogout.value = Event(Unit)
+                } else {
+                    Log.e("HomeViewModel", "Failed to complete schedule planning", e)
                 }
                 loadingViewModel.hideLoading()
             }

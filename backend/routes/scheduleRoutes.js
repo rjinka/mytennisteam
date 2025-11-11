@@ -96,7 +96,7 @@ router.put('/:id', protect, async (req, res) => {
             return res.status(403).json({ msg: 'User not authorized to edit this schedule' });
         }
 
-        // --- Handle isCompleted logic ---
+        // --- Handle schedule completed  logic ---
         const oldRecurrenceCount = schedule.recurrenceCount || 0;
         const newRecurrenceCount = updatedScheduleData.recurrenceCount;
 
@@ -105,11 +105,12 @@ router.put('/:id', protect, async (req, res) => {
         const isRecurringFinished = updatedScheduleData.recurring && updatedScheduleData.frequency > 0 && updatedScheduleData.week > updatedScheduleData.recurrenceCount;
 
         if (isOneTimeFinished || isRecurringFinished) {
-            updatedScheduleData.isCompleted = true;
+            updatedScheduleData.status = 'COMPLETED';
+            
         }
         // If user extends a completed schedule, re-activate it
-        else if (schedule.isCompleted && newRecurrenceCount > oldRecurrenceCount) {
-            updatedScheduleData.isCompleted = false;
+        else if (schedule.status === 'COMPLETED'&& newRecurrenceCount > oldRecurrenceCount) {
+            updatedScheduleData.status = 'ACTIVE';
         }
 
         // Merge the existing schedule with the updated data
@@ -148,6 +149,137 @@ router.delete('/:id', protect, async (req, res) => {
         res.json({ msg: 'Schedule removed' });
     } catch (error) {
         console.error('Error deleting schedule:', error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
+// @route   GET /api/schedules/:scheduleId/signups
+// @desc    Get all players signed up for a schedule
+// @access  Private (Admin only)
+router.get('/:scheduleId/signups', protect, async (req, res) => {
+    try {
+        const schedule = await Schedule.findById(req.params.scheduleId);
+        if (!schedule) {
+            return res.status(404).json({ msg: 'Schedule not found' });
+        }
+
+        // Authorization check: Only group admins can view signups
+        const group = await Group.findById(schedule.groupId);
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+            return res.status(403).json({ msg: 'User not authorized to view signups for this schedule' });
+        }
+
+        // Find all players who have this schedule in their availability
+        const players = await Player.find({ 'availability.scheduleId': schedule.id }).populate('userId', 'name');
+
+        const signups = players.map(player => {
+            const availability = player.availability.find(a => a.scheduleId.equals(schedule.id));
+            return {
+                playerId: player.id,
+                playerName: player.userId.name,
+                availabilityType: availability.type,
+            };
+        });
+
+        res.json(signups);
+    } catch (error) {
+        console.error('Error fetching schedule signups:', error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
+// @route   POST /api/schedules/:scheduleId/complete-planning
+// @desc    Completes the planning phase for a schedule and generates the initial lineup
+// @access  Private (Admin only)
+router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
+    try {
+        const schedule = await Schedule.findById(req.params.scheduleId);
+        if (!schedule) {
+            return res.status(404).json({ msg: 'Schedule not found' });
+        }
+
+        if (schedule.status !== 'PLANNING') {
+            return res.status(400).json({ msg: 'Schedule is not in planning phase' });
+        }
+
+        // Authorization check
+        const group = await Group.findById(schedule.groupId);
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+            return res.status(403).json({ msg: 'User not authorized to complete planning for this schedule' });
+        }
+
+        // --- Rotation Generation Logic (similar to /generate) ---
+        const playersInGroup = await Player.find({ groupId: schedule.groupId });
+        const availablePlayers = playersInGroup.filter(p =>
+            p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup')
+        );
+
+        if (availablePlayers.length === 0) {
+            // Not enough players, but still move to ACTIVE
+            schedule.playingPlayersIds = [];
+            schedule.benchPlayersIds = [];
+        } else if (availablePlayers.length <= schedule.maxPlayersCount) {
+            schedule.playingPlayersIds = availablePlayers.map(p => p.id);
+            schedule.benchPlayersIds = [];
+        } else {
+             const permanentPlayers = availablePlayers.filter(p =>
+                p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent'
+            );
+
+            let playingLineup = [...permanentPlayers];
+            const rotationPlayers = availablePlayers.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
+
+            // Simple random selection for the first time.
+            rotationPlayers.sort(() => Math.random() - 0.5);
+
+            const needed = schedule.maxPlayersCount - playingLineup.length;
+            if (needed > 0) {
+                playingLineup.push(...rotationPlayers.slice(0, needed));
+            }
+
+            schedule.playingPlayersIds = playingLineup.map(p => p._id);
+            schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
+        }
+
+        // --- Finalize Stats and Update Schedule State for the first time ---
+        const today = new Date();
+        const todayDate = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()} ${today.getFullYear()}`;
+        const currentWeek = 1;
+
+        const allPlayersForStatUpdate = [...schedule.playingPlayersIds, ...schedule.benchPlayersIds];
+
+        for (const playerId of allPlayersForStatUpdate) {
+            const status = schedule.playingPlayersIds.some(pId => pId.equals(playerId)) ? 'played' : 'benched';
+            await PlayerStat.findOneAndUpdate(
+                { playerId: playerId, scheduleId: schedule.id },
+                {
+                    $push: { stats: { week: currentWeek, status: status, date: todayDate } }
+                },
+                { upsert: true, new: true }
+            );
+        }
+
+        // Update schedule state
+        schedule.status = 'ACTIVE';
+        schedule.lastGeneratedWeek = currentWeek;
+        schedule.isRotationGenerated = true;
+        schedule.lastRotationGeneratedDate = today;
+
+        if (schedule.recurring) {
+            schedule.week += 1;
+            if (schedule.frequency > 0 && schedule.week > schedule.recurrenceCount) {
+                schedule.status = 'COMPLETED';
+            }
+        } else {
+            schedule.status = 'COMPLETED';// One-time schedules are completed after one generation
+        }
+
+
+        const updatedSchedule = await schedule.save();
+        res.status(200).json(updatedSchedule);
+
+    } catch (error) {
+        console.error('Error completing planning:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
@@ -318,10 +450,10 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
         if (schedule.recurring) {
             schedule.week += 1;
             if (schedule.frequency > 0 && schedule.week > schedule.recurrenceCount) {
-                schedule.isCompleted = true;
+                schedule.status = 'COMPLETED';
             }
         } else {
-            schedule.isCompleted = true; // One-time schedules are completed after one generation
+            schedule.status = 'COMPLETED'; // One-time schedules are completed after one generation
         }
 
         const updatedSchedule = await schedule.save();
@@ -356,7 +488,14 @@ router.get('/:id/rotation-button-state', protect, async (req, res) => {
             disabled: false,
         };
 
-        if (schedule.isCompleted) {
+        if (schedule.status === 'PLANNING') {
+            buttonState.text = 'Finish Planning';
+            buttonState.disabled = true;
+            buttonState.visible = false;
+            return res.json(buttonState);
+        }
+
+        if (schedule.status === 'COMPLETED') {
             buttonState.text = 'Schedule Finished';
             buttonState.disabled = true;
             return res.json(buttonState);

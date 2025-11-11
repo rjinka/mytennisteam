@@ -44,7 +44,14 @@ data class Schedule(
     @SerializedName("courts") val courts: List<ScheduleCourtInfo>,
     @SerializedName("week") val week: Int,
     @SerializedName("playingPlayersIds") val playingPlayersIds: List<String>,
-    @SerializedName("benchPlayersIds") val benchPlayersIds: List<String>
+    @SerializedName("benchPlayersIds") val benchPlayersIds: List<String>,
+    @SerializedName("status") val status: String
+)
+
+data class ScheduleSignup(
+    @SerializedName("playerId") val playerId: String,
+    @SerializedName("playerName") val playerName: String,
+    @SerializedName("availabilityType") val availabilityType: String
 )
 
 data class PlayerAvailability(

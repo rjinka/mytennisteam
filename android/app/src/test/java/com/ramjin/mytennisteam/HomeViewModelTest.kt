@@ -249,7 +249,8 @@ class HomeViewModelTest {
                 emptyList(),
                 1,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                status = "PLANNING"
             )
         )
         val players = listOf(
@@ -390,7 +391,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         val request = CreateScheduleRequest(
             "New Schedule",
@@ -435,7 +437,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         val homeData = HomeData(group, listOf(schedule), emptyList(), emptyList())
         val updatedSchedule = schedule.copy(name = "Updated Schedule")
@@ -482,7 +485,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         val homeData = HomeData(group, listOf(schedule), emptyList(), emptyList())
 
@@ -581,7 +585,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         (viewModel.homeData as MutableLiveData).value = homeData
         whenever(apiService.generateRotation(any(), any())).thenReturn(schedule)
@@ -620,7 +625,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         (viewModel.homeData as MutableLiveData).value = homeData
         whenever(apiService.swapPlayers(any(), any(), any())).thenReturn(schedule)
@@ -632,5 +638,36 @@ class HomeViewModelTest {
 
         verify(apiService).swapPlayers(any(), any(), any())
         verify(apiService).getSchedules(any(), any())
+    }
+
+    @Test
+    fun `getScheduleSignups success`() = runTest {
+        val loadingViewModel = mock<LoadingViewModel>()
+        val signups = listOf(ScheduleSignup("p1", "Player 1", "Rotation"))
+        whenever(apiService.getScheduleSignups(any(), any())).thenReturn(signups)
+
+        viewModel.getScheduleSignups("token", "s1", loadingViewModel)
+
+        verify(apiService).getScheduleSignups(any(), any())
+        assertEquals(signups, viewModel.scheduleSignups.value)
+    }
+
+    @Test
+    fun `completeSchedulePlanning success`() = runTest {
+        val loadingViewModel = mock<LoadingViewModel>()
+        val group = Group("1", "Group 1", emptyList())
+        val homeData = HomeData(group, emptyList(), emptyList(), emptyList())
+        val schedule = Schedule("s1", "Schedule 1", "1", "Mon", "10", 1.0, false, 0, 0, emptyList(), 1, emptyList(), emptyList(), "ACTIVE")
+        (viewModel.homeData as MutableLiveData).value = homeData
+        whenever(apiService.completeSchedulePlanning(any(), any())).thenReturn(schedule)
+        whenever(apiService.getSchedules(any(), any())).thenReturn(listOf(schedule))
+        whenever(apiService.getPlayers(any(), any())).thenReturn(emptyList())
+        whenever(apiService.getCourts(any(), any())).thenReturn(emptyList())
+
+        viewModel.completeSchedulePlanning("token", "s1", loadingViewModel)
+
+        verify(apiService).completeSchedulePlanning(any(), any())
+        verify(apiService).getSchedules(any(), any())
+        assertEquals("ACTIVE", viewModel.homeData.value?.schedules?.first()?.status)
     }
 }
