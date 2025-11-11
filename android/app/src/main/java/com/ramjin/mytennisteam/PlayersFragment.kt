@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ramjin.mytennisteam.databinding.FragmentPlayersBinding
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.ramjin.mytennisteam.R
 
 class PlayersFragment : Fragment() {
 
@@ -118,7 +117,8 @@ class PlayersFragment : Fragment() {
                         scheduleName = schedule.name, // The backend only sends name
                         totalPlayed = totalPlayed,
                         totalBenched = totalBenched,
-                        history = playerStat.stats
+                        history = playerStat.stats,
+                        scheduleFrequency = schedule.frequency
                     )
                 }
                 statsAdapter.submitList(formattedStats)

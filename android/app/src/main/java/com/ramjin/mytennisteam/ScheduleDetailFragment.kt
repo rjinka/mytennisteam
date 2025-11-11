@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -15,7 +16,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.ramjin.mytennisteam.R
+import com.google.android.material.textfield.TextInputLayout
 import com.ramjin.mytennisteam.databinding.FragmentScheduleDetailBinding
 
 class ScheduleDetailFragment : Fragment() {
@@ -141,21 +142,44 @@ class ScheduleDetailFragment : Fragment() {
         val title = dialogView.findViewById<TextView>(R.id.swap_title_text_view)
         val subtitle = dialogView.findViewById<TextView>(R.id.swap_subtitle_text_view)
         val spinner = dialogView.findViewById<AutoCompleteTextView>(R.id.player_to_swap_spinner)
+        val swapWithBackupCheckbox = dialogView.findViewById<CheckBox>(R.id.swap_with_backup_checkbox)
+        val backupSpinnerLayout = dialogView.findViewById<TextInputLayout>(R.id.backup_player_to_swap_layout)
+        val backupSpinner = dialogView.findViewById<AutoCompleteTextView>(R.id.backup_player_to_swap_spinner)
 
         title.text = "Swap ${playerToSwapOut.user.name}"
-        subtitle.text = "Swap ${playerToSwapOut.user.name} with:"
+        subtitle.text = if (isBench) "Move to Playing" else "Move to Bench"
 
-        val swapCandidates = if (isBench) {
+        // Regular swap candidates (playing <-> bench)
+        val regularSwapCandidates = if (isBench) {
             allPlayers.filter { it.id in schedule.playingPlayersIds }
         } else {
             allPlayers.filter { it.id in schedule.benchPlayersIds }
         }
+        val regularAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, regularSwapCandidates.map { it.user.name })
+        spinner.setAdapter(regularAdapter)
 
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, swapCandidates.map { it.user.name })
-        spinner.setAdapter(adapter)
+        // Backup player candidates
+        val backupPlayers = allPlayers.filter { player ->
+            // A player cannot be swapped with themselves.
+            player.id != playerToSwapOut.id && player.availability.any { it.scheduleId == schedule.id && it.type == "Backup" }
+        }
+
+        val backupAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, backupPlayers.map { it.user.name })
+        backupSpinner.setAdapter(backupAdapter)
+
         var selectedPlayer: Player? = null
         spinner.setOnItemClickListener { _, _, position, _ ->
-            selectedPlayer = swapCandidates[position]
+            selectedPlayer = regularSwapCandidates.getOrNull(position)
+        }
+        backupSpinner.setOnItemClickListener { _, _, position, _ ->
+            selectedPlayer = backupPlayers.getOrNull(position)
+        }
+
+        swapWithBackupCheckbox.setOnCheckedChangeListener { _, isChecked ->
+            backupSpinnerLayout.visibility = if (isChecked) View.VISIBLE else View.GONE
+            dialogView.findViewById<TextInputLayout>(R.id.player_to_swap_layout).visibility = if (isChecked) View.GONE else View.VISIBLE
+            spinner.text.clear()
+            backupSpinner.text.clear()
         }
 
         AlertDialog.Builder(requireContext())
@@ -163,13 +187,22 @@ class ScheduleDetailFragment : Fragment() {
             .setView(dialogView)
             .setPositiveButton("Confirm Swap") { _, _ ->
                 val playerToSwapIn = selectedPlayer
-                if (playerToSwapIn != null && spinner.text.toString() == playerToSwapIn.user.name) {
-                    val rawToken = SessionManager.getAuthToken(requireContext())
-                    if (rawToken != null) {
-                        homeViewModel.swapPlayer("Bearer $rawToken", schedule.id, playerToSwapIn.id, playerToSwapOut.id, loadingViewModel)
-                    }
+
+                if (playerToSwapIn == null) {
+                    Toast.makeText(context, "Please select a valid player to swap with.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val rawToken = SessionManager.getAuthToken(requireContext())
+                if (rawToken != null) {
+                    // The player being moved out of the rotation is always `playerOutId`.
+                    // The player being moved into the rotation is always `playerInId`.
+                    // If a player is on the bench, they are "out" and we are swapping them "in".
+                    val finalPlayerInId = if (isBench) playerToSwapOut.id else playerToSwapIn.id
+                    val finalPlayerOutId = if (isBench) playerToSwapIn.id else playerToSwapOut.id
+                    homeViewModel.swapPlayer("Bearer $rawToken", schedule.id, finalPlayerInId, finalPlayerOutId, loadingViewModel)
                 } else {
-                    Toast.makeText(context, "Please select a player from the list to swap with.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Authentication error.", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

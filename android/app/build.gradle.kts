@@ -103,4 +103,7 @@ dependencies {
 
     // Swipe to Refresh
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0-beta01")
+
+    // Flexbox Layout for wrapping views
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
 }
