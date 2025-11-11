@@ -366,13 +366,17 @@
 
         <!-- Schedule Signups Modal -->
         <div id="scheduleSignupsModalOverlay" class="modal-overlay">
-            <div class="modal-content w-full max-w-lg">
+            <div class="modal-content w-full max-w-lg relative">
+                <button id="closeScheduleSignupsBtn" class="absolute top-2 right-2 btn-icon-only">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Schedule Sign-ups</h3>
                 <div id="scheduleSignupsContainer" class="overflow-y-auto max-h-96">
                     <!-- Sign-ups will be rendered here -->
                 </div>
                 <div class="flex justify-end gap-3 mt-4">
-                    <button id="cancelScheduleSignupsBtn" class="btn btn-secondary">Cancel</button>
                     <button id="completePlanningBtn" class="btn btn-primary">Complete Planning</button>
                     <button id="deleteScheduleFromSignupsBtn" class="btn btn-danger">Delete Schedule</button>
                 </div>

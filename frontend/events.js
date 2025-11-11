@@ -248,7 +248,7 @@ export function setupGlobalEventListeners() {
     };
 
     // Schedule Signups Modal
-    document.getElementById('cancelScheduleSignupsBtn').onclick = () => {
+    document.getElementById('closeScheduleSignupsBtn').onclick = () => {
         document.body.classList.remove('modal-open');
         document.getElementById('scheduleSignupsModalOverlay').classList.remove('show');
     };
