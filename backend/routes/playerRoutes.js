@@ -75,14 +75,17 @@ router.put('/:id', protect, async (req, res) => {
             if (!schedule) continue;
 
             // Remove player from both lists to prevent duplicates before re-adding
-            schedule.playingPlayersIds.pull(player._id);
-            schedule.benchPlayersIds.pull(player._id);
+            // Do not add player to lineup if schedule is in planning
+            if (schedule.status !== 'PLANNING') {
+                schedule.playingPlayersIds.pull(player._id);
+                schedule.benchPlayersIds.pull(player._id);
 
-            if (newAvail.type === 'Permanent' || newAvail.type === 'Rotation') {
-                if (schedule.playingPlayersIds.length < schedule.maxPlayersCount) {
-                    schedule.playingPlayersIds.push(player._id);
-                } else {
-                    schedule.benchPlayersIds.push(player._id);
+                if (newAvail.type === 'Permanent' || newAvail.type === 'Rotation') {
+                    if (schedule.playingPlayersIds.length < schedule.maxPlayersCount) {
+                        schedule.playingPlayersIds.push(player._id);
+                    } else {
+                        schedule.benchPlayersIds.push(player._id);
+                    }
                 }
             }
             // If type is 'Backup', they are not added to playing/bench initially

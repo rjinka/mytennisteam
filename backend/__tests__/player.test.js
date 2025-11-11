@@ -61,6 +61,7 @@ describe('Player Routes', () => {
 
   describe('PUT /api/players/:id', () => {
     it('should update a player\'s availability and schedule', async () => {
+      await schedule.updateOne({ status: 'ACTIVE' });
       const res = await request(app)
         .put(`/api/players/${player._id}`)
         .send({
@@ -75,7 +76,7 @@ describe('Player Routes', () => {
 
     it('should move a player to the bench if the schedule is full', async () => {
         const player2 = await Player.create({ userId: new mongoose.Types.ObjectId(), groupId: group._id });
-        await schedule.updateOne({$set: {playingPlayersIds: [player2._id] }});
+        await schedule.updateOne({$set: {playingPlayersIds: [player2._id], status: 'ACTIVE' }});
 
         const res = await request(app)
         .put(`/api/players/${player._id}`)
@@ -97,6 +98,19 @@ describe('Player Routes', () => {
                 availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
             });
         expect(res.statusCode).toBe(400);
+    });
+
+    it('should not add player to lineup for a PLANNING schedule', async () => {
+        await schedule.updateOne({ status: 'PLANNING' });
+        const res = await request(app)
+            .put(`/api/players/${player._id}`)
+            .send({
+                availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
+            });
+        expect(res.statusCode).toBe(200);
+        const updatedSchedule = await Schedule.findById(schedule._id);
+        expect(updatedSchedule.playingPlayersIds).not.toContainEqual(player._id);
+        expect(updatedSchedule.benchPlayersIds).not.toContainEqual(player._id);
     });
   });
 
