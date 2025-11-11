@@ -213,7 +213,7 @@ export function setupGlobalEventListeners() {
 
         showLoading(true);
         try {
-            if (app.selection.selectedSchedule.status === 'COMPLETED') {
+            if (app.selection.selectedSchedule.isCompleted) {
                 showMessageBox("Schedule Finished", "This schedule has completed its cycle and no more rotations can be generated.");
                 return;
             }

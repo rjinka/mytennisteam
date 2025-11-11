@@ -137,12 +137,14 @@ export const showScheduleDetails = async (schedule) => {
     playingPlayersContainer.innerHTML = '';
     benchPlayersContainer.innerHTML = '';
     const generateBtn = document.getElementById('generateRotationBtn');
-    generateBtn.style.display = 'none'; // Hide button by default
+    if (generateBtn) {
+        generateBtn.style.display = 'none'; // Hide button by default
+    }
 
     if (schedule.status === 'PLANNING') {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Player lineup will be generated after planning is complete.</p>';
         benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">View sign-ups to manage this schedule.</p>';
-    } else if (schedule.status === 'COMPLETED') {
+    } else if (schedule.isCompleted) {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">This schedule has finished.</p>';
         benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No players on the bench.</p>';
     } else {
@@ -184,14 +186,16 @@ export const showScheduleDetails = async (schedule) => {
         recurrenceInfoContainer.style.display = 'none';
     }
 
-    try {
-        const buttonState = await getRotationButtonState(schedule.id);
-        generateBtn.style.display = buttonState.visible ? 'block' : 'none';
-        generateBtn.textContent = buttonState.text;
-        generateBtn.disabled = buttonState.disabled;
-    } catch (error) {
-        console.error("Could not get rotation button state:", error);
-        generateBtn.style.display = 'none';
+    if (generateBtn) {
+        try {
+            const buttonState = await getRotationButtonState(schedule.id);
+            generateBtn.style.display = buttonState.visible ? 'block' : 'none';
+            generateBtn.textContent = buttonState.text;
+            generateBtn.disabled = buttonState.disabled;
+        } catch (error) {
+            console.error("Could not get rotation button state:", error);
+            generateBtn.style.display = 'none';
+        }
     }
 
     addSwapButtonListenersForSchedule(schedule);
