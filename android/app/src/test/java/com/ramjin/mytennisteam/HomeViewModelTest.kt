@@ -249,7 +249,8 @@ class HomeViewModelTest {
                 emptyList(),
                 1,
                 emptyList(),
-                emptyList()
+                emptyList(),
+                status = "PLANNING"
             )
         )
         val players = listOf(
@@ -390,7 +391,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         val request = CreateScheduleRequest(
             "New Schedule",
@@ -435,7 +437,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         val homeData = HomeData(group, listOf(schedule), emptyList(), emptyList())
         val updatedSchedule = schedule.copy(name = "Updated Schedule")
@@ -482,7 +485,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         val homeData = HomeData(group, listOf(schedule), emptyList(), emptyList())
 
@@ -581,7 +585,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         (viewModel.homeData as MutableLiveData).value = homeData
         whenever(apiService.generateRotation(any(), any())).thenReturn(schedule)
@@ -620,7 +625,8 @@ class HomeViewModelTest {
             emptyList(),
             1,
             emptyList(),
-            emptyList()
+            emptyList(),
+            status = "PLANNING"
         )
         (viewModel.homeData as MutableLiveData).value = homeData
         whenever(apiService.swapPlayers(any(), any(), any())).thenReturn(schedule)

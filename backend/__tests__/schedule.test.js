@@ -178,6 +178,7 @@ describe('Schedule Routes', () => {
         isRotationGenerated: true,
         lastRotationGeneratedDate: lastDate,
         frequency: '2', // Weekly
+        status: 'ACTIVE',
       });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
