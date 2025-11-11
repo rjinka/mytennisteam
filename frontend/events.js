@@ -1,4 +1,4 @@
-import { showEditCourtModal, showEditPlayerModal, showPlayerStatsModal, showSwapModalForSchedule, showEditScheduleModal, showScheduleStatsModal } from './modals.js';
+import { showEditCourtModal, showEditPlayerModal, showPlayerStatsModal, showSwapModalForSchedule, showEditScheduleModal, showScheduleStatsModal, showScheduleSignupsModal } from './modals.js';
 import * as app from './app.js';
 import * as api from './api.js';
 import { showMessageBox, renderGroupsList, showLoading, renderCourtsList, showScheduleDetails } from './ui.js';
@@ -246,6 +246,46 @@ export function setupGlobalEventListeners() {
     document.getElementById('editScheduleFrequencySelect').onchange = (e) => {
         document.getElementById('editScheduleRecurrenceCountContainer').style.display = e.target.value > 0 ? 'flex' : 'none';
     };
+
+    // Schedule Signups Modal
+    document.getElementById('cancelScheduleSignupsBtn').onclick = () => {
+        document.body.classList.remove('modal-open');
+        document.getElementById('scheduleSignupsModalOverlay').classList.remove('show');
+    };
+    document.getElementById('completePlanningBtn').onclick = async () => {
+        if (!app.selection.selectedSchedule) return;
+        showLoading(true);
+        try {
+            await api.completeSchedulePlanning(app.selection.selectedSchedule.id);
+            showMessageBox('Success', 'Planning completed successfully.');
+            document.body.classList.remove('modal-open');
+            document.getElementById('scheduleSignupsModalOverlay').classList.remove('show');
+            await app.reloadData();
+        } catch (error) {
+            console.error('Error completing planning:', error);
+            showMessageBox('Error', 'Failed to complete planning.');
+        } finally {
+            showLoading(false);
+        }
+    };
+    document.getElementById('deleteScheduleFromSignupsBtn').onclick = async () => {
+        if (!app.selection.selectedSchedule) return;
+        if (confirm('Are you sure you want to delete this schedule?')) {
+            showLoading(true);
+            try {
+                await api.deleteSchedule(app.selection.selectedSchedule.id);
+                showMessageBox('Success', 'Schedule deleted successfully.');
+                document.body.classList.remove('modal-open');
+                document.getElementById('scheduleSignupsModalOverlay').classList.remove('show');
+                await app.reloadData();
+            } catch (error) {
+                console.error('Error deleting schedule:', error);
+                showMessageBox('Error', 'Failed to delete schedule.');
+            } finally {
+                showLoading(false);
+            }
+        }
+    };
 }
 
 export const addScheduleActionListeners = () => {
@@ -266,7 +306,7 @@ export const addScheduleActionListeners = () => {
             } else if (action === 'stats') {
                 showScheduleStatsModal(schedule);
             } else if (action === 'view-signups') {
-                window.location.href = `/signup.html?scheduleId=${schedule.id}`;
+                showScheduleSignupsModal(schedule);
             } else if (action === 'delete') {
                 showLoading(true);
                 try {

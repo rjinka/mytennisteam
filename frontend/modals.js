@@ -439,3 +439,44 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
     document.body.classList.add('modal-open');
     document.getElementById('swapModalOverlay').classList.add('show');
 };
+
+export const showScheduleSignupsModal = async (schedule) => {
+    const modalOverlay = document.getElementById('scheduleSignupsModalOverlay');
+    const container = document.getElementById('scheduleSignupsContainer');
+    container.innerHTML = '';
+    showLoading(true);
+    try {
+        const signups = await api.getScheduleSignups(schedule.id);
+        if (signups.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">No players have signed up for this schedule yet.</p>';
+        } else {
+            const table = document.createElement('table');
+            table.className = 'min-w-full bg-white';
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border-b">Player Name</th>
+                        <th class="py-2 px-4 border-b">Availability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${signups.map(signup => `
+                        <tr>
+                            <td class="py-2 px-4 border-b">${signup.playerName}</td>
+                            <td class="py-2 px-4 border-b">${signup.availabilityType}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            container.appendChild(table);
+        }
+    } catch (error) {
+        console.error('Error loading signups:', error);
+        showMessageBox('Error', 'Failed to load signups.');
+    } finally {
+        showLoading(false);
+    }
+
+    document.body.classList.add('modal-open');
+    modalOverlay.classList.add('show');
+};

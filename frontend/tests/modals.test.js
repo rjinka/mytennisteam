@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { showGroupSelectionModal, populateScheduleCourtsDropdown, showEditScheduleModal } from '../modals.js';
+import { showGroupSelectionModal, populateScheduleCourtsDropdown, showEditScheduleModal, showScheduleSignupsModal } from '../modals.js';
 import * as app from '../app.js';
+import * as api from '../api.js';
 
 // Mock the app module
 vi.mock('../app.js', () => ({
@@ -12,6 +13,10 @@ vi.mock('../app.js', () => ({
         currentGroupId: null,
     },
     setCurrentGroup: vi.fn(),
+}));
+
+vi.mock('../api.js', () => ({
+    getScheduleSignups: vi.fn(),
 }));
 
 import { showEditPlayerModal } from '../modals.js';
@@ -40,6 +45,10 @@ describe('modals.js', () => {
                 <div id="modifyAvailableSchedulesList"></div>
                 <button id="savePlayerChangesBtn"></button>
             </div>
+            <div id="scheduleSignupsModalOverlay">
+                <div id="scheduleSignupsContainer"></div>
+            </div>
+            <div id="loadingOverlay"></div>
         `;
     });
 
@@ -99,6 +108,22 @@ describe('modals.js', () => {
 
             expect(planningCheckbox.disabled).toBe(false);
             expect(activeCheckbox.disabled).toBe(true);
+        });
+    });
+
+    describe('showScheduleSignupsModal', () => {
+        it('should show the signups modal and populate it with data', async () => {
+            const schedule = { id: 'schedule1' };
+            const signups = [{ playerName: 'Player 1', availabilityType: 'Rotation' }];
+            api.getScheduleSignups.mockResolvedValue(signups);
+
+            await showScheduleSignupsModal(schedule);
+
+            const modal = document.getElementById('scheduleSignupsModalOverlay');
+            expect(modal.classList.contains('show')).toBe(true);
+            const container = document.getElementById('scheduleSignupsContainer');
+            expect(container.textContent).toContain('Player 1');
+            expect(container.textContent).toContain('Rotation');
         });
     });
 });
