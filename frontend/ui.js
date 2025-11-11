@@ -136,10 +136,13 @@ export const showScheduleDetails = async (schedule) => {
     const benchPlayersContainer = document.getElementById('benchPlayersContainer');
     playingPlayersContainer.innerHTML = '';
     benchPlayersContainer.innerHTML = '';
-    document.getElementById('generateRotationBtn').style.display = 'none'; // Hide button by default
+    const generateBtn = document.getElementById('generateRotationBtn');
+    generateBtn.style.display = 'none'; // Hide button by default
 
-    // Use the new isCompleted flag from the database
-    if (schedule.isCompleted) {
+    if (schedule.status === 'PLANNING') {
+        playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Player lineup will be generated after planning is complete.</p>';
+        benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">View sign-ups to manage this schedule.</p>';
+    } else if (schedule.isCompleted) {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">This schedule has finished.</p>';
         benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No players on the bench.</p>';
     } else {
@@ -148,6 +151,16 @@ export const showScheduleDetails = async (schedule) => {
 
         renderPlayerList(playingPlayersContainer, playingPlayerIds, 'playing', 'moveToBench', 'No players assigned to play.', schedule);
         renderPlayerList(benchPlayersContainer, benchPlayerIds, 'sitting-out', 'moveToCourt', 'No players on the bench.', schedule);
+
+        try {
+            const buttonState = await getRotationButtonState(schedule.id);
+            generateBtn.style.display = buttonState.visible ? 'block' : 'none';
+            generateBtn.textContent = buttonState.text;
+            generateBtn.disabled = buttonState.disabled;
+        } catch (error) {
+            console.error("Could not get rotation button state:", error);
+            generateBtn.style.display = 'none';
+        }
     }
 
     document.getElementById('currentDayDisplay').textContent = `${weekdayNames[schedule.day]}'s at ${schedule.time}`;
