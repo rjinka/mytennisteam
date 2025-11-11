@@ -1,4 +1,4 @@
-import { setCurrentGroup, groups, courts, schedules, players, ui, playerGroups } from './app.js';
+import { setCurrentGroup, groups, courts, schedules, players, ui, playerGroups, isCurrentUserAdminOfSelectedGroup } from './app.js';
 import { getDerivedStats } from './rotation.js';
 import { showMessageBox, renderAllPlayers, showLoading } from './ui.js';
 import * as api from './api.js';
@@ -241,6 +241,7 @@ export const showEditPlayerModal = (player) => {
     document.getElementById('editPlayerNameInput').value = player.user.name;
     const modifyAvailableSchedulesList = document.getElementById('modifyAvailableSchedulesList');
     modifyAvailableSchedulesList.innerHTML = '';
+    const isAdmin = isCurrentUserAdminOfSelectedGroup();
     Object.values(schedules).forEach(schedule => {
         const playerAvailability = player.availability?.find(a => a.scheduleId === schedule.id);
         const isChecked = !!playerAvailability;
@@ -250,13 +251,13 @@ export const showEditPlayerModal = (player) => {
         container.className = 'flex items-center justify-between p-2 rounded-md';
 
         const isPlanning = schedule.status === 'PLANNING';
-        if (!isPlanning) {
+        if (!isPlanning && !isAdmin) {
             container.classList.add('opacity-50', 'cursor-not-allowed');
         }
 
         const label = document.createElement('label');
         label.className = 'flex items-center gap-2';
-        if (isPlanning) {
+        if (isPlanning || isAdmin) {
             label.classList.add('cursor-pointer');
         }
 
@@ -265,7 +266,7 @@ export const showEditPlayerModal = (player) => {
         checkbox.value = schedule.id;
         checkbox.className = 'schedule-checkbox form-checkbox h-4 w-4 text-blue-600';
         checkbox.checked = isChecked;
-        checkbox.disabled = !isPlanning;
+        checkbox.disabled = !isPlanning && !isAdmin;
 
         const span = document.createElement('span');
         span.textContent = `${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})`;

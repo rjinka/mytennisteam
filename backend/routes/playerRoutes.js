@@ -33,8 +33,9 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         // Authorization: User must be an admin of the group the player is in.
+        // Player is allowed to update his own player card
         const group = await Group.findById(player.groupId);
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id)) && player.userId.toString() !== req.user._id.toString()) {
             return res.status(403).json({ msg: 'User not authorized to edit this player' });
         }
 
