@@ -146,7 +146,7 @@ describe('Schedule Routes', () => {
     });
 
     it('should return visible and disabled for admin if schedule is completed', async () => {
-      await schedule.updateOne({ isCompleted: true });
+      await schedule.updateOne({ status : 'COMPLETED' });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({

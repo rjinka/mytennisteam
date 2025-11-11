@@ -103,6 +103,7 @@ class SchedulesFragment : Fragment() {
 
                 val currentUserId = SessionManager.getUserId(requireContext())
                 val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
+                scheduleAdapter.updateGroupAdmins(data.selectedGroup.admins)
                 val isGroupAdmin = data.selectedGroup.admins.contains(currentUserId)
 
                 val canManageSchedules = isSuperAdmin || isGroupAdmin
@@ -360,7 +361,7 @@ class SchedulesFragment : Fragment() {
         homeViewModel.getScheduleSignups(token, schedule.id, loadingViewModel)
 
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_schedule_signups, null)
-        val dialogTitle = dialogView.findViewById<TextView>(R.id.signup_title)
+        val dialogTitle = dialogView.findViewById<TextView>(R.id.signups_title)
         val signupsRecyclerView = dialogView.findViewById<RecyclerView>(R.id.signups_recycler_view)
         val completeButton = dialogView.findViewById<Button>(R.id.complete_planning_button)
         val deleteButton = dialogView.findViewById<Button>(R.id.delete_schedule_button)

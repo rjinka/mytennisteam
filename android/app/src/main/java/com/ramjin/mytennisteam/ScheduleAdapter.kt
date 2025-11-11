@@ -16,8 +16,13 @@ class ScheduleAdapter(
     private val onViewSignupsClicked: (Schedule) -> Unit,
     private val currentUserId: String?,
     private val isSuperAdmin: Boolean,
-    private val groupAdmins: List<String>
+    private var groupAdmins: List<String>
 ) : ListAdapter<Schedule, ScheduleAdapter.ScheduleViewHolder>(ScheduleDiffCallback()) {
+
+    fun updateGroupAdmins(newAdmins: List<String>) {
+        groupAdmins = newAdmins
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScheduleViewHolder {
         val binding = ItemScheduleBinding.inflate(LayoutInflater.from(parent.context), parent, false)
