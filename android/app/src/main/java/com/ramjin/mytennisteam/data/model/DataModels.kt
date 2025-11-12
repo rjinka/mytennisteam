@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.data.model
 
 import com.google.gson.annotations.SerializedName
 
@@ -141,3 +141,28 @@ data class RotationButtonState(val visible: Boolean, val text: String, val disab
 data class JoinGroupResponse(val message: String)
 
 data class UpdateGroupAdminsRequest(val adminUserIds: List<String>)
+
+// --- Formatted Data Models for UI ---
+
+data class FormattedScheduleStat(
+    val playerName: String,
+    val availability: String,
+    val timesPlayed: Int,
+    val timesOnBench: Int,
+    val isPlayerOut: Boolean
+)
+
+data class FormattedPlayerStat(
+    val scheduleName: String,
+    val totalPlayed: Int,
+    val totalBenched: Int,
+    val history: List<GameHistory>,
+    val scheduleFrequency: Int
+)
+
+data class HomeData(
+    val selectedGroup: Group,
+    val schedules: List<Schedule>,
+    val players: List<Player>,
+    val courts: List<Court>
+)

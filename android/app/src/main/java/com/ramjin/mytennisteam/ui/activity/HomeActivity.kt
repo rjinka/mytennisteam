@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +9,14 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.ramjin.mytennisteam.R
 import com.ramjin.mytennisteam.databinding.ActivityHomeBinding
+import com.ramjin.mytennisteam.ui.fragment.CourtsFragment
+import com.ramjin.mytennisteam.ui.fragment.GroupsFragment
+import com.ramjin.mytennisteam.ui.fragment.PlayersFragment
+import com.ramjin.mytennisteam.ui.fragment.SchedulesFragment
+import com.ramjin.mytennisteam.util.EventObserver
+import com.ramjin.mytennisteam.util.SessionManager
+import com.ramjin.mytennisteam.viewmodel.HomeViewModel
+import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
 
 class HomeActivity : AppCompatActivity() {
 

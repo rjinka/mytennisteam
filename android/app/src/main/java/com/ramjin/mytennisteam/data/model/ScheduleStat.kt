@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.data.model
 
 // Represents the stats for a single player for a single schedule
 data class ScheduleStatResponse(

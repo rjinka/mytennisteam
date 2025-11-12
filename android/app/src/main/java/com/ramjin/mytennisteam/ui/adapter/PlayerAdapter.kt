@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.ramjin.mytennisteam.data.model.Player
 import com.ramjin.mytennisteam.databinding.ItemPlayerBinding
 
 class PlayerAdapter(

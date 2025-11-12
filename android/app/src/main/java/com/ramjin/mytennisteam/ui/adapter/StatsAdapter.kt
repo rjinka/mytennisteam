@@ -1,7 +1,6 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -9,6 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayoutManager
 import com.google.android.flexbox.JustifyContent
+import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.FormattedPlayerStat
+import com.ramjin.mytennisteam.data.model.GameHistory
 import com.ramjin.mytennisteam.databinding.ItemHistoryBinding
 import com.ramjin.mytennisteam.databinding.ItemScheduleStatBinding
 
@@ -87,11 +89,3 @@ class HistoryAdapter(private val scheduleFrequency: Int) : ListAdapter<GameHisto
         }
     }
 }
-
-data class FormattedPlayerStat(
-    val scheduleName: String,
-    val totalPlayed: Int,
-    val totalBenched: Int,
-    val history: List<GameHistory>,
-    val scheduleFrequency: Int
-)

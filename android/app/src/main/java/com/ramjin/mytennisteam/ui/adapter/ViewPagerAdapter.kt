@@ -1,8 +1,11 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.ramjin.mytennisteam.ui.fragment.GroupsFragment
+import com.ramjin.mytennisteam.ui.fragment.PlayersFragment
+import com.ramjin.mytennisteam.ui.fragment.SchedulesFragment
 
 class ViewPagerAdapter(fragmentActivity: FragmentActivity) : FragmentStateAdapter(fragmentActivity) {
 

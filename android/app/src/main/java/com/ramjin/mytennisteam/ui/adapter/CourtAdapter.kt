@@ -1,10 +1,11 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ramjin.mytennisteam.data.model.Court
 import com.ramjin.mytennisteam.databinding.ItemCourtBinding
 
 class CourtAdapter(

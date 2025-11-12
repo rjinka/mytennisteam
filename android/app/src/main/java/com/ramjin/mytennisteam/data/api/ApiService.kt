@@ -1,5 +1,6 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.data.api
 
+import com.ramjin.mytennisteam.data.model.*
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET

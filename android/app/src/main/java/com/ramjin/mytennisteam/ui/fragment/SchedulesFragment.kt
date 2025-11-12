@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.fragment
 
 import android.app.TimePickerDialog
 import android.os.Bundle
@@ -19,11 +19,17 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.ramjin.mytennisteam.adapter.ScheduleSignUpAdapter
-import com.ramjin.mytennisteam.databinding.FragmentSchedulesBinding
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.*
+import com.ramjin.mytennisteam.databinding.FragmentSchedulesBinding
+import com.ramjin.mytennisteam.ui.adapter.ScheduleAdapter
+import com.ramjin.mytennisteam.ui.adapter.ScheduleSignUpAdapter
+import com.ramjin.mytennisteam.ui.adapter.ScheduleStatsAdapter
+import com.ramjin.mytennisteam.util.SessionManager
+import com.ramjin.mytennisteam.viewmodel.HomeViewModel
+import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale

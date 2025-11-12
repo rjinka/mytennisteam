@@ -1,10 +1,11 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.recyclerview.widget.RecyclerView
 import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.Player
 
 class GroupAdminAdapter(
     private val players: List<Player>,

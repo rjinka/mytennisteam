@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -12,8 +12,11 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.lifecycleScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.api.RetrofitClient
+import com.ramjin.mytennisteam.data.model.AuthRequest
 import com.ramjin.mytennisteam.databinding.ActivityMainBinding
+import com.ramjin.mytennisteam.util.SessionManager
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {

@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam.adapter
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ramjin.mytennisteam.R
-import com.ramjin.mytennisteam.ScheduleSignup
+import com.ramjin.mytennisteam.data.model.ScheduleSignup
 
 class ScheduleSignUpAdapter : ListAdapter<ScheduleSignup, ScheduleSignUpAdapter.SignUpViewHolder>(SignUpDiffCallback()) {
 

@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.fragment
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,9 +10,15 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.ramjin.mytennisteam.databinding.FragmentCourtsBinding
 import com.google.android.material.textfield.TextInputLayout
 import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.Court
+import com.ramjin.mytennisteam.databinding.FragmentCourtsBinding
+import com.ramjin.mytennisteam.ui.activity.HomeActivity
+import com.ramjin.mytennisteam.ui.adapter.CourtAdapter
+import com.ramjin.mytennisteam.util.SessionManager
+import com.ramjin.mytennisteam.viewmodel.HomeViewModel
+import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
 
 class CourtsFragment : Fragment() {
 

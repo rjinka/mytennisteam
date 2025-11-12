@@ -1,25 +1,16 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.*
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.ramjin.mytennisteam.data.api.RetrofitClient
+import com.ramjin.mytennisteam.data.model.*
+import com.ramjin.mytennisteam.util.Event
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
-data class HomeData(
-    val selectedGroup: Group,
-    val schedules: List<Schedule>,
-    val players: List<Player>,
-    val courts: List<Court>
-)
 class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val _allGroups = MutableLiveData<List<Group>>()

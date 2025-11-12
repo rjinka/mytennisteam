@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.fragment
 
 import android.app.AlertDialog
 import android.os.Bundle
@@ -17,7 +17,15 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.textfield.TextInputLayout
+import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.Player
+import com.ramjin.mytennisteam.data.model.Schedule
 import com.ramjin.mytennisteam.databinding.FragmentScheduleDetailBinding
+import com.ramjin.mytennisteam.ui.adapter.AvailabilityAdapter
+import com.ramjin.mytennisteam.ui.adapter.PlayerLineupAdapter
+import com.ramjin.mytennisteam.util.SessionManager
+import com.ramjin.mytennisteam.viewmodel.HomeViewModel
+import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
 
 class ScheduleDetailFragment : Fragment() {
 

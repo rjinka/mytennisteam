@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.fragment
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,12 +10,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ramjin.mytennisteam.BuildConfig
 import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.Group
 import com.ramjin.mytennisteam.databinding.FragmentGroupsBinding
+import com.ramjin.mytennisteam.ui.adapter.GroupAdapter
+import com.ramjin.mytennisteam.ui.adapter.GroupAdminAdapter
+import com.ramjin.mytennisteam.util.SessionManager
+import com.ramjin.mytennisteam.viewmodel.HomeViewModel
+import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
 
 class GroupsFragment : Fragment() {
 

@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -8,9 +8,10 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.ramjin.mytennisteam.databinding.ItemGroupBinding
 import com.google.android.material.card.MaterialCardView
 import com.ramjin.mytennisteam.R
+import com.ramjin.mytennisteam.data.model.Group
+import com.ramjin.mytennisteam.databinding.ItemGroupBinding
 
 class GroupAdapter(
     private val onGroupSelected: (Group) -> Unit,

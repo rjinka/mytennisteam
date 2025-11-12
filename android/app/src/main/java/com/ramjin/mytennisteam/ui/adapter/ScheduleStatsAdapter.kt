@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.ui.adapter
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ramjin.mytennisteam.data.model.FormattedScheduleStat
 import com.ramjin.mytennisteam.databinding.ItemScheduleStatRowBinding
 
 class ScheduleStatsAdapter : ListAdapter<FormattedScheduleStat, ScheduleStatsAdapter.StatsViewHolder>(StatsDiffCallback()) {
@@ -42,11 +43,3 @@ class ScheduleStatsAdapter : ListAdapter<FormattedScheduleStat, ScheduleStatsAda
         }
     }
 }
-
-data class FormattedScheduleStat(
-    val playerName: String,
-    val availability: String,
-    val timesPlayed: Int,
-    val timesOnBench: Int,
-    val isPlayerOut: Boolean
-)

@@ -1,4 +1,4 @@
-package com.ramjin.mytennisteam
+package com.ramjin.mytennisteam.util
 
 import android.content.Context
 import android.content.SharedPreferences
