@@ -135,6 +135,51 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
+    fun refreshHomeData(token: String, loadingViewModel: LoadingViewModel) {
+        viewModelScope.launch {
+            _homeData.value?.selectedGroup?.let { group ->
+                try {
+                    val updatedGroups = RetrofitClient.instance.getGroups(token)
+                    _allGroups.value = updatedGroups
+
+                    val groupToRefresh = updatedGroups.find { it.id == group.id } ?: updatedGroups.firstOrNull()
+
+                    if (groupToRefresh != null) {
+                        val schedules: List<Schedule>
+                        val players: List<Player>
+                        val courts: List<Court>
+
+                        coroutineScope {
+                            val schedulesDeferred = async { RetrofitClient.instance.getSchedules(token, groupToRefresh.id) }
+                            val playersDeferred = async { RetrofitClient.instance.getPlayers(token, groupToRefresh.id) }
+                            val courtsDeferred = async { RetrofitClient.instance.getCourts(token, groupToRefresh.id) }
+
+                            schedules = schedulesDeferred.await()
+                            players = playersDeferred.await()
+                            courts = courtsDeferred.await()
+                        }
+
+                        _homeData.value = HomeData(groupToRefresh, schedules, players, courts)
+                        savedStateHandle[SELECTED_GROUP_ID_KEY] = groupToRefresh.id
+                        _selectedSchedule.value?.let {
+                            val updatedSchedule = schedules.find { s -> s.id == it.id }
+                            _selectedSchedule.value = updatedSchedule
+                        }
+                    } else {
+                        _allGroups.value = emptyList()
+                        _homeData.value = null
+                    }
+                } catch (e: Exception) {
+                    if (e is HttpException && e.code() == 401) {
+                        _forceLogout.value = Event(Unit)
+                    } else {
+                        Log.e("HomeViewModel", "Failed to refresh data for group ${group.name}", e)
+                    }
+                }
+            }
+        }
+    }
+
     fun fetchPlayerStats(token: String, playerId: String, loadingViewModel: LoadingViewModel) {
         viewModelScope.launch {
             loadingViewModel.showLoading()
