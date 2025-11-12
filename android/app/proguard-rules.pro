@@ -1,0 +1,1 @@
+-assumenosideeffects class android.util.Log { *; }

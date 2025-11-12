@@ -52,6 +52,13 @@ class PlayersFragment : Fragment() {
         binding.fabAddPlayer.setOnClickListener {
             showInvitePlayerDialog()
         }
+
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            val rawToken = SessionManager.getAuthToken(requireContext())
+            if (rawToken != null) {
+                homeViewModel.refreshHomeData("Bearer $rawToken", loadingViewModel)
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -133,6 +140,7 @@ class PlayersFragment : Fragment() {
             if (data != null) {
                 allPlayers = data.players
                 playerAdapter.submitList(allPlayers)
+                binding.swipeRefreshLayout.isRefreshing = false
 
                 val currentUserId = SessionManager.getUserId(requireContext())
                 playerAdapter.updateGroupAdmins(data.selectedGroup.admins)

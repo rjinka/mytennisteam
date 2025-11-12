@@ -55,6 +55,13 @@ class SchedulesFragment : Fragment() {
             showCreateOrEditScheduleDialog(null)
         }
 
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            val rawToken = SessionManager.getAuthToken(requireContext())
+            if (rawToken != null) {
+                homeViewModel.refreshHomeData("Bearer $rawToken", loadingViewModel)
+            }
+        }
+
         if (childFragmentManager.findFragmentById(R.id.schedule_detail_container) == null) {
             childFragmentManager.beginTransaction()
                 .add(R.id.schedule_detail_container, ScheduleDetailFragment())
@@ -100,6 +107,7 @@ class SchedulesFragment : Fragment() {
         homeViewModel.homeData.observe(viewLifecycleOwner) { data ->
             if (data != null) {
                 scheduleAdapter.submitList(data.schedules)
+                binding.swipeRefreshLayout.isRefreshing = false
 
                 val currentUserId = SessionManager.getUserId(requireContext())
                 val isSuperAdmin = SessionManager.isSuperAdmin(requireContext())
