@@ -1,5 +1,3 @@
-// backend/routes/authRoutes.js
-
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
@@ -17,6 +15,38 @@ async function verifyGoogleToken(token) {
     return ticket.getPayload();
 }
 
+/**
+ * Finds an existing user or creates a new one based on the Google profile.
+ * Also updates the last login timestamp.
+ * @param {object} googleUser - The payload from the verified Google ID token.
+ * @returns {Promise<User>} The user document from the database.
+ */
+async function findOrCreateUserFromGoogle(googleUser) {
+    let user = await User.findOne({ googleId: googleUser.sub });
+
+    if (!user) {
+        user = new User({
+            googleId: googleUser.sub,
+            email: googleUser.email,
+            name: googleUser.name,
+            picture: googleUser.picture,
+        });
+    }
+    user.lastLoginAt = new Date();
+    return await user.save();
+}
+
+// @desc    Logout user and clear cookie
+// @route   POST /api/auth/logout
+// @access  Private
+router.post('/logout', (req, res) => {
+    res.cookie('token', '', {
+        httpOnly: true,
+        expires: new Date(0), // Expire the cookie immediately
+    });
+    res.status(200).json({ message: 'Logged out successfully' });
+});
+
 // This route now receives the POST directly from Google
 router.post('/google', async (req, res) => {
     try {
@@ -28,31 +58,22 @@ router.post('/google', async (req, res) => {
         }
 
         // Verify the JWT from Google to get user info securely
-        const googleUser = await verifyGoogleToken(credential);
-
-        let user = await User.findOne({ googleId: googleUser.sub });
-
-        if (!user) {
-            user = new User({
-                googleId: googleUser.sub,
-                email: googleUser.email,
-                name: googleUser.name,
-                picture: googleUser.picture,
-            });
-            await user.save();
-        }
-
-        // Update last login timestamp for both new and existing users
-        user.lastLoginAt = new Date();
-        await user.save();
-
+        const googlePayload = await verifyGoogleToken(credential);
+        const user = await findOrCreateUserFromGoogle(googlePayload);
         // Create your application's JWT
         const payload = { id: user._id, name: user.name, isSuperAdmin: user.isSuperAdmin };
-        const token = jwt.sign(payload, config.jwt_secret, { expiresIn: '1d' });
+        const token = jwt.sign(payload, config.jwt_secret, { expiresIn: '30d' });
 
-        // Redirect back to the frontend, passing the token as a query parameter
+        // Set the token in an httpOnly cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+            sameSite: 'strict', // Mitigate CSRF attacks
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        });
+        // Redirect back to the frontend
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
-        res.redirect(`${frontendUrl}?token=${token}`);
+        res.redirect(frontendUrl);
 
     } catch (error) {
         console.error('Error in Google auth callback:', error);
@@ -70,26 +91,11 @@ router.post('/google/mobile', async (req, res) => {
         }
 
         // Verify the ID token with Google
-        const googleUser = await verifyGoogleToken(idToken);
-
-        let user = await User.findOne({ googleId: googleUser.sub });
-
-        if (!user) {
-            user = new User({
-                googleId: googleUser.sub,
-                email: googleUser.email,
-                name: googleUser.name,
-                picture: googleUser.picture,
-            });
-        }
-
-        // Update last login timestamp for both new and existing users
-        user.lastLoginAt = new Date();
-        await user.save();
-
+        const googlePayload = await verifyGoogleToken(idToken);
+        const user = await findOrCreateUserFromGoogle(googlePayload);
         // Create and sign your application's JWT
         const payload = { id: user._id, name: user.name, isSuperAdmin: user.isSuperAdmin };
-        const appToken = jwt.sign(payload, config.jwt_secret, { expiresIn: '1d' });
+        const appToken = jwt.sign(payload, config.jwt_secret, { expiresIn: '30d' });
 
         // Return your app's token in the response body
         res.status(200).json({ token: appToken, user : { id: user.id, name: user.name, isSuperAdmin: user.isSuperAdmin } });

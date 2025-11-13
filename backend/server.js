@@ -1,4 +1,5 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import { config } from './config.js';
@@ -10,10 +11,13 @@ import scheduleRoutes from './routes/scheduleRoutes.js';
 import invitationRoutes from './routes/invitationRoutes.js';
 import playerStatRoutes from './routes/playerStatRoutes.js';
 import versionRoutes from './routes/versionRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+
 
 console.log(`Running in ${process.env.NODE_ENV || 'development'} mode.`);
 
 const app = express();
+app.use(cookieParser());
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -48,6 +52,7 @@ const corsOptions = {
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization'], // Allowed custom headers
+    credentials: true, // Allow cookies to be sent with requests
 };
 app.use(cors(corsOptions));
 
@@ -64,6 +69,7 @@ app.use('/api/players', playerRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/stats', playerStatRoutes);
+app.use('/api/users', userRoutes);
 
 const startServer = async () => {
     try {
