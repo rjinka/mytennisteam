@@ -62,14 +62,14 @@ describe('app.js', () => {
 
         it('should call showGroupSelectionModal on initial load', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: true };
-            localStorage.setItem('user', user);
+            localStorage.setItem('user', JSON.stringify(user));
             handleDataUpdate({ allGroups: allGroupsData }, true);
             expect(modals.showGroupSelectionModal).toHaveBeenCalled();
         });
 
         it('should correctly filter admin and player groups', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: true };
-            localStorage.setItem('user', user);
+            localStorage.setItem('user', JSON.stringify(user));
             handleDataUpdate({ allGroups: allGroupsData }, false);
 
             expect(Object.keys(groups)).toHaveLength(1);
@@ -86,14 +86,14 @@ describe('app.js', () => {
 
         it('should return true for a super admin', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: true };
-            localStorage.setItem('user', user);
+            localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
         });
 
         it('should return true for a regular admin of the selected group', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
-            localStorage.setItem('user', user);
+            localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
             groups['group1'] = { id: 'group1', name: 'Group 1', admins: ['123'] };
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
@@ -101,7 +101,7 @@ describe('app.js', () => {
 
         it('should return false if the user is not an admin of the selected group', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
-            localStorage.setItem('user', user);
+            localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
             // In this scenario, the 'groups' object would not contain 'group1'
             // because the user is not an admin. The beforeEach hook clears it.
