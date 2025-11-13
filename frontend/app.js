@@ -23,15 +23,15 @@ export const ui = {
     groupBeingEdited: null,
 };
 
-export function isCurrentUserAdminOfSelectedGroup() {
-    if (!selection.currentGroupId) return false;
-    // Get user info from localStorage, which is set after a successful login check.
+export function isCurrentUserAdminOfSelectedGroup() {    
     const userString = localStorage.getItem('user');
     if (!userString) return false;
-    
     const user = JSON.parse(userString);
+
     if (user.isSuperAdmin) return true;
-    return !!groups[selection.currentGroupId]; // Check if user is a regular admin of the selected group
+    if (!selection.currentGroupId || !groups[selection.currentGroupId]) return false;
+
+    return groups[selection.currentGroupId].admins.includes(user._id);
 }
 
 export async function reloadData() {
@@ -76,8 +76,7 @@ export function copyToClipboard(text, successMessage) {
 
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
-        const token = localStorage.getItem('token');
-        const user = token ? parseJwt(token) : {};
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
         const allGroups = apiData.allGroups || [];
 
         // Separate groups into admin and player groups on the client side
@@ -499,16 +498,6 @@ export function logout() {
         localStorage.clear();
         window.location.href = '/';
     });
-}
-
-export function parseJwt (token) {
-    var base64Url = token.split('.')[1];
-    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    return JSON.parse(jsonPayload);
 }
 
 async function checkLoginStatus() {

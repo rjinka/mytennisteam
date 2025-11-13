@@ -52,14 +52,16 @@ describe('Auth Routes', () => {
         .post('/api/auth/google')
         .send({ credential: 'any_google_token' }); // The actual token doesn't matter because it's mocked
 
-      expect(res.statusCode).toBe(302);
-      expect(res.headers.location).toMatch(/token=/);
+      expect(res.statusCode).toBe(302); // Expect a redirect
+      expect(res.headers.location).toBe('http://localhost:5000'); // Expect redirect to the correct URL
+      expect(res.headers['set-cookie'][0]).toMatch(/token=.+; Max-Age=.+; Path=\/; Expires=.+; HttpOnly; SameSite=Strict/);
+
       const user = await User.findOne({ googleId: mockGoogleUser.sub });
       expect(user).not.toBeNull();
       expect(user.email).toBe(mockGoogleUser.email);
     });
 
-    it('should log in an existing user and redirect with a token', async () => {
+    it('should log in an existing user and redirect with a cookie', async () => {
       // Pre-seed the database with an existing user
       await new User({
         googleId: mockGoogleUser.sub,
@@ -73,7 +75,8 @@ describe('Auth Routes', () => {
         .send({ credential: 'any_google_token' });
 
       expect(res.statusCode).toBe(302);
-      expect(res.headers.location).toMatch(/token=/);
+      expect(res.headers.location).toBe('http://localhost:5000');
+      expect(res.headers['set-cookie'][0]).toMatch(/token=/);
     });
 
     it('should return 400 if credential is missing', async () => {
