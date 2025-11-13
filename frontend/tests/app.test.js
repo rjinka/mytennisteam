@@ -68,7 +68,7 @@ describe('app.js', () => {
         });
 
         it('should correctly filter admin and player groups', () => {
-            const user = { id: '123', name: 'Test User', isSuperAdmin: true };
+            const user = { id: '123', name: 'Test User', isSuperAdmin: false };
             localStorage.setItem('user', JSON.stringify(user));
             handleDataUpdate({ allGroups: allGroupsData }, false);
 
