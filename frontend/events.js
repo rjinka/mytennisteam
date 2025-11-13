@@ -341,7 +341,8 @@ export const addEditGroupListeners = () => {
                 groupAdminsList.innerHTML = '';
                 const groupPlayers = Object.values(app.players).filter(p => p.groupId === groupId);
                 const currentAdmins = app.ui.groupBeingEdited.admins || [];
-                const currentUserId = app.parseJwt(localStorage.getItem('token')).id;
+                const user = JSON.parse(localStorage.getItem('user'));
+                const currentUserId = user ? user.id : null;
 
                 groupPlayers.forEach(player => {
                     const isPlayerAdmin = currentAdmins.includes(player.userId);

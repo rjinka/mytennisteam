@@ -13,7 +13,6 @@ vi.mock('../app.js', () => ({
         currentGroupId: null,
     },
     isCurrentUserAdminOfSelectedGroup: vi.fn(),
-    parseJwt: vi.fn().mockReturnValue({ id: 'user1' }),
     setCurrentGroup: vi.fn(),
 }));
 
@@ -86,8 +85,11 @@ describe('ui.js', () => {
 
     describe('renderAllPlayers', () => {
         it('should render a grid of players', () => {
+            const user = { id: '123', name: 'Test User', isSuperAdmin: false };
+            localStorage.setItem('user', JSON.stringify(user));
             app.players = { player1: { id: 'player1', user: { name: 'Player 1' } } };
             app.selection.currentGroupId = 'group1';
+            app.players.player1.userId = '123';
             app.players.player1.groupId = 'group1';
             renderAllPlayers();
             const allPlayersGrid = document.getElementById('allPlayersGrid');

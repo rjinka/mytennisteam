@@ -23,14 +23,15 @@ export const ui = {
     groupBeingEdited: null,
 };
 
-export function isCurrentUserAdminOfSelectedGroup() {
-    if (!selection.currentGroupId) return false;
-    const token = localStorage.getItem('token');
-    if (token) {
-        const user = parseJwt(token);
-        if (user.isSuperAdmin) return true;
-    }
-    return !!groups[selection.currentGroupId]; // Is a regular admin of the selected group
+export function isCurrentUserAdminOfSelectedGroup() {    
+    const userString = localStorage.getItem('user');
+    if (!userString) return false;
+    const user = JSON.parse(userString);
+
+    if (user.isSuperAdmin) return true;
+    if (!selection.currentGroupId || !groups[selection.currentGroupId]) return false;
+
+    return groups[selection.currentGroupId].admins.includes(user.id);
 }
 
 export async function reloadData() {
@@ -75,8 +76,7 @@ export function copyToClipboard(text, successMessage) {
 
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
-        const token = localStorage.getItem('token');
-        const user = token ? parseJwt(token) : {};
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
         const allGroups = apiData.allGroups || [];
 
         // Separate groups into admin and player groups on the client side
@@ -488,18 +488,31 @@ export async function deleteGroup(groupId) {
 }
 
 export function logout() {
-    localStorage.removeItem('token');
-    window.location.reload();
+    // Call the backend endpoint to clear the httpOnly cookie
+    api.logout().then(() => {
+        localStorage.removeItem('user'); // Clear user data from local storage
+        window.location.href = '/'; // Redirect to home to trigger sign-in flow
+    }).catch(err => {
+        console.error('Logout failed:', err);
+        // As a fallback, clear local state and redirect
+        localStorage.clear();
+        window.location.href = '/';
+    });
 }
 
-export function parseJwt (token) {
-    var base64Url = token.split('.')[1];
-    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-
-    return JSON.parse(jsonPayload);
+async function checkLoginStatus() {
+    try {
+        // This endpoint relies on the httpOnly cookie being sent automatically.
+        // If it succeeds, the user is logged in. The backend returns user data.
+        const user = await api.getSelf(); // A new API endpoint to get the current user
+        localStorage.setItem('user', JSON.stringify(user)); // Store non-sensitive user data for UI
+        return user;
+    } catch (error) {
+        // A 401/403 error from this endpoint means the user is not logged in.
+        console.log('User not authenticated.');
+        localStorage.removeItem('user');
+        return null;
+    }
 }
 
 async function initializeApp() {
@@ -524,7 +537,8 @@ async function initializeApp() {
         showGroupSelectionModal();
     } catch (error) {
         console.error("Initialization failed, token might be invalid:", error);
-        // If initialization fails (e.g., token expired), log the user out.
+        // If initialization fails, show the sign-in page.
+        document.getElementById('signInContainer').style.display = 'flex';
         logout();
     }
 }
@@ -532,13 +546,10 @@ async function initializeApp() {
 async function handleInvitationToken(params) {
     const join_token = params.get('join_token');
     if (join_token) {
+        // The check for login status now happens at the start of the app.
+        // If the user is not logged in, they will be prompted to sign in,
+        // and this logic will re-run after they are redirected back.
         try {
-            // First, ensure user is logged in
-            if (!localStorage.getItem('token')) {
-                // If not logged in, the normal sign-in flow will happen.
-                // After login, this function will be called again.
-                return;
-            }
             const { msg } = await api.acceptInvitation(join_token);
             showMessageBox('Success!', msg, reloadData);
             // Clean the token from the URL
@@ -556,12 +567,6 @@ async function handleGroupJoinToken(params) {
     const groupId = params.get('groupId');
     if (groupId) {
         try {
-            // Ensure user is logged in
-            if (!localStorage.getItem('token')) {
-                // If not logged in, the normal sign-in flow will handle it.
-                // The groupId will be picked up from sessionStorage after redirect.
-                return;
-            }
             const { msg } = await api.joinGroup(groupId);
             showMessageBox('Group Joined', msg, reloadData);
             // Clean the token from sessionStorage and URL
@@ -578,23 +583,6 @@ async function handleGroupJoinToken(params) {
 // On page load, check for an existing token and initialize the app if found.
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
-
-    // If a join_token is present, store it in sessionStorage before it gets lost in the auth redirect.
-    if (urlParams.has('join_token')) {
-        sessionStorage.setItem('join_token', urlParams.get('join_token'));
-    }
-    // If a groupId is present, store it in sessionStorage.
-    if (urlParams.has('groupId')) {
-        sessionStorage.setItem('groupId', urlParams.get('groupId'));
-    }
-
-    if (tokenFromUrl) {
-        // If a token is found in the URL from the backend redirect, save it.
-        localStorage.setItem('token', tokenFromUrl);
-        // Clean the token from the URL for a cleaner user experience and to prevent reuse.
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
 
     // After login, check sessionStorage for a pending invitation.
     const pendingJoinToken = sessionStorage.getItem('join_token');
@@ -611,7 +599,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await handleGroupJoinToken(urlParams);
     }
 
-    if (localStorage.getItem('token')) { // Now, check if the user is logged in
+    // Instead of checking for a token in localStorage, we check the login status via an API call.
+    // The browser will automatically send the httpOnly cookie.
+    const user = await checkLoginStatus();
+    if (user) {
         initializeApp();
+    } else {
+        document.getElementById('signInContainer').style.display = 'flex';
     }
 });

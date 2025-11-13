@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as api from '../api.js';
+import * as api from '../api.js'; // Assuming this is where your API functions are exported
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -25,8 +25,7 @@ const BASE_URL = 'http://localhost:3000/api';
 describe('api.js', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        localStorage.clear();
-        localStorage.setItem('token', 'test-token');
+        mockFetch.mockClear();
     });
 
     describe('swapPlayers', () => {
@@ -47,11 +46,8 @@ describe('api.js', () => {
                 `${BASE_URL}/schedules/${scheduleId}/swap`,
                 expect.objectContaining({
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer test-token',
-                    },
                     body: JSON.stringify({ playerInId, playerOutId }),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -82,7 +78,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/schedules/${scheduleId}/signups`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -104,6 +102,7 @@ describe('api.js', () => {
                 `${BASE_URL}/schedules/${scheduleId}/complete-planning`,
                 expect.objectContaining({
                     method: 'POST',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -127,6 +126,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify(scheduleData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -147,8 +147,8 @@ describe('api.js', () => {
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/groups/player`,
                 expect.objectContaining({
-                    method: 'GET',
-                    headers: expect.any(Object),
+                    method: 'GET', 
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -173,6 +173,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'PUT',
                     body: JSON.stringify(scheduleData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -195,6 +196,7 @@ describe('api.js', () => {
                 `${BASE_URL}/schedules/${scheduleId}/generate`,
                 expect.objectContaining({
                     method: 'POST',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -215,7 +217,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/schedules/${scheduleId}/rotation-button-state`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -237,6 +241,7 @@ describe('api.js', () => {
                 `${BASE_URL}/schedules/${scheduleId}`,
                 expect.objectContaining({
                     method: 'DELETE',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -260,6 +265,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify(groupData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -284,6 +290,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'PUT',
                     body: JSON.stringify(groupData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -308,6 +315,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'PUT',
                     body: JSON.stringify({ adminUserIds }),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -328,7 +336,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/schedules/${groupId}`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -345,7 +355,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/schedules`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -365,7 +377,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/stats/schedule/${scheduleId}`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -385,7 +399,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/stats/player/${playerId}`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -408,6 +424,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify(statData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -432,6 +449,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'PUT',
                     body: JSON.stringify(statData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -456,6 +474,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'PUT',
                     body: JSON.stringify(courtData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -476,7 +495,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/players/${groupId}`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -499,6 +520,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify(playerData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -523,6 +545,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'PUT',
                     body: JSON.stringify(playerData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -545,6 +568,7 @@ describe('api.js', () => {
                 `${BASE_URL}/players/${playerId}`,
                 expect.objectContaining({
                     method: 'DELETE',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -565,7 +589,9 @@ describe('api.js', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 `${BASE_URL}/courts/${groupId}`,
-                expect.objectContaining({ headers: expect.any(Object) })
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -588,6 +614,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify(courtData),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -610,6 +637,7 @@ describe('api.js', () => {
                 `${BASE_URL}/courts/${courtId}`,
                 expect.objectContaining({
                     method: 'DELETE',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -632,6 +660,7 @@ describe('api.js', () => {
                 `${BASE_URL}/groups/${groupId}`,
                 expect.objectContaining({
                     method: 'DELETE',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -656,6 +685,7 @@ describe('api.js', () => {
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify({ email }),
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
@@ -675,7 +705,10 @@ describe('api.js', () => {
             const result = await api.verifyInvitation(join_token);
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${BASE_URL}/invitations/verify/${join_token}`
+                `${BASE_URL}/invitations/verify/${join_token}`,
+                expect.objectContaining({
+                    credentials: 'include',
+                })
             );
             expect(result).toEqual(responseData);
         });
@@ -697,32 +730,11 @@ describe('api.js', () => {
                 `${BASE_URL}/invitations/accept/${join_token}`,
                 expect.objectContaining({
                     method: 'POST',
+                    credentials: 'include',
                 })
             );
             expect(result).toEqual(responseData);
         });
     });
 
-    describe('authenticateWithGoogle', () => {
-        it('should make a POST request to authenticate with Google', async () => {
-            const userData = { token: 'google-token' };
-            const responseData = { success: true };
-
-            mockFetch.mockResolvedValue({
-                ok: true,
-                json: () => Promise.resolve(responseData),
-            });
-
-            const result = await api.authenticateWithGoogle(userData);
-
-            expect(mockFetch).toHaveBeenCalledWith(
-                `${BASE_URL}/auth/google`,
-                expect.objectContaining({
-                    method: 'POST',
-                    body: JSON.stringify(userData),
-                })
-            );
-            expect(result).toEqual(responseData);
-        });
-    });
 });
