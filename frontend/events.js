@@ -179,13 +179,18 @@ export function setupGlobalEventListeners() {
         const regularSwapPlayerId = document.getElementById('swapPlayerSelect').value;
         const backupSwapPlayerId = document.getElementById('backupPlayerSelect').value;
 
-        const playerInId = app.ui.playerBeingSwapped?.id;
-        const playerOutId = swapWithBackup ? backupSwapPlayerId : regularSwapPlayerId;
+        const playerToSwapOut = app.ui.playerBeingSwapped;
+        const playerToSwapInId = swapWithBackup ? backupSwapPlayerId : regularSwapPlayerId;
 
-        if (!playerInId || !playerOutId) {
+        if (!playerToSwapOut || !playerToSwapInId) {
             showMessageBox("Error", "Please select a player to swap with.");
             return;
         }
+
+        // Determine who is "in" and who is "out" based on the initial action
+        // 'moveToBench' means the clicked player (playerToSwapOut) is currently playing and will be moved OUT.
+        const playerOutId = app.ui.swapActionDirection === 'moveToBench' ? playerToSwapOut.id : playerToSwapInId;
+        const playerInId = app.ui.swapActionDirection === 'moveToBench' ? playerToSwapInId : playerToSwapOut.id;
 
         showLoading(true);
         try {

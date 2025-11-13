@@ -87,7 +87,7 @@ class ModelsTest {
         assertEquals(0, schedule.frequency)
         assertEquals(0, schedule.recurrenceCount)
         assertEquals(emptyList<ScheduleCourtInfo>(), schedule.courts)
-        assertEquals(1, schedule.week)
+        assertEquals(1, schedule.occurrenceNumber)
         assertEquals(emptyList<String>(), schedule.playingPlayersIds)
         assertEquals(emptyList<String>(), schedule.benchPlayersIds)
         assertEquals("PLANNING", schedule.status)

@@ -13,7 +13,7 @@ data class Schedule(
     @SerializedName("frequency") val frequency: Int,
     @SerializedName("recurrenceCount") val recurrenceCount: Int,
     @SerializedName("courts") val courts: List<ScheduleCourtInfo>,
-    @SerializedName("week") val week: Int,
+    @SerializedName("occurrenceNumber") val occurrenceNumber: Int,
     @SerializedName("playingPlayersIds") val playingPlayersIds: List<String>,
     @SerializedName("benchPlayersIds") val benchPlayersIds: List<String>,
     @SerializedName("status") val status: String

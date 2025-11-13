@@ -56,7 +56,7 @@ class ScheduleDetailFragment : Fragment() {
                     4 -> "Month"
                     else -> "Period"
                 }
-                binding.lineupTitleTextView.text = "${schedule.name} Lineup ($frequencyText ${schedule.week})"
+                binding.lineupTitleTextView.text = "${schedule.name} Lineup ($frequencyText ${schedule.occurrenceNumber})"
                 val allPlayers = homeViewModel.homeData.value?.players ?: emptyList()
 
                 updatePlayerList(binding.playingPlayersRecyclerView, schedule.playingPlayersIds, allPlayers, isBench = false)

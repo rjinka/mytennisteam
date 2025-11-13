@@ -102,7 +102,7 @@ router.put('/:id', protect, async (req, res) => {
 
         // Check if the schedule is now completed
         const isOneTimeFinished = !updatedScheduleData.recurring && updatedScheduleData.isRotationGenerated;
-        const isRecurringFinished = updatedScheduleData.recurring && updatedScheduleData.frequency > 0 && updatedScheduleData.week > updatedScheduleData.recurrenceCount;
+        const isRecurringFinished = updatedScheduleData.recurring && updatedScheduleData.frequency > 0 && updatedScheduleData.occurrenceNumber > updatedScheduleData.recurrenceCount;
 
         if (isOneTimeFinished || isRecurringFinished) {
             updatedScheduleData.status = 'COMPLETED';
@@ -244,7 +244,7 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
         // --- Finalize Stats and Update Schedule State for the first time ---
         const today = new Date();
         const todayDate = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()} ${today.getFullYear()}`;
-        const currentWeek = 1;
+        const currentOccurrenceNumber = 1;
 
         const allPlayersForStatUpdate = [...schedule.playingPlayersIds, ...schedule.benchPlayersIds];
 
@@ -253,7 +253,7 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
             await PlayerStat.findOneAndUpdate(
                 { playerId: playerId, scheduleId: schedule.id },
                 {
-                    $push: { stats: { week: currentWeek, status: status, date: todayDate } }
+                    $push: { stats: { occurrenceNumber: currentOccurrenceNumber, status: status, date: todayDate } }
                 },
                 { upsert: true, new: true }
             );
@@ -261,13 +261,13 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
 
         // Update schedule state
         schedule.status = 'ACTIVE';
-        schedule.lastGeneratedWeek = currentWeek;
+        schedule.lastGeneratedOccurrenceNumber = currentOccurrenceNumber;
         schedule.isRotationGenerated = true;
         schedule.lastRotationGeneratedDate = today;
 
         if (schedule.recurring) {
-            schedule.week += 1;
-            if (schedule.frequency > 0 && schedule.week > schedule.recurrenceCount) {
+            schedule.occurrenceNumber += 1;
+            if (schedule.frequency > 0 && schedule.occurrenceNumber > schedule.recurrenceCount) {
                 schedule.status = 'COMPLETED';
             }
         } else {
@@ -296,43 +296,34 @@ router.put('/:id/swap', protect, async (req, res) => {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
         
-        const player1 = await Player.findById(playerInId);
-        const player2 = await Player.findById(playerOutId)
-
-        if (!player1 || !player2) {
+        // Validate players exist
+        const [playerIn, playerOut] = await Promise.all([
+            Player.findById(playerInId),
+            Player.findById(playerOutId)
+        ]);
+        if (!playerIn || !playerOut) {
             return res.status(404).json({ msg: 'One or both players not found.' });
         }
 
-        const p1Availability = player1.availability.find(a => a.scheduleId.equals(scheduleId))?.type;
-        const p2Availability = player2.availability.find(a => a.scheduleId.equals(scheduleId))?.type;
+        // Get player positions
+        const playerInIsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerInId));
+        const playerInIsBenched = schedule.benchPlayersIds.some(id => id.equals(playerInId));
+        const playerOutIsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerOutId));
 
-        const p1IsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerInId));
-        const p1IsBenched = schedule.benchPlayersIds.some(id => id.equals(playerInId));
-        const p2IsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerOutId));
-        const p2IsBenched = schedule.benchPlayersIds.some(id => id.equals(playerOutId));
+        // --- Refactored Swap Logic ---
 
-        // Case 1: Standard swap between a playing and a benched player
-        if ((p1IsPlaying && p2IsBenched) || (p1IsBenched && p2IsPlaying)) {
-            schedule.playingPlayersIds = schedule.playingPlayersIds.map(id => (id.toString() === playerInId ? playerOutId : (id.toString() === playerOutId ? playerInId : id)));
-            schedule.benchPlayersIds = schedule.benchPlayersIds.map(id => (id.toString() === playerInId ? playerOutId : (id.toString() === playerOutId ? playerInId : id)));
+        // Player 'playerOut' must be in the playing list.
+        if (!playerOutIsPlaying) {
+            return res.status(400).json({ msg: 'Invalid swap. The player to be replaced is not in the playing lineup.' });
         }
-        // Case 2: A backup player (p2) is swapping in for a playing player (p1)
-        else if (p1IsPlaying && p2Availability === 'Backup') {
-            // Move p1 to bench, move p2 to playing
-            schedule.playingPlayersIds = schedule.playingPlayersIds.filter(id => id.toString() !== playerInId);
-            schedule.playingPlayersIds.push(playerOutId);
-            schedule.benchPlayersIds.push(playerInId);
-        }
-        // Case 3: A backup player (p1) is swapping in for a playing player (p2)
-        else if (p2IsPlaying && p1Availability === 'Backup') {
-            // Move p2 to bench, move p1 to playing
-            schedule.playingPlayersIds = schedule.playingPlayersIds.filter(id => id.toString() !== playerOutId);
-            schedule.playingPlayersIds.push(playerInId);
-            schedule.benchPlayersIds.push(playerOutId);
-        }
-        else {
-            return res.status(400).json({ msg: 'Invalid swap. Players are not in swappable positions (e.g., both playing, both benched, or invalid backup swap).' });
-        }
+
+        // Remove playerOut from playing and add to bench
+        schedule.playingPlayersIds.pull(playerOutId);
+        schedule.benchPlayersIds.push(playerOutId);
+
+        // Remove playerIn from bench (if they were there) and add to playing
+        schedule.benchPlayersIds.pull(playerInId);
+        schedule.playingPlayersIds.push(playerInId);
 
         await schedule.save();
         res.status(200).json(schedule); // Return the updated schedule
@@ -375,7 +366,7 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
 
             const getDerivedStats = (history) => {
                 if (!history || history.length === 0) return { playedLastTime: false, weeksOnBench: 0, weeksPlayed: 0 };
-                const sorted = [...history].sort((a, b) => b.week - a.week);
+                const sorted = [...history].sort((a, b) => b.occurrenceNumber - a.occurrenceNumber);
                 return {
                     playedLastTime: sorted[0]?.status === 'played',
                     weeksOnBench: history.filter(h => h.status === 'benched').length,
@@ -426,7 +417,7 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
         // --- Finalize Stats and Update Schedule State ---
         const today = new Date();
         const todayDate = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()} ${today.getFullYear()}`;
-        const currentWeek = schedule.week || 1;
+        const currentOccurrenceNumber = schedule.occurrenceNumber || 1;
 
         const allPlayersForStatUpdate = [...schedule.playingPlayersIds, ...schedule.benchPlayersIds];
 
@@ -435,21 +426,21 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
             await PlayerStat.findOneAndUpdate(
                 { playerId: playerId, scheduleId: schedule.id },
                 {
-                    $push: { stats: { week: currentWeek, status: status, date: todayDate } }
+                    $push: { stats: { occurrenceNumber: currentOccurrenceNumber, status: status, date: todayDate } }
                 },
                 { upsert: true, new: true }
             );
         }
 
         // Update schedule state
-        schedule.lastGeneratedWeek = currentWeek;
+        schedule.lastGeneratedOccurrenceNumber = currentOccurrenceNumber;
         schedule.isRotationGenerated = true;
         schedule.lastRotationGeneratedDate = today;
 
 
         if (schedule.recurring) {
-            schedule.week += 1;
-            if (schedule.frequency > 0 && schedule.week > schedule.recurrenceCount) {
+            schedule.occurrenceNumber += 1;
+            if (schedule.frequency > 0 && schedule.occurrenceNumber > schedule.recurrenceCount) {
                 schedule.status = 'COMPLETED';
             }
         } else {

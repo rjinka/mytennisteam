@@ -166,7 +166,7 @@ export const showScheduleDetails = async (schedule) => {
     }
 
     document.getElementById('currentDayDisplay').textContent = `${weekdayNames[schedule.day]}'s at ${schedule.time}`;
-    document.getElementById('currentNum').textContent = schedule.week || 1;
+    document.getElementById('currentNum').textContent = schedule.occurrenceNumber || 1;
 
     const recurrenceInfoContainer = document.getElementById('recurrenceInfoContainer');
     const recurrenceTypeDisplay = document.getElementById('recurrenceTypeDisplay');
