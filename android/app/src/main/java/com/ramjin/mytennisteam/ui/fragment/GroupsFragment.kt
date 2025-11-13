@@ -48,14 +48,21 @@ class GroupsFragment : Fragment() {
         observeViewModel()
 
         binding.swipeRefreshLayout.setOnRefreshListener {
-            val rawToken = SessionManager.getAuthToken(requireContext())
-            if (rawToken != null) {
-                homeViewModel.refreshHomeData("Bearer $rawToken", loadingViewModel)
-            }
+            refreshData()
         }
 
         binding.fabAddGroup.setOnClickListener {
             showCreateGroupDialog()
+        }
+    }
+
+    private fun refreshData() {
+        val rawToken = SessionManager.getAuthToken(requireContext())
+        if (rawToken != null) {
+            homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
+        } else {
+            Toast.makeText(context, "Authentication error", Toast.LENGTH_SHORT).show()
+            binding.swipeRefreshLayout.isRefreshing = false
         }
     }
 

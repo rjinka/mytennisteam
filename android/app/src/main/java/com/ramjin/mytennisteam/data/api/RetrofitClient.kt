@@ -8,12 +8,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
     private val client = OkHttpClient.Builder().build()
 
-    val instance: ApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.API_BASE_URL)
+    var instance: ApiService = Retrofit.Builder()
+            .baseUrl(BuildConfig.BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
             .create(ApiService::class.java)
-    }
+    
 }
