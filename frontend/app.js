@@ -31,7 +31,7 @@ export function isCurrentUserAdminOfSelectedGroup() {
     if (user.isSuperAdmin) return true;
     if (!selection.currentGroupId || !groups[selection.currentGroupId]) return false;
 
-    return groups[selection.currentGroupId].admins.includes(user._id);
+    return groups[selection.currentGroupId].admins.includes(user.id);
 }
 
 export async function reloadData() {

@@ -56,7 +56,7 @@ describe('app.js', () => {
 
     describe('handleDataUpdate', () => {
         const allGroupsData = [
-            { id: 'group1', name: 'Group 1', admins: ['user1'] },
+            { id: 'group1', name: 'Group 1', admins: ['123'] },
             { id: 'group2', name: 'Group 2', admins: ['user2'] }
         ];
 
