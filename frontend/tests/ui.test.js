@@ -13,7 +13,6 @@ vi.mock('../app.js', () => ({
         currentGroupId: null,
     },
     isCurrentUserAdminOfSelectedGroup: vi.fn(),
-    parseJwt: vi.fn().mockReturnValue({ id: 'user1' }),
     setCurrentGroup: vi.fn(),
 }));
 

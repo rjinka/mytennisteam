@@ -1,11 +1,10 @@
-import { setCurrentGroup, loadSchedulesForGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup, parseJwt, saveScheduleChanges } from './app.js';
+import { setCurrentGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup } from './app.js';
 import { addEditGroupListeners, addRemoveGroupListeners, addShareGroupListeners, addScheduleActionListeners } from './events.js';
-import { showEditScheduleModal, populateScheduleCourtsDropdown, hideEditScheduleModal } from './modals.js';
+import { populateScheduleCourtsDropdown } from './modals.js';
 import { addSwapButtonListenersForSchedule } from './events.js';
-import { getDerivedStats } from './rotation.js';
 import { addNewPlayer, addRemovePlayerListeners, addEditPlayerListeners, addViewStatsListeners } from './events.js';
 import { addRemoveCourtListeners, addEditCourtListeners } from './events.js';
-import { getRotationButtonState, updateSchedule } from './api.js';
+import { getRotationButtonState } from './api.js';
 
 
 const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -207,7 +206,7 @@ function renderPlayerList(container, playerIds, itemClass, action, emptyMessage,
         return;
     } 
 
-    const currentUser = parseJwt(localStorage.getItem('token'));
+    const currentUser = JSON.parse(localStorage.getItem('user'));
     const isAdmin = isCurrentUserAdminOfSelectedGroup();
 
     playerIds.forEach(id => {
@@ -354,7 +353,7 @@ export const renderAllPlayers = () => {
         card.className = 'player-item flex flex-col justify-end items-center text-sm p-2 rounded-lg shadow-md bg-cover bg-center text-white relative overflow-hidden h-24 md:h-32';
         card.style.backgroundImage = `url(${pictureUrl})`;
 
-        const isOwnProfile = player.userId === parseJwt(localStorage.getItem('token')).id;
+        const isOwnProfile = player.userId === JSON.parse(localStorage.getItem('user')).id;
         const isAdmin = isCurrentUserAdminOfSelectedGroup();
 
         card.innerHTML = `
