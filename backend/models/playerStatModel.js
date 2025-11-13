@@ -12,7 +12,7 @@ const playerStatSchema = new mongoose.Schema({
         ref: 'Schedule',
     },
     stats: {
-        type: [{ week: Number, status: String, date: String }],
+        type: [{ occurrenceNumber: Number, status: String, date: String }],
         default: [],
     },
 }, {

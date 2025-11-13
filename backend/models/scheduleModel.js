@@ -21,9 +21,9 @@ const scheduleSchema = new mongoose.Schema({
     recurring: { type: Boolean, default: false },
     frequency: { type: Number, default: 0 },
     recurrenceCount: { type: Number, default: 1 },
-    maxPlayersCount: { type: Number, required: true },
-    week: { type: Number, default: 1 },
-    lastGeneratedWeek: { type: Number, default: 0 },
+    maxPlayersCount: { type: Number, required: true }, // Max players for a single game
+    occurrenceNumber: { type: Number, default: 1 }, // Tracks the current occurrence/iteration number
+    lastGeneratedOccurrenceNumber: { type: Number, default: 0 },
     isRotationGenerated: { type: Boolean, default: false },
     lastRotationGeneratedDate: { type: Date },
     playingPlayersIds: [{

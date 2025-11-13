@@ -291,7 +291,22 @@ export async function createNewSchedule() {
     const maxPlayersCount = selectedCourts.reduce((sum, court) => {
         return sum + (court.gameType === '0' ? 2 : 4);
     }, 0);
-    const newSchedule = { name, groupId: selection.currentGroupId, courts: selectedCourts, day, time, duration, recurring, frequency, recurrenceCount, maxPlayersCount, week: 1, lastGeneratedWeek: 0, isRotationGenerated: false, playingPlayersIds: [], benchPlayersIds: [] };
+    // Construct the schedule object with only the necessary fields.
+    // Fields like 'occurrenceNumber', 'lastGeneratedOccurrenceNumber', 'isRotationGenerated',
+    // 'playingPlayersIds', and 'benchPlayersIds' have defaults set in the backend model,
+    // so they don't need to be explicitly sent from the client.
+    const newSchedule = {
+        name,
+        groupId: selection.currentGroupId,
+        courts: selectedCourts,
+        day,
+        time,
+        duration,
+        recurring,
+        frequency, 
+        recurrenceCount, 
+        maxPlayersCount
+    };
 
     showLoading(true);
     try {

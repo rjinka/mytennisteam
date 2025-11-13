@@ -73,7 +73,7 @@ class HistoryAdapter(private val scheduleFrequency: Int) : ListAdapter<GameHisto
                 4 -> "M" // Monthly
                 else -> "W" // Default
             }
-            binding.weekTextView.text = "$prefix${history.week}"
+            binding.weekTextView.text = "$prefix${history.occurrenceNumber}"
             val iconRes = if (history.status == "played") R.drawable.ic_status_played else R.drawable.ic_status_benched
             binding.statusIconImageView.setImageResource(iconRes)
         }
@@ -81,7 +81,7 @@ class HistoryAdapter(private val scheduleFrequency: Int) : ListAdapter<GameHisto
 
     class HistoryDiffCallback : DiffUtil.ItemCallback<GameHistory>() {
         override fun areItemsTheSame(oldItem: GameHistory, newItem: GameHistory): Boolean {
-            return oldItem.week == newItem.week
+            return oldItem.occurrenceNumber == newItem.occurrenceNumber
         }
 
         override fun areContentsTheSame(oldItem: GameHistory, newItem: GameHistory): Boolean {

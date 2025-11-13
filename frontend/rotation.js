@@ -3,7 +3,7 @@ export const getDerivedStats = (history) => {
         return { playedLastTime: false, weeksPlayed: 0, weeksOnBench: 0, lastPlayed: 'Never' };
     }
 
-    const sortedHistory = [...history].sort((a, b) => b.week - a.week);
+    const sortedHistory = [...history].sort((a, b) => b.occurrenceNumber - a.occurrenceNumber);
     const lastEvent = sortedHistory[0];
     const playedLastTime = lastEvent.status === 'played';
     const weeksPlayed = history.filter(h => h.status === 'played').length;

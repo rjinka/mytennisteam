@@ -15,9 +15,9 @@ describe('rotation.js', () => {
 
         it('should correctly calculate stats from history', () => {
             const history = [
-                { week: 1, status: 'played', date: '2025-01-01' },
-                { week: 2, status: 'benched', date: '2025-01-08' },
-                { week: 3, status: 'played', date: '2025-01-15' },
+                { occurrenceNumber: 1, status: 'played', date: '2025-01-01' },
+                { occurrenceNumber: 2, status: 'benched', date: '2025-01-08' },
+                { occurrenceNumber: 3, status: 'played', date: '2025-01-15' },
             ];
             const stats = getDerivedStats(history);
             expect(stats).toEqual({

@@ -337,7 +337,7 @@ export const showPlayerStatsModal = async (player) => {
             const icon = h.status === 'played' ? playIcon : benchIcon;
             return `
                 <div class="flex items-center gap-1 p-1 bg-gray-100 rounded-md">
-                    <span class="font-semibold text-xs">${recurrencePrefix}${h.week}</span>
+                    <span class="font-semibold text-xs">${recurrencePrefix}${h.occurrenceNumber}</span>
                     ${icon}
                 </div>
             `;
