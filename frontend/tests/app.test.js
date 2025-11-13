@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseJwt, handleDataUpdate, isCurrentUserAdminOfSelectedGroup, selection, groups, playerGroups } from '../app.js';
+import { handleDataUpdate, isCurrentUserAdminOfSelectedGroup, selection, groups, playerGroups } from '../app.js';
 import * as modals from '../modals.js';
-import * as api from '../api.js';
+
 
 // Mocking modules
 vi.mock('../modals.js', () => ({
@@ -54,14 +54,6 @@ describe('app.js', () => {
         Object.keys(playerGroups).forEach(key => delete playerGroups[key]);
     });
 
-    describe('parseJwt', () => {
-        it('should correctly parse a JWT token', () => {
-            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyMyIsIm5hbWUiOiJUZXN0IFVzZXIiLCJpc1N1cGVyQWRtaW4iOnRydWV9.signature';
-            const expectedPayload = { id: '123', name: 'Test User', isSuperAdmin: true };
-            expect(parseJwt(token)).toEqual(expectedPayload);
-        });
-    });
-
     describe('handleDataUpdate', () => {
         const allGroupsData = [
             { id: 'group1', name: 'Group 1', admins: ['user1'] },
@@ -69,15 +61,15 @@ describe('app.js', () => {
         ];
 
         it('should call showGroupSelectionModal on initial load', () => {
-            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXIxIn0.signature';
-            localStorage.setItem('token', token);
+            const user = { id: '123', name: 'Test User', isSuperAdmin: true };
+            localStorage.setItem('user', user);
             handleDataUpdate({ allGroups: allGroupsData }, true);
             expect(modals.showGroupSelectionModal).toHaveBeenCalled();
         });
 
         it('should correctly filter admin and player groups', () => {
-            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXIxIn0.signature';
-            localStorage.setItem('token', token);
+            const user = { id: '123', name: 'Test User', isSuperAdmin: true };
+            localStorage.setItem('user', user);
             handleDataUpdate({ allGroups: allGroupsData }, false);
 
             expect(Object.keys(groups)).toHaveLength(1);
@@ -93,23 +85,23 @@ describe('app.js', () => {
         });
 
         it('should return true for a super admin', () => {
-            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InN1cGVyVXNlciIsImlzU3VwZXJBZG1pbiI6dHJ1ZX0.signature';
-            localStorage.setItem('token', token);
+            const user = { id: '123', name: 'Test User', isSuperAdmin: true };
+            localStorage.setItem('user', user);
             selection.currentGroupId = 'group1';
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
         });
 
         it('should return true for a regular admin of the selected group', () => {
-            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXIxIn0.signature';
-            localStorage.setItem('token', token);
+            const user = { id: '123', name: 'Test User', isSuperAdmin: false };
+            localStorage.setItem('user', user);
             selection.currentGroupId = 'group1';
-            groups['group1'] = { id: 'group1', name: 'Group 1', admins: ['user1'] };
+            groups['group1'] = { id: 'group1', name: 'Group 1', admins: ['123'] };
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
         });
 
         it('should return false if the user is not an admin of the selected group', () => {
-            const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InVzZXIyIn0.signature';
-            localStorage.setItem('token', token);
+            const user = { id: '123', name: 'Test User', isSuperAdmin: false };
+            localStorage.setItem('user', user);
             selection.currentGroupId = 'group1';
             // In this scenario, the 'groups' object would not contain 'group1'
             // because the user is not an admin. The beforeEach hook clears it.
