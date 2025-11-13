@@ -6,7 +6,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 import androidx.annotation.VisibleForTesting
-import com.ramjin.mytennisteam.BuildConfig
+import com.ramjin.mytennisteam.data.api.ApiService
 
 object RetrofitClient {
 

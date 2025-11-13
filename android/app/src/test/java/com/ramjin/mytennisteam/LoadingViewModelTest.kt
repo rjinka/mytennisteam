@@ -1,7 +1,7 @@
 package com.ramjin.mytennisteam
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.ramjin.mytennisteam.LoadingViewModel
+import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before

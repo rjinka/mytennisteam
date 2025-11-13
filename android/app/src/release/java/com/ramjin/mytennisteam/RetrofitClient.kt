@@ -1,5 +1,6 @@
 package com.ramjin.mytennisteam
 
+import com.ramjin.mytennisteam.data.api.ApiService
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
