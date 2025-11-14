@@ -101,7 +101,7 @@ router.put('/:id', protect, async (req, res) => {
         const user = await User.findById(player.userId);
 
         // -- if name is changes, update the name in users document
-        if (name !== user.name) {
+        if (name && name !== user.name) {
             user.name = name;
             await user.save();
         }
