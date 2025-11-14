@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ramjin.mytennisteam.data.model.Schedule
 import com.ramjin.mytennisteam.databinding.ItemScheduleBinding
+import com.ramjin.mytennisteam.util.AppUtilities
 
 class ScheduleAdapter(
     private val onItemClicked: (Schedule) -> Unit,
@@ -38,14 +39,16 @@ class ScheduleAdapter(
     class ScheduleViewHolder(private val binding: ItemScheduleBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(schedule: Schedule, onItemClicked: (Schedule) -> Unit, onEditClicked: (Schedule) -> Unit, onDeleteClicked: (Schedule) -> Unit, onStatsClicked: (Schedule) -> Unit, onViewSignupsClicked: (Schedule) -> Unit, currentUserId: String?, isSuperAdmin: Boolean, groupAdmins: List<String>) {
             binding.scheduleNameTextView.text = schedule.name
-            binding.scheduleDayTimeTextView.text = "${getDayString(schedule.day)} ${schedule.time}"
+            binding.scheduleDayTimeTextView.text =
+                "${AppUtilities.getDayString(schedule.day)} ${schedule.time}"
 
             val isGroupAdmin = groupAdmins.contains(currentUserId)
             val canManage = isSuperAdmin || isGroupAdmin
 
             binding.editScheduleButton.visibility = if (canManage) View.VISIBLE else View.GONE
             binding.deleteScheduleButton.visibility = if (canManage) View.VISIBLE else View.GONE
-            binding.viewSignupsButton.visibility = if (canManage && schedule.status == "PLANNING") View.VISIBLE else View.GONE
+            binding.viewSignupsButton.visibility =
+                if (canManage && schedule.status == "PLANNING") View.VISIBLE else View.GONE
 
             itemView.setOnClickListener {
                 onItemClicked(schedule)
@@ -65,19 +68,6 @@ class ScheduleAdapter(
 
             binding.viewSignupsButton.setOnClickListener {
                 onViewSignupsClicked(schedule)
-            }
-        }
-
-        private fun getDayString(day: String): String {
-            return when (day.toIntOrNull()) {
-                0 -> "Sunday"
-                1 -> "Monday"
-                2 -> "Tuesday"
-                3 -> "Wednesday"
-                4 -> "Thursday"
-                5 -> "Friday"
-                6 -> "Saturday"
-                else -> day // Fallback to the original string if it's not a number
             }
         }
     }

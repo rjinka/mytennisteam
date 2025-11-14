@@ -583,28 +583,35 @@ async function handleGroupJoinToken(params) {
 // On page load, check for an existing token and initialize the app if found.
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
-
-    // After login, check sessionStorage for a pending invitation.
-    const pendingJoinToken = sessionStorage.getItem('join_token');
-    if (pendingJoinToken) {
-        // Pass the token to the handler and clear it from storage.
-        urlParams.set('join_token', pendingJoinToken); // Temporarily add it back for the handler
-        await handleInvitationToken(urlParams); // Pass the params object to the function
-    }
-
-    // After login, check sessionStorage for a pending group join.
-    const pendingGroupId = sessionStorage.getItem('groupId');
-    if (pendingGroupId) {
-        urlParams.set('groupId', pendingGroupId);
-        await handleGroupJoinToken(urlParams);
-    }
+    const join_token = urlParams.get('join_token');
+    const groupId = urlParams.get('groupId');
 
     // Instead of checking for a token in localStorage, we check the login status via an API call.
     // The browser will automatically send the httpOnly cookie.
     const user = await checkLoginStatus();
+
     if (user) {
+        // User is logged in, initialize the app.
         initializeApp();
+
+        // Now that the user is logged in, process any pending tokens from sessionStorage or the current URL.
+        const pendingJoinToken = sessionStorage.getItem('join_token') || join_token;
+        if (pendingJoinToken) {
+            urlParams.set('join_token', pendingJoinToken);
+            await handleInvitationToken(urlParams);
+        }
+
+        const pendingGroupId = sessionStorage.getItem('groupId') || groupId;
+        if (pendingGroupId) {
+            urlParams.set('groupId', pendingGroupId);
+            await handleGroupJoinToken(urlParams);
+        }
     } else {
+        // User is not logged in. Store tokens in sessionStorage if they exist, so they persist after the login redirect.
+        if (join_token) sessionStorage.setItem('join_token', join_token);
+        if (groupId) sessionStorage.setItem('groupId', groupId);
+
+        // Show the sign-in page.
         document.getElementById('signInContainer').style.display = 'flex';
     }
 });

@@ -117,7 +117,7 @@ describe('Schedule Routes', () => {
     it('should complete planning for a schedule and set status to ACTIVE', async () => {
         const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
         expect(res.statusCode).toBe(200);
-        expect(res.body.status).toBe('COMPLETED');
+        expect(res.body.status).toBe('ACTIVE');
         expect(res.body.isRotationGenerated).toBe(true);
     });
 

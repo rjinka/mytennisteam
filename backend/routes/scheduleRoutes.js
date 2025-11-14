@@ -241,43 +241,14 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
             schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
         }
 
-        // --- Finalize Stats and Update Schedule State for the first time ---
         const today = new Date();
-        const todayDate = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()} ${today.getFullYear()}`;
-        const currentOccurrenceNumber = 1;
 
-        const allPlayersForStatUpdate = [...schedule.playingPlayersIds, ...schedule.benchPlayersIds];
-
-        for (const playerId of allPlayersForStatUpdate) {
-            const status = schedule.playingPlayersIds.some(pId => pId.equals(playerId)) ? 'played' : 'benched';
-            await PlayerStat.findOneAndUpdate(
-                { playerId: playerId, scheduleId: schedule.id },
-                {
-                    $push: { stats: { occurrenceNumber: currentOccurrenceNumber, status: status, date: todayDate } }
-                },
-                { upsert: true, new: true }
-            );
-        }
-
-        // Update schedule state
         schedule.status = 'ACTIVE';
-        schedule.lastGeneratedOccurrenceNumber = currentOccurrenceNumber;
         schedule.isRotationGenerated = true;
         schedule.lastRotationGeneratedDate = today;
 
-        if (schedule.recurring) {
-            schedule.occurrenceNumber += 1;
-            if (schedule.frequency > 0 && schedule.occurrenceNumber > schedule.recurrenceCount) {
-                schedule.status = 'COMPLETED';
-            }
-        } else {
-            schedule.status = 'COMPLETED';// One-time schedules are completed after one generation
-        }
-
-
         const updatedSchedule = await schedule.save();
         res.status(200).json(updatedSchedule);
-
     } catch (error) {
         console.error('Error completing planning:', error);
         res.status(500).json({ msg: 'Server Error' });

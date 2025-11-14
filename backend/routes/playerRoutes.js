@@ -4,6 +4,7 @@ import Player from '../models/playerModel.js';
 import Group from '../models/groupModel.js';
 import Schedule from '../models/scheduleModel.js';
 import PlayerStat from '../models/playerStatModel.js';
+import User from '../models/userModel.js';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const router = express.Router();
 // @access  Private
 router.get('/:groupId', protect, async (req, res) => {
     try {
-        const players = await Player.find({ groupId: req.params.groupId }).populate('user');
+        const players = await Player.find({ groupId: req.params.groupId }).populate('user', 'name picture id');
         res.json(players);
     } catch (error) {
         console.error(error);
@@ -24,7 +25,7 @@ router.get('/:groupId', protect, async (req, res) => {
 // @desc    Update a player's availability for schedules
 // @access  Private
 router.put('/:id', protect, async (req, res) => {
-    const { availability } = req.body; // Expecting an array like [{ scheduleId, type }, ...]
+    const { availability, name } = req.body; // Expecting an array like [{ scheduleId, type }, ...]
 
     try {
         const player = await Player.findById(req.params.id);
@@ -97,7 +98,14 @@ router.put('/:id', protect, async (req, res) => {
         player.availability = availability;
         await player.save();
 
-        const updatedPlayer = await Player.findById(player._id).populate('user');
+        const user = await User.findById(player.userId);
+
+        // -- if name is changes, update the name in users document
+        if (name && name !== user.name) {
+            user.name = name;
+            await user.save();
+        }
+        const updatedPlayer = await Player.findById(player._id).populate('user', 'name picture id');
         res.json(updatedPlayer);
 
     } catch (error) {

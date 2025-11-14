@@ -32,6 +32,7 @@ import com.ramjin.mytennisteam.ui.adapter.StatsAdapter
 import com.ramjin.mytennisteam.util.SessionManager
 import com.ramjin.mytennisteam.viewmodel.HomeViewModel
 import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
+import com.ramjin.mytennisteam.util.AppUtilities
 
 class PlayersFragment : Fragment() {
 
@@ -232,7 +233,7 @@ class PlayersFragment : Fragment() {
             val checkBox = scheduleView.findViewById<CheckBox>(R.id.schedule_checkbox)
             val spinner = scheduleView.findViewById<AutoCompleteTextView>(R.id.availability_spinner)
 
-            checkBox.text = "${schedule.name} (${schedule.day} at ${schedule.time})"
+            checkBox.text = "${schedule.name} (${AppUtilities.getDayString(schedule.day)} at ${schedule.time})"
             checkBox.tag = schedule.id
             spinner.setAdapter(availabilityAdapter)
 
