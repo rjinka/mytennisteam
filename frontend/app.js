@@ -490,13 +490,15 @@ export async function deleteGroup(groupId) {
 export function logout() {
     // Call the backend endpoint to clear the httpOnly cookie
     api.logout().then(() => {
-        localStorage.removeItem('user'); // Clear user data from local storage
-        window.location.href = '/'; // Redirect to home to trigger sign-in flow
+        localStorage.clear();
+        window.location.href = '/?logged_out=true'; // Redirect with a flag to prevent auto-login
     }).catch(err => {
         console.error('Logout failed:', err);
         // As a fallback, clear local state and redirect
         localStorage.clear();
-        window.location.href = '/';
+        
+        // Redirect with a flag to prevent auto-login
+        Window.location.href = '/?logged_out=true'; // Redirect with a flag to prevent auto-login
     });
 }
 
@@ -585,6 +587,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const join_token = urlParams.get('join_token');
     const groupId = urlParams.get('groupId');
+    const justLoggedOut = urlParams.get('logged_out');
+
+    if (justLoggedOut) {
+        // If the user just logged out, don't try to check their login status.
+        // Just show the sign-in page.
+        document.getElementById('signInContainer').style.display = 'flex';
+        return; // Stop further execution
+    }
 
     // Instead of checking for a token in localStorage, we check the login status via an API call.
     // The browser will automatically send the httpOnly cookie.
