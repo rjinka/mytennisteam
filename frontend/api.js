@@ -325,7 +325,7 @@ export const joinGroup = async (groupId) => {
 };
 
 export const logout = async () => {
-    const response = await fetchWithAuth(`${API_BASE_URL}/auth/logout`, {
+    const response = await fetchWithAuth(`${API_BASE_URL}/users/logout`, {
         method: 'POST',
     });
     if (!response.ok) throw new ApiError('Logout failed', response.status);
