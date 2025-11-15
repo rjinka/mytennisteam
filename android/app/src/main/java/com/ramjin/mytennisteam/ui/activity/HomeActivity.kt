@@ -100,6 +100,7 @@ class HomeActivity : AppCompatActivity() {
             return
         }
         homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
+        setCourtsTabVisibility(homeViewModel.allGroups.value?.isNotEmpty() ?: false)
     }
 
     private fun observeViewModels() {
