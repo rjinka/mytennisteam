@@ -298,6 +298,8 @@ export const renderCourtsList = () => {
 
     // If the user has no admin groups, don't render anything for courts.
     if (Object.keys(groups).length === 0) {
+        const courtManagementTabBtn = document.getElementById('courtManagementTabBtn');
+        courtManagementTabBtn.style.display = 'none';
         courtsList.innerHTML = '<p class="text-gray-500">You do not have administrative access to any courts.</p>';
         return;
     }
