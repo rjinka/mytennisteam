@@ -2,8 +2,11 @@ package com.ramjin.mytennisteam.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -65,10 +68,40 @@ class HomeActivity : AppCompatActivity() {
     private fun setupToolbar() {
         setSupportActionBar(binding.appBar.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
+    }
 
-        binding.appBar.logoutButton.setOnClickListener {
-            logout()
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.home_toolbar_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_delete_account -> {
+                requestAccountDeletion()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun requestAccountDeletion() {
+        if (homeViewModel.allGroups.value?.isNotEmpty() == true) {
+            Toast.makeText(this, "You must leave all groups before deleting your account.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Delete Account")
+            .setMessage("Are you sure you want to permanently delete your account? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                val token = SessionManager.getAuthToken(this)
+                if (token != null) {
+                    homeViewModel.deleteAccount("Bearer $token", loadingViewModel)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun logout() {
@@ -117,6 +150,15 @@ class HomeActivity : AppCompatActivity() {
         homeViewModel.forceLogout.observe(this, EventObserver {
             logout()
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()
+        })
+
+        homeViewModel.deleteAccountStatus.observe(this, EventObserver { success ->
+            if (success) {
+                Toast.makeText(this, "Account successfully deleted.", Toast.LENGTH_LONG).show()
+                logout()
+            } else {
+                Toast.makeText(this, "Failed to delete account. Please try again.", Toast.LENGTH_LONG).show()
+            }
         })
 
         loadingViewModel.isLoading.observe(this) { isLoading ->

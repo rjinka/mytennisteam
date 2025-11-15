@@ -2,6 +2,7 @@ package com.ramjin.mytennisteam.ui.fragment
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,9 +20,11 @@ import com.ramjin.mytennisteam.data.model.Group
 import com.ramjin.mytennisteam.databinding.FragmentGroupsBinding
 import com.ramjin.mytennisteam.ui.adapter.GroupAdapter
 import com.ramjin.mytennisteam.ui.adapter.GroupAdminAdapter
+import com.ramjin.mytennisteam.util.Event
 import com.ramjin.mytennisteam.util.SessionManager
 import com.ramjin.mytennisteam.viewmodel.HomeViewModel
 import com.ramjin.mytennisteam.viewmodel.LoadingViewModel
+import retrofit2.HttpException
 
 class GroupsFragment : Fragment() {
 
@@ -57,13 +60,20 @@ class GroupsFragment : Fragment() {
     }
 
     private fun refreshData() {
-        val rawToken = SessionManager.getAuthToken(requireContext())
-        if (rawToken != null) {
-            homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
-        } else {
-            Toast.makeText(context, "Authentication error", Toast.LENGTH_SHORT).show()
-            binding.swipeRefreshLayout.isRefreshing = false
+        try {
+            val rawToken = SessionManager.getAuthToken(requireContext())
+            if (rawToken != null) {
+                homeViewModel.fetchInitialGroups("Bearer $rawToken", loadingViewModel)
+            } else {
+                Toast.makeText(context, "Authentication error", Toast.LENGTH_SHORT).show()
+                binding.swipeRefreshLayout.isRefreshing = false
+            }
+        } catch(e: Exception) {
+            Log.e("HomeViewModel", "Failed to fetch groups", e)
+        } finally {
+                binding.swipeRefreshLayout.isRefreshing = false
         }
+
     }
 
     private fun setupRecyclerView() {

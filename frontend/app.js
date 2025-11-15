@@ -502,6 +502,33 @@ export function logout() {
     });
 }
 
+export async function requestAccountDeletion() {
+    // Condition: User must not be in any groups or an admin of any groups.
+    if (Object.keys(playerGroups).length > 0 || Object.keys(groups).length > 0) {
+        showMessageBox(
+            'Deletion Not Allowed',
+            'You cannot delete your account while you are a member or an administrator of any groups. Please leave all groups and/or transfer admin rights before deleting your account.'
+        );
+        return;
+    }
+
+    showMessageBox(
+        'Confirm Account Deletion',
+        'Are you sure you want to permanently delete your account? This action cannot be undone.',
+        async () => {
+            showLoading(true);
+            try {
+                await api.deleteSelf();
+                showMessageBox('Account Deleted', 'Your account has been successfully deleted.', logout);
+            } catch (error) {
+                showMessageBox('Error', error.message || 'Failed to delete account.');
+            } finally {
+                showLoading(false);
+        }
+    });
+}
+
+
 async function checkLoginStatus() {
     try {
         // This endpoint relies on the httpOnly cookie being sent automatically.

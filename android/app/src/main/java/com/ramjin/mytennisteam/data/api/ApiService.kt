@@ -1,6 +1,7 @@
 package com.ramjin.mytennisteam.data.api
 
 import com.ramjin.mytennisteam.data.model.*
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -102,5 +103,8 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("groupId") groupId: String
     ): JoinGroupResponse
+
+    @DELETE("api/users/me")
+    suspend fun deleteSelf(@Header("Authorization") token: String): Response<Void>
 
 }
