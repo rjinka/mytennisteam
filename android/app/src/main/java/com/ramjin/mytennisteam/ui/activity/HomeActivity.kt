@@ -109,6 +109,10 @@ class HomeActivity : AppCompatActivity() {
             }
         }
 
+        homeViewModel.allGroups.observe(this) { groups ->
+            setCourtsTabVisibility(groups.isNotEmpty())
+        }
+
         homeViewModel.forceLogout.observe(this, EventObserver {
             logout()
             Toast.makeText(this, "Session expired. Please log in again.", Toast.LENGTH_LONG).show()

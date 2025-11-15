@@ -42,7 +42,24 @@ export function setupGlobalEventListeners() {
     };
 
     // Logout Button
-    document.getElementById('logoutBtn').onclick = app.logout;
+    const logoutBtn = document.getElementById('logoutBtn');
+    logoutBtn.onclick = app.logout;
+
+    // Privacy Policy Link
+    const versionDisplay = document.getElementById('version-display');
+    if (versionDisplay && versionDisplay.parentNode) {
+        const privacyLink = document.createElement('a');
+        privacyLink.href = 'privacy.html';
+        privacyLink.target = '_blank';
+        privacyLink.innerHTML = '&nbsp;|&nbsp;Privacy'; // Add separator
+        privacyLink.className = 'text-xs text-gray-400 hover:underline ml-4'; // Match footer style
+        privacyLink.classList.remove('ml-4'); // The separator handles spacing
+        versionDisplay.appendChild(privacyLink);
+    }
+
+    // Initial UI state setup
+    updateCourtsTabVisibility();
+
 
     // Group Modals
     document.getElementById('cancelCreateGroupBtn').onclick = () => {
@@ -79,6 +96,7 @@ export function setupGlobalEventListeners() {
             document.body.classList.remove('modal-open');
             document.getElementById('editGroupModalOverlay').classList.remove('show');
             await app.setCurrentGroup(app.selection.currentGroupId, true); // Refresh UI for current group
+            updateCourtsTabVisibility();
             renderGroupsList(); // Re-render the admin group list
         } catch (error) {
             console.error('Error updating group:', error);
@@ -407,6 +425,7 @@ export const addRemoveGroupListeners = () => {
                     app.selection.currentGroupId = null;
                 }
                 await app.reloadData();
+                updateCourtsTabVisibility();
                 renderGroupsList(); // Re-render the admin group list
             } catch (error) {
                 console.error('Error deleting group and associated data:', error);
@@ -514,4 +533,11 @@ export const addNewPlayer = () => {
     addPlayerModalOverlay.classList.add('show');
     invitePlayerEmailInput.value = '';
     invitePlayerEmailInput.focus();
+};
+
+export const updateCourtsTabVisibility = () => {
+    const courtManagementTabBtn = document.getElementById('courtManagementTabBtn');
+    if (courtManagementTabBtn) {
+        courtManagementTabBtn.style.display = Object.keys(app.groups).length > 0 ? '' : 'none';
+    }
 };
