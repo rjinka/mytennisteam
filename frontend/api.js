@@ -343,3 +343,14 @@ export const getSelf = async () => {
     if (!response.ok) throw new ApiError('Failed to fetch user data', response.status);
     return response.json();
 };
+
+/**
+ * Sends a request to the backend to delete the current user's account.
+ */
+export const deleteSelf = async () => {
+    const response = await fetchWithAuth(`${API_BASE_URL}/users/me`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) throw new ApiError((await response.json()).msg || 'Failed to delete account', response.status);
+    return response.json();
+};

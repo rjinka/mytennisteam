@@ -43,6 +43,9 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _scheduleSignups = MutableLiveData<List<ScheduleSignup>>()
     val scheduleSignups: LiveData<List<ScheduleSignup>> = _scheduleSignups
 
+    private val _deleteAccountStatus = MutableLiveData<Event<Boolean>>()
+    val deleteAccountStatus: LiveData<Event<Boolean>> = _deleteAccountStatus
+
     companion object {
     private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
@@ -54,6 +57,24 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
                 // Get the SavedStateHandle from the CreationExtras
                 val savedStateHandle = extras.createSavedStateHandle()
                 return HomeViewModel(savedStateHandle) as T
+            }
+        }
+    }
+
+    fun deleteAccount(token: String, loadingViewModel: LoadingViewModel) {
+        loadingViewModel.showLoading()
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.instance.deleteSelf(token)
+                if (response.isSuccessful) {
+                    _deleteAccountStatus.postValue(Event(true))
+                } else {
+                    _deleteAccountStatus.postValue(Event(false))
+                }
+            } catch (e: Exception) {
+                _deleteAccountStatus.postValue(Event(false))
+            } finally {
+                loadingViewModel.hideLoading()
             }
         }
     }
