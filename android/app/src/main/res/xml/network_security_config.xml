@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
+    <!-- Default configuration for release builds -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">auth.mytennisteam.com</domain>
     </domain-config>
+
+    <!-- Debug-only overrides for local development -->
+    <debug-overrides>
+        <trust-anchors>
+            <!-- Allow user-installed certificates for debugging proxies -->
+            <certificates src="user"/>
+            <certificates src="system"/>
+        </trust-anchors>
+    </debug-overrides>
 </network-security-config>
