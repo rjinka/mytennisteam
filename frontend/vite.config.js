@@ -24,6 +24,12 @@ export default defineConfig(({ mode }) => {
             // The output directory for the build
             outDir: './dist',
             emptyOutDir: true,
+            rollupOptions: {
+                input: {
+                    main: resolve(__dirname, 'index.html'),
+                    privacy: resolve(__dirname, 'privacy.html'),
+                },
+            },
         },
         plugins: [],
     };
