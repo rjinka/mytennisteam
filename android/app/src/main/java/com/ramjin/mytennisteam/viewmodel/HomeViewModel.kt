@@ -16,8 +16,8 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _allGroups = MutableLiveData<List<Group>>()
     val allGroups: LiveData<List<Group>> = _allGroups
 
-    private val _homeData = MutableLiveData<HomeData>()
-    val homeData: LiveData<HomeData> = _homeData
+    private val _homeData = MutableLiveData<HomeData?>()
+    val homeData: LiveData<HomeData?> = _homeData
 
     private val _selectedSchedule = MutableLiveData<Schedule?>()
     val selectedSchedule: LiveData<Schedule?> = _selectedSchedule

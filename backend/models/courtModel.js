@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 
 const courtSchema = new mongoose.Schema({
+    // The name of the court (e.g., "Court 1", "Center Court").
     name: {
         type: String,
         required: true,
     },
+    // Reference to the Group this court belongs to.
     groupId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
