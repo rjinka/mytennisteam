@@ -98,7 +98,7 @@ interface ApiService {
     @POST("api/invitations/accept/{join_token}")
     suspend fun acceptInvitation(@Header("Authorization") token: String, @Path("join_token") joinToken: String)
 
-    @POST("/api/groups/{groupId}/join")
+    @POST("api/groups/{groupId}/join")
     suspend fun joinGroup(
         @Header("Authorization") token: String,
         @Path("groupId") groupId: String
@@ -106,5 +106,8 @@ interface ApiService {
 
     @DELETE("api/users/me")
     suspend fun deleteSelf(@Header("Authorization") token: String): Response<Void>
+
+    @POST("api/support/contact")
+    suspend fun supportContact(@Header("Authorization") token: String, @Body request: SubmitSupportRequest) : Response<Void>
 
 }

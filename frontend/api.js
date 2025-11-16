@@ -354,3 +354,16 @@ export const deleteSelf = async () => {
     if (!response.ok) throw new ApiError((await response.json()).msg || 'Failed to delete account', response.status);
     return response.json();
 };
+
+// This function should be added to c/Projects/mytennisteam/frontend/api.js
+export async function submitSupport(data) {
+    const response = await fetchWithAuth(`${API_BASE_URL}/support/contact`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to send support request.', response.status);
+    }
+    return response.json();
+}

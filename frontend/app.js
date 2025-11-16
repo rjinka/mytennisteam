@@ -528,6 +528,34 @@ export async function requestAccountDeletion() {
     });
 }
 
+export async function submitSupportRequest() {
+    const messageTextarea = document.getElementById('supportMessageTextarea');
+    const message = messageTextarea.value.trim();
+
+    if (!message) {
+        showMessageBox('Input Required', 'Please describe your issue before submitting.');
+        return;
+    }
+
+    showLoading(true);
+    const payload = { message };
+    if (selection.currentGroupId) {
+        payload.groupId = selection.currentGroupId;
+    }
+
+    try {
+        const response = await api.submitSupport(payload);
+        showMessageBox('Success', response.msg || 'Your support request has been sent.');
+        document.getElementById('contactSupportModalOverlay').classList.remove('show');
+        document.body.classList.remove('modal-open');
+        messageTextarea.value = ''; // Clear the textarea
+    } catch (error) {
+        showMessageBox('Error', error.message || 'Failed to send support request.');
+    } finally {
+        showLoading(false);
+    }
+}
+
 
 async function checkLoginStatus() {
     try {

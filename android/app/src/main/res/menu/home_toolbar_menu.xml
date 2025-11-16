@@ -6,4 +6,9 @@
         android:id="@+id/action_delete_account"
         android:title="Delete Account"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_contact_support"
+        android:title="Contact Support"
+        app:showAsAction="never" />
 </menu>

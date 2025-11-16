@@ -12,6 +12,7 @@ import invitationRoutes from './routes/invitationRoutes.js';
 import playerStatRoutes from './routes/playerStatRoutes.js';
 import versionRoutes from './routes/versionRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import supportRoutes from './routes/supportRoutes.js';
 
 
 console.log(`Running in ${process.env.NODE_ENV || 'development'} mode.`);
@@ -70,6 +71,7 @@ app.use('/api/invitations', invitationRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/stats', playerStatRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/support', supportRoutes);
 
 const startServer = async () => {
     try {

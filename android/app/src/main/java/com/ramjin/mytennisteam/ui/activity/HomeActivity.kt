@@ -2,9 +2,11 @@ package com.ramjin.mytennisteam.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import android.widget.EditText
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -81,8 +83,40 @@ class HomeActivity : AppCompatActivity() {
                 requestAccountDeletion()
                 true
             }
+            R.id.action_contact_support -> {
+                showContactSupportDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun showContactSupportDialog() {
+        val editText = EditText(this).apply {
+            hint = "Please describe your issue..."
+            setLines(5)
+            isSingleLine = false
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Contact Support")
+            .setView(editText)
+            .setPositiveButton("Submit") { _, _ ->
+                val message = editText.text.toString().trim()
+                if (message.isNotBlank()) {
+                    val token = SessionManager.getAuthToken(this)
+                    if (token != null) {
+                        homeViewModel.submitSupportRequest(
+                            "Bearer $token",
+                            homeViewModel.homeData.value?.selectedGroup?.id,
+                            message,
+                            loadingViewModel
+                        )
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun requestAccountDeletion() {
@@ -158,6 +192,14 @@ class HomeActivity : AppCompatActivity() {
                 logout()
             } else {
                 Toast.makeText(this, "Failed to delete account. Please try again.", Toast.LENGTH_LONG).show()
+            }
+        })
+
+        homeViewModel.contactSupportStatus.observe(this, EventObserver { success ->
+            if (success) {
+                Toast.makeText(this@HomeActivity, "Support request sent!", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this@HomeActivity, "Failed to submit support request. Please try again.", Toast.LENGTH_LONG).show()
             }
         })
 

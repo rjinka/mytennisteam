@@ -321,6 +321,20 @@ export function setupGlobalEventListeners() {
             }
         }
     };
+
+    // Contact Support Modal
+    document.getElementById('contactSupportBtn').onclick = () => {
+        document.getElementById('contactSupportModalOverlay').classList.add('show');
+        document.body.classList.add('modal-open');
+    };
+
+    document.getElementById('closeContactSupportModal').onclick = () => {
+        document.getElementById('contactSupportModalOverlay').classList.remove('show');
+        document.body.classList.remove('modal-open');
+    };
+
+    document.getElementById('submitSupportRequestBtn').onclick = app.submitSupportRequest;
+
 }
 
 export const addScheduleActionListeners = () => {
