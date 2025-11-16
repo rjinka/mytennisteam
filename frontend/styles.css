@@ -16,6 +16,10 @@
             min-height: 100vh;
             padding: 1.5rem;
         }
+
+        #user-actions-container {
+            background-color: #00ffa7 !important
+        }
         .container {
             background-color: #ffffff;
             padding: 4rem;

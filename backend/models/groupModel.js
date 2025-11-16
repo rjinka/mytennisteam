@@ -1,16 +1,19 @@
 import mongoose from 'mongoose';
 
 const groupSchema = new mongoose.Schema({
+    // The name of the group.
     name: {
         type: String,
         required: true,
         trim: true,
     },
+    // The user who originally created the group.
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
+    // An array of user IDs who have administrative privileges for this group.
     admins: {
         type: [{
             type: mongoose.Schema.Types.ObjectId,

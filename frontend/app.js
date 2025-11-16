@@ -502,7 +502,7 @@ export function logout() {
     });
 }
 
-export async function requestAccountDeletion() {
+export function requestAccountDeletion() {
     // Condition: User must not be in any groups or an admin of any groups.
     if (Object.keys(playerGroups).length > 0 || Object.keys(groups).length > 0) {
         showMessageBox(

@@ -1,26 +1,32 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+    // Unique identifier from Google Sign-In.
     googleId: {
         type: String,
         required: true,
         unique: true,
     },
+    // User's email address, must be unique.
     email: {
         type: String,
         required: true,
         unique: true,
     },
+    // User's full name.
     name: {
         type: String,
         required: true,
     },
+    // URL to the user's profile picture.
     picture: {
         type: String,
     },
+    // Timestamp of the last login.
     lastLoginAt: {
         type: Date,
     },
+    // Flag to indicate if the user has super administrator privileges.
     isSuperAdmin: {
         type: Boolean,
         default: false,
