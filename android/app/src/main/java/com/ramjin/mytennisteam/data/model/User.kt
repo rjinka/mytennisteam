@@ -12,3 +12,5 @@ data class User(
 data class AuthRequest(val token: String)
 
 data class AuthResponse(val token: String, val user: User)
+
+data class SubmitSupportRequest(val groupId: String?, val message: String)

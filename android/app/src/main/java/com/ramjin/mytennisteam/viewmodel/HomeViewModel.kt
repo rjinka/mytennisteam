@@ -46,6 +46,9 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     private val _deleteAccountStatus = MutableLiveData<Event<Boolean>>()
     val deleteAccountStatus: LiveData<Event<Boolean>> = _deleteAccountStatus
 
+    private val _contactSupportStatus = MutableLiveData<Event<Boolean>>()
+    val contactSupportStatus: LiveData<Event<Boolean>> = _contactSupportStatus
+
     companion object {
     private const val SELECTED_GROUP_ID_KEY = "selected_group_id"
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
@@ -61,16 +64,27 @@ class HomeViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
         }
     }
 
+    fun submitSupportRequest(token: String, groupId: String?, message: String, loadingViewModel: LoadingViewModel) {
+        loadingViewModel.showLoading()
+        viewModelScope.launch {
+            try {
+                val request = SubmitSupportRequest(groupId, message)
+                val response = RetrofitClient.instance.supportContact(token, request)
+                _contactSupportStatus.postValue(Event(response.isSuccessful))
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Failed to submit support contact", e)
+            } finally {
+                loadingViewModel.hideLoading()
+            }
+        }
+    }
+
     fun deleteAccount(token: String, loadingViewModel: LoadingViewModel) {
         loadingViewModel.showLoading()
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.instance.deleteSelf(token)
-                if (response.isSuccessful) {
-                    _deleteAccountStatus.postValue(Event(true))
-                } else {
-                    _deleteAccountStatus.postValue(Event(false))
-                }
+                _deleteAccountStatus.postValue(Event(response.isSuccessful))
             } catch (e: Exception) {
                 _deleteAccountStatus.postValue(Event(false))
             } finally {
