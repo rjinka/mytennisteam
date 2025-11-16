@@ -11,9 +11,11 @@ jobs:
   increment_frontend_version:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grant write permission to push changes
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -26,4 +28,4 @@ jobs:
         run: |
           cd frontend
           npm version minor -m "Chore(frontend): auto-increment minor version to %s [skip ci]"
-          git push
+          git push --follow-tags
