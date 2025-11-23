@@ -134,7 +134,9 @@ router.delete('/:id', protect, async (req, res) => {
         }
         // Authorization check: Only group admins can delete
         const group = await Group.findById(schedule.groupId);
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        const isAdmin = req.user.isSuperAdmin || (group && group.admins.some(adminId => adminId.equals(req.user._id)));
+
+        if (!isAdmin) {
             return res.status(403).json({ msg: 'User not authorized to delete this schedule' });
         }
 
