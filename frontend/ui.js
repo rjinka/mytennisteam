@@ -142,7 +142,7 @@ export const showScheduleDetails = async (schedule) => {
 
     if (schedule.status === 'PLANNING') {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Player lineup will be generated after planning is complete.</p>';
-        benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">View sign-ups to manage this schedule.</p>';
+        benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">Bench players will be generated after planning is complete</p>';
     } else if (schedule.status === 'COMPLETED') {
         playingPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">This schedule has finished.</p>';
         benchPlayersContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No players on the bench.</p>';
