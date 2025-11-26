@@ -5,7 +5,7 @@ import Group from '../models/groupModel.js';
 import Schedule from '../models/scheduleModel.js';
 import PlayerStat from '../models/playerStatModel.js';
 import User from '../models/userModel.js';
-import { isGroupAdmin, isOwner, isOwner } from '../utils/util.js';
+import { isGroupAdmin, isOwner } from '../utils/util.js';
 
 
 const router = express.Router();
@@ -37,11 +37,11 @@ router.put('/:id', protect, async (req, res) => {
 
         // Authorization: User must be an admin of the group the player is in.
         const group = await Group.findById(player.groupId);
-        const isOwner = isOwner(req.user, player);
+        const isOwnPlayer = isOwner(req.user, player);
         const isAdmin = isGroupAdmin(req.user, group);
 
 
-        if (!isOwner && !isAdmin) {
+        if (!isOwnPlayer && !isAdmin) {
             return res.status(403).json({ msg: 'User not authorized to edit this player' });
         }
 
