@@ -3,8 +3,8 @@ import Schedule from '../models/scheduleModel.js';
 import { protect } from '../middleware/authMiddleware.js';
 import Player from '../models/playerModel.js';
 import PlayerStat from '../models/playerStatModel.js';
-import { v4 as uuidv4 } from 'uuid';
 import Group from '../models/groupModel.js';
+import { isGroupAdmin } from './../utils/util';
 
 const router = express.Router();
 
@@ -63,7 +63,7 @@ router.post('/', protect, async (req, res) => {
             return res.status(404).json({ msg: 'Group not found' });
         }
 
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to create a schedule for this group' });
         }
 
@@ -92,7 +92,7 @@ router.put('/:id', protect, async (req, res) => {
 
         // Authorization check: Only group admins can edit
         const group = await Group.findById(schedule.groupId);
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to edit this schedule' });
         }
 
@@ -134,7 +134,7 @@ router.delete('/:id', protect, async (req, res) => {
         }
         // Authorization check: Only group admins can delete
         const group = await Group.findById(schedule.groupId);
-        const isAdmin = req.user.isSuperAdmin || (group && group.admins.some(adminId => adminId.equals(req.user._id)));
+        const isAdmin = isGroupAdmin(req.user, group);
 
         if (!isAdmin) {
             return res.status(403).json({ msg: 'User not authorized to delete this schedule' });
@@ -167,7 +167,7 @@ router.get('/:scheduleId/signups', protect, async (req, res) => {
 
         // Authorization check: Only group admins can view signups
         const group = await Group.findById(schedule.groupId);
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to view signups for this schedule' });
         }
 
@@ -206,7 +206,7 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
 
         // Authorization check
         const group = await Group.findById(schedule.groupId);
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to complete planning for this schedule' });
         }
 
@@ -279,8 +279,6 @@ router.put('/:id/swap', protect, async (req, res) => {
         }
 
         // Get player positions
-        const playerInIsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerInId));
-        const playerInIsBenched = schedule.benchPlayersIds.some(id => id.equals(playerInId));
         const playerOutIsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerOutId));
 
         // --- Refactored Swap Logic ---
@@ -319,7 +317,7 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
         // Authorization check
         const group = await Group.findById(schedule.groupId);
 
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to generate rotation for this schedule' });
         }
 
@@ -440,7 +438,8 @@ router.get('/:id/rotation-button-state', protect, async (req, res) => {
         }
 
         const group = await Group.findById(schedule.groupId)
-        const isAdmin = req.user.isSuperAdmin || (group && group.admins.some(adminId => adminId.equals(req.user._id)));
+        const isAdmin = isGroupAdmin(req.user, group);
+
 
         if (!isAdmin) {
             return res.json({ visible: false });

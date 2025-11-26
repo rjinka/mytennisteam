@@ -5,6 +5,8 @@ import Group from '../models/groupModel.js';
 import Schedule from '../models/scheduleModel.js';
 import PlayerStat from '../models/playerStatModel.js';
 import User from '../models/userModel.js';
+import { isGroupAdmin, isOwner, isOwner } from '../utils/util.js';
+
 
 const router = express.Router();
 
@@ -35,8 +37,9 @@ router.put('/:id', protect, async (req, res) => {
 
         // Authorization: User must be an admin of the group the player is in.
         const group = await Group.findById(player.groupId);
-        const isOwner = player.userId.equals(req.user._id);
-        const isAdmin = req.user.isSuperAdmin || (group && group.admins.some(adminId => adminId.equals(req.user._id)));
+        const isOwner = isOwner(req.user, player);
+        const isAdmin = isGroupAdmin(req.user, group);
+
 
         if (!isOwner && !isAdmin) {
             return res.status(403).json({ msg: 'User not authorized to edit this player' });
@@ -132,7 +135,7 @@ router.delete('/:id', protect, async (req, res) => {
         if (!group) {
             // If group doesn't exist, player is orphaned, allow deletion.
             // This is a cleanup case.
-        } else if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        } else if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to remove this player' });
         }
 

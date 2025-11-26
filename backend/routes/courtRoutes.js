@@ -3,6 +3,8 @@ import Court from '../models/courtModel.js';
 import Player from '../models/playerModel.js';
 import Group from '../models/groupModel.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { isGroupAdmin } from '../utils/util.js';
+
 
 const router = express.Router();
 
@@ -61,7 +63,7 @@ router.post('/', protect, async (req, res) => {
             return res.status(404).json({ msg: 'Group not found' });
         }
 
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to add courts to this group' });
         }
 
@@ -108,10 +110,9 @@ router.delete('/:id', protect, async (req, res) => {
         // Authorization check: Only group admins can delete courts
         const group = await Group.findById(court.groupId);
         if (!group) {
-            // If group is not found, the court is orphaned. Allow deletion for cleanup.
-        }
-
-        if (!req.user.isSuperAdmin && (!group || !group.admins.some(adminId => adminId.equals(req.user._id)))) {
+            // If group doesn't exist, player is orphaned, allow deletion.
+            // This is a cleanup case.
+        } else if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized to delete this court' });
         }
 

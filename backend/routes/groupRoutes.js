@@ -8,6 +8,7 @@ import User from '../models/userModel.js';
 import Schedule from '../models/scheduleModel.js';
 import PlayerStat from '../models/playerStatModel.js';
 import Court from '../models/courtModel.js';
+import { isSuperAdmin, isGroupAdmin } from '../utils/util.js';
 
 
 const router = express.Router();
@@ -19,7 +20,7 @@ router.get('/player', protect, async (req, res) => {
     try {
         let groups;
         if (!req.user) return res.status(401).json({ msg: 'Not authorized' });
-        if (req.user.isSuperAdmin) {
+        if (isSuperAdmin(req.user)) {
             groups = await Group.find({}); // Super admin gets all groups
             return res.json(groups);
         }
@@ -84,7 +85,7 @@ router.put('/:id', protect, async (req, res) => {
         let group = await Group.findById(req.params.id);
         if (!group) return res.status(404).json({ msg: 'Group not found' });
 
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
@@ -107,7 +108,7 @@ router.put('/:id/admins', protect, async (req, res) => {
         if (!group) return res.status(404).json({ msg: 'Group not found' });
 
         // Authorization: only an existing admin can change the admin list
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
@@ -134,7 +135,7 @@ router.delete('/:id', protect, async (req, res) => {
         const group = await Group.findById(req.params.id);
         if (!group) return res.status(404).json({ msg: 'Group not found' });
 
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
@@ -203,7 +204,7 @@ router.post('/:groupId/invite', protect, async (req, res) => {
         }
 
         // Authorization: Only group admins or super admins can invite
-        if (!req.user.isSuperAdmin && !group.admins.some(adminId => adminId.equals(req.user._id))) {
+        if (!isGroupAdmin(req.user, group)) {
             return res.status(403).json({ msg: 'You are not authorized to invite players to this group.' });
         }
 
