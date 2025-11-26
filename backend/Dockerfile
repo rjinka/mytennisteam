@@ -20,3 +20,5 @@ COPY --from=dependencies /usr/src/app/node_modules ./node_modules
 COPY . .
 EXPOSE 3000
 CMD [ "node", "server.js" ]
+
+# Docker version is not used in prod.

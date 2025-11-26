@@ -17,6 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0 # Fetch all history for all branches and tags
           token: ${{ secrets.MY_ADMIN_PAT }}
 
@@ -34,4 +35,4 @@ jobs:
         run: |
           cd frontend
           npm version minor -m "Chore(frontend): auto-increment minor version to %s [skip ci]"
-          git push origin HEAD:main --follow-tags
+          git push --follow-tags
