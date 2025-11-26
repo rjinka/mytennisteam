@@ -20,14 +20,8 @@ android {
         applicationId = "com.ramjin.mytennisteam"
         minSdk = 24
         targetSdk = 36
-        // Read version info (VERSION_CODE, VERSION_NAME) from android/version.properties if present
-        val versionProps = Properties()
-        val versionFile = rootProject.file("version.properties")
-        if (versionFile.exists()) {
-            versionFile.inputStream().use { versionProps.load(it) }
-        }
-        versionCode = versionProps.getProperty("VERSION_CODE")?.toInt() ?: 1
-        versionName = versionProps.getProperty("VERSION_NAME") ?: "1.0"
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
