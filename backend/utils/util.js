@@ -1,4 +1,3 @@
-// General Utils file for permissions
 export const isGroupAdmin = (user, group) => {
     if (!user) return false;
 
