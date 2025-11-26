@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'android/**'
-  workflow_dispatch:   # Allows manual runs for testing (use the Actions UI or gh cli)
 
 jobs:
   increment_version:
@@ -127,18 +126,8 @@ jobs:
 
       - name: Merge PR when checks are passing (or skip)
         if: steps.check_version.outputs.manual_bump == 'false' && steps.wait_for_checks.outputs.ready == 'true'
-        uses: actions/github-script@v6
-        env:
-          PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number }}
+        uses: peter-evans/merge-pull-request@v3
         with:
-          script: |
-            const prNumber = parseInt(process.env.PR_NUMBER, 10);
-            const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
-            try {
-              const res = await github.rest.pulls.merge({ owner, repo, pull_number: prNumber, merge_method: 'squash' });
-              core.info(`Merge result: ${JSON.stringify(res.data)}`);
-            } catch (err) {
-              core.warning(`Merge attempt failed: ${err}`);
-            }
-          
-          # Note: replaced peter-evans/merge-pull-request with actions/github-script because the action returned "repository not found" during runs. Using this script ensures merging is done via API and avoids dependency on this third-party action.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: squash
