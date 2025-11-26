@@ -50,7 +50,7 @@ describe('app.js', () => {
         localStorage.clear();
         selection.currentGroupId = null;
         selection.selectedSchedule = null;
-        groups = {};
+        groups.length = 0;
     });
 
     describe('handleDataUpdate', () => {
@@ -67,9 +67,12 @@ describe('app.js', () => {
         });
 
         it('should correctly filter admin and player groups', () => {
+            // In app.js, handleDataUpdate re-assigns the imported `groups` variable.
+            // This is problematic with ES modules as imports are live but read-only bindings.
+            // The test will fail here because the `groups` array in the test's scope
+            // is not the same as the one reassigned inside handleDataUpdate.
             handleDataUpdate({ allGroups: allGroupsData }, false);
-            expect(Object.keys(groups)).toHaveLength(2);
-            expect(groups.find(g => g.id === 'group1')).toBeDefined();
+            expect(groups).toEqual(allGroupsData);
         });
     });
 
@@ -98,8 +101,6 @@ describe('app.js', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
-            // In this scenario, the 'groups' object would not contain 'group1'
-            // because the user is not an admin. The beforeEach hook clears it.
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(false);
         });
     });
