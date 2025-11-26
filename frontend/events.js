@@ -93,9 +93,11 @@ export function setupGlobalEventListeners() {
                 api.updateGroupAdmins(app.ui.groupBeingEdited.id, newAdminUserIds)
             ]);
 
-            // The group object from updateGroup doesn't have the new admins, so we update it manually
-            app.groups.find(g => g.id === updatedGroup.id) = updatedGroup;
-            app.groups.find(g => g.id === updatedGroup.id).admins = newAdminUserIds;
+            // replace the group in the groups array
+            const index = app.groups.findIndex(g => g.id === updatedGroup.id);
+            if (index !== -1) {
+                app.groups[index] = updatedGroup;
+            }
 
 
 
