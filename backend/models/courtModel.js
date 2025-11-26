@@ -24,5 +24,3 @@ courtSchema.virtual('id').get(function () { return this._id.toHexString(); });
 const Court = mongoose.model('Court', courtSchema);
 
 export default Court;
-
-// for testing
