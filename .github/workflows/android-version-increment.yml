@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'android/**'
+  workflow_dispatch:
 
 jobs:
   increment_version:
