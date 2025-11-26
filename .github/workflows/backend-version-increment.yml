@@ -9,7 +9,7 @@ on:
 
 jobs:
   increment_backend_version:
-    if: "startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, '[skip ci]')"
+    if: ${{ startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # Grant write permission to push changes
@@ -19,7 +19,7 @@ jobs:
         with:
           ref: main # Explicitly check out the main branch
           fetch-depth: 0 # Fetch all history for all branches and tags
-          token: ${{ secrets.MY_ADMIN_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
