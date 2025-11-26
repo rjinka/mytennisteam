@@ -4,7 +4,7 @@ import { protect } from '../middleware/authMiddleware.js';
 import Player from '../models/playerModel.js';
 import PlayerStat from '../models/playerStatModel.js';
 import Group from '../models/groupModel.js';
-import { isGroupAdmin } from './../utils/util';
+import { isGroupAdmin } from '../utils/util.js';
 
 const router = express.Router();
 
@@ -33,10 +33,10 @@ router.get('/', protect, async (req, res) => {
 // @route GET /api/schedules/:groupId
 // @desc Get all schedules for a group
 // @access private
-router.get('/:groupId', protect, async( req, res) => {
+router.get('/:groupId', protect, async (req, res) => {
     try {
         const { groupId } = req.params;
-        
+
         // Authorization check: User must be a member of the group to view its courts.
         const group = await Group.findById(groupId);
         if (!group) {
@@ -106,10 +106,10 @@ router.put('/:id', protect, async (req, res) => {
 
         if (isOneTimeFinished || isRecurringFinished) {
             updatedScheduleData.status = 'COMPLETED';
-            
+
         }
         // If user extends a completed schedule, re-activate it
-        else if (schedule.status === 'COMPLETED'&& newRecurrenceCount > oldRecurrenceCount) {
+        else if (schedule.status === 'COMPLETED' && newRecurrenceCount > oldRecurrenceCount) {
             updatedScheduleData.status = 'ACTIVE';
         }
 
@@ -224,7 +224,7 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
             schedule.playingPlayersIds = availablePlayers.map(p => p.id);
             schedule.benchPlayersIds = [];
         } else {
-             const permanentPlayers = availablePlayers.filter(p =>
+            const permanentPlayers = availablePlayers.filter(p =>
                 p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent'
             );
 
@@ -268,7 +268,7 @@ router.put('/:id/swap', protect, async (req, res) => {
         if (!schedule) {
             return res.status(404).json({ msg: 'Schedule not found' });
         }
-        
+
         // Validate players exist
         const [playerIn, playerOut] = await Promise.all([
             Player.findById(playerInId),
