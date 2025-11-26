@@ -21,8 +21,3 @@ data class UpdateCourtRequest(
 
 data class ScheduleCourtInfo(@SerializedName("courtId") val courtId: String, @SerializedName("gameType") val gameType: String)
 
-
-// Court Model
-// id: string
-// name: string
-// groupId: string
