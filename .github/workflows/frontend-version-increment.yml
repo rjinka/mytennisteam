@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - 'frontend/**'
+  workflow_dispatch:   # Allows manual runs for testing (use the Actions UI or gh cli)
 
 jobs:
   increment_frontend_version:
-    if: "startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, '[skip ci]')"
+    # Run when PRs are merged to main OR when a manual workflow dispatch is invoked for testing
+    if: "github.event_name == 'workflow_dispatch' || (startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, '[skip ci]'))"
     runs-on: ubuntu-latest
     permissions:
       contents: write # Grant write permission to read/write contents and push
@@ -126,8 +128,18 @@ jobs:
 
       - name: Merge PR when checks are passing (or skip)
         if: steps.wait_for_checks.outputs.ready == 'true'
-        uses: peter-evans/merge-pull-request@v3
+        uses: actions/github-script@v6
+        env:
+          PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number }}
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
-          merge-method: squash
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+            try {
+              const res = await github.rest.pulls.merge({ owner, repo, pull_number: prNumber, merge_method: 'squash' });
+              core.info(`Merge result: ${JSON.stringify(res.data)}`);
+            } catch (err) {
+              core.warning(`Merge attempt failed: ${err}`);
+            }
+          
+          # Note: replaced peter-evans/merge-pull-request with actions/github-script because the third-party action returned "repository not found". This uses the REST API and logs merge result.
