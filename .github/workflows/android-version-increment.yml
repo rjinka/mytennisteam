@@ -12,13 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
 
       - name: Configure Git
         run: |
@@ -38,96 +36,13 @@ jobs:
             echo "manual_bump=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Increment version and open PR
+      - name: Increment version
         if: steps.check_version.outputs.manual_bump == 'false'
-        id: bump_and_push
         run: |
-          set -e
           cd android
-
-          BRANCH_NAME="version-bump/android-${GITHUB_RUN_ID}"
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-          git checkout -b "$BRANCH_NAME"
-
           ./gradlew incrementVersion
           git add version.properties
           # Read the new version from the properties file
           new_version=$(grep "VERSION_NAME" version.properties | sed 's/VERSION_NAME=//')
-          NEW_VERSION="$new_version"
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-          git commit -m "Chore: auto-increment android version to $new_version [skip ci]" || true
-
-      - name: Push bump branch to origin
-        if: steps.check_version.outputs.manual_bump == 'false'
-        run: |
-          set -e
-          cd android
-          git push origin "$BRANCH_NAME"
-
-      - name: Create Pull Request for android version bump
-        id: create_pr
-        if: steps.check_version.outputs.manual_bump == 'false'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Chore(android): auto-increment version to v${{ env.NEW_VERSION }} [skip ci]"
-          title: "Chore(android): auto-increment version to v${{ env.NEW_VERSION }} [skip ci]"
-          body: "Auto-generated PR to bump android version to v${{ env.NEW_VERSION }}"
-          base: main
-          head: ${{ env.BRANCH_NAME }}
-          labels: "auto-version-bump"
-
-      - name: Enable auto-merge for android PR
-        if: steps.check_version.outputs.manual_bump == 'false'
-        uses: peter-evans/enable-pull-request-automerge@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
-          merge-method: squash
-
-      - name: Print PR mergeable state (for debugging)
-        if: steps.check_version.outputs.manual_bump == 'false'
-        run: |
-          apt-get update && apt-get install -y jq
-          PR=${{ steps.create_pr.outputs.pull-request-number }}
-          echo "PR number: $PR"
-          # Let GitHub compute mergeable state
-          sleep 10
-          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/pulls/$PR | jq -r '.mergeable_state'
-
-      - name: Wait for PR checks and mergeability
-        if: steps.check_version.outputs.manual_bump == 'false'
-        id: wait_for_checks
-        run: |
-          apt-get update && apt-get install -y jq
-          PR=${{ steps.create_pr.outputs.pull-request-number }}
-          echo "PR number: $PR"
-          OWNER_REPO=${{ github.repository }}
-          TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          MAX_TRIES=40
-          SLEEP_SECONDS=30
-          ready=false
-          for i in $(seq 1 $MAX_TRIES); do
-            echo "Attempt $i: fetching PR and commit statuses"
-            PR_JSON=$(curl -s -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/$OWNER_REPO/pulls/$PR)
-            HEAD_SHA=$(echo "$PR_JSON" | jq -r '.head.sha')
-            MERGEABLE_STATE=$(echo "$PR_JSON" | jq -r '.mergeable_state')
-            COMBINED_STATE=$(curl -s -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/$OWNER_REPO/commits/$HEAD_SHA/status | jq -r '.state')
-            echo "mergeable_state=$MERGEABLE_STATE combined_state=$COMBINED_STATE"
-            if [ "$COMBINED_STATE" = "success" ] && [ "$MERGEABLE_STATE" = "clean" ]; then
-              ready=true
-              echo "All checks are passing and PR is mergeable"
-              break
-            fi
-            echo "Not mergeable yet. Sleeping $SLEEP_SECONDS seconds..."
-            sleep $SLEEP_SECONDS
-          done
-          echo "ready=$ready" >> $GITHUB_OUTPUT
-
-      - name: Merge PR when checks are passing (or skip)
-        if: steps.check_version.outputs.manual_bump == 'false' && steps.wait_for_checks.outputs.ready == 'true'
-        uses: peter-evans/merge-pull-request@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
-          merge-method: squash
+          git commit -m "Chore: auto-increment android version to $new_version [skip ci]"
+          git push
