@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -37,12 +38,42 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      - name: Increment version
+      - name: Increment version and commit changes
+        id: increment
         run: |
           cd android
           ./gradlew incrementVersion
-          git add version.properties
           # Read the new version from the properties file
           new_version=$(grep "VERSION_NAME" version.properties | sed 's/VERSION_NAME=//')
-          git commit -m "Chore: auto-increment android version to $new_version [skip ci]"
-          git push --follow-tags
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.MY_ADMIN_PAT }}
+          commit-message: "Chore: auto-increment android version to ${{ steps.increment.outputs.new_version }} [skip ci]"
+          branch: version-bump/android-${{ github.run_number }}
+          delete-branch: true
+          title: "🤖 Auto-increment Android version to ${{ steps.increment.outputs.new_version }}"
+          body: |
+            ## Automated Version Increment
+            
+            This PR was automatically created by the version increment workflow.
+            
+            **New Version:** `${{ steps.increment.outputs.new_version }}`
+            **Triggered by:** ${{ github.event.head_commit.message }}
+            
+            This PR will auto-merge once all checks pass.
+          labels: |
+            automated
+            version-bump
+            android
+
+      - name: Enable Pull Request Auto-merge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        run: |
+          gh pr merge --auto --squash "${{ steps.cpr.outputs.pull-request-number }}"
+        env:
+          GH_TOKEN: ${{ secrets.MY_ADMIN_PAT }}
+
