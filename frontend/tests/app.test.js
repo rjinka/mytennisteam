@@ -5,7 +5,7 @@ import * as modals from '../modals.js';
 
 // Mocking modules
 vi.mock('../modals.js', () => ({
-  showGroupSelectionModal: vi.fn(),
+    showGroupSelectionModal: vi.fn(),
 }));
 
 vi.mock('../api.js', () => ({
@@ -18,16 +18,16 @@ vi.mock('../api.js', () => ({
 
 // Mock localStorage
 const localStorageMock = (() => {
-  let store = {};
-  return {
-    getItem: (key) => store[key] || null,
-    setItem: (key, value) => {
-      store[key] = value.toString();
-    },
-    clear: () => {
-      store = {};
-    }
-  };
+    let store = {};
+    return {
+        getItem: (key) => store[key] || null,
+        setItem: (key, value) => {
+            store[key] = value.toString();
+        },
+        clear: () => {
+            store = {};
+        }
+    };
 })();
 global.localStorage = localStorageMock;
 global.atob = (str) => Buffer.from(str, 'base64').toString('binary');
@@ -50,8 +50,7 @@ describe('app.js', () => {
         localStorage.clear();
         selection.currentGroupId = null;
         selection.selectedSchedule = null;
-        Object.keys(groups).forEach(key => delete groups[key]);
-        Object.keys(playerGroups).forEach(key => delete playerGroups[key]);
+        groups = [];
     });
 
     describe('handleDataUpdate', () => {
@@ -68,13 +67,9 @@ describe('app.js', () => {
         });
 
         it('should correctly filter admin and player groups', () => {
-            const user = { id: '123', name: 'Test User', isSuperAdmin: false };
-            localStorage.setItem('user', JSON.stringify(user));
             handleDataUpdate({ allGroups: allGroupsData }, false);
-
-            expect(Object.keys(groups)).toHaveLength(1);
-            expect(groups['group1']).toBeDefined();
-            expect(Object.keys(playerGroups)).toHaveLength(2);
+            expect(Object.keys(groups)).toHaveLength(2);
+            expect(groups.find(g => g.id === 'group1')).toBeDefined();
         });
     });
 
@@ -95,7 +90,7 @@ describe('app.js', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
-            groups['group1'] = { id: 'group1', name: 'Group 1', admins: ['123'] };
+            groups.push({ id: 'group1', name: 'Group 1', admins: ['123'] });
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
         });
 

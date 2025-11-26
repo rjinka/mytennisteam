@@ -88,14 +88,16 @@ export function setupGlobalEventListeners() {
         showLoading(true);
         try {
             // Update group name and admins in parallel
-            const [updatedGroup, ] = await Promise.all([
+            const [updatedGroup,] = await Promise.all([
                 api.updateGroup(app.ui.groupBeingEdited.id, { name: newName }),
                 api.updateGroupAdmins(app.ui.groupBeingEdited.id, newAdminUserIds)
             ]);
 
             // The group object from updateGroup doesn't have the new admins, so we update it manually
-            app.groups[updatedGroup.id] = updatedGroup;
-            app.groups[updatedGroup.id].admins = newAdminUserIds;
+            app.groups.find(g => g.id === updatedGroup.id) = updatedGroup;
+            app.groups.find(g => g.id === updatedGroup.id).admins = newAdminUserIds;
+
+
 
             document.body.classList.remove('modal-open');
             document.getElementById('editGroupModalOverlay').classList.remove('show');
@@ -369,7 +371,7 @@ export const addEditGroupListeners = () => {
     document.querySelectorAll('.edit-group-btn').forEach(button => {
         button.onclick = (event) => {
             const groupId = event.currentTarget.dataset.id;
-            app.ui.groupBeingEdited = app.groups[groupId];
+            app.ui.groupBeingEdited = app.groups.find(g => g.id === groupId);
             if (app.ui.groupBeingEdited) {
                 document.getElementById('editGroupNameInput').value = app.ui.groupBeingEdited.name;
 

@@ -4,7 +4,6 @@ import { setupGlobalEventListeners } from './events.js';
 import * as api from './api.js';
 
 export let groups = {};
-export let playerGroups = {};
 export let schedules = {};
 export let players = {};
 export let courts = {};
@@ -23,15 +22,15 @@ export const ui = {
     groupBeingEdited: null,
 };
 
-export function isCurrentUserAdminOfSelectedGroup() {    
+export function isCurrentUserAdminOfSelectedGroup() {
     const userString = localStorage.getItem('user');
     if (!userString) return false;
     const user = JSON.parse(userString);
 
     if (user.isSuperAdmin) return true;
-    if (!selection.currentGroupId || !groups[selection.currentGroupId]) return false;
+    if (!selection.currentGroupId) return false;
 
-    return groups[selection.currentGroupId].admins.includes(user.id);
+    return groups.filter(g => g.id === selection.currentGroupId && g.admins.includes(user.id)).length > 0;
 }
 
 export async function reloadData() {
@@ -76,15 +75,7 @@ export function copyToClipboard(text, successMessage) {
 
 export function handleDataUpdate(apiData, isInitialLoad = false) {
     if (apiData) {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const allGroups = apiData.allGroups || [];
-
-        // Separate groups into admin and player groups on the client side
-        groups = allGroups.filter(g => user.isSuperAdmin || g.admins.includes(user.id))
-                          .reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
-
-        playerGroups = allGroups.reduce((acc, group) => ({ ...acc, [group.id]: group }), {});
-
+        groups = apiData.allGroups || [];
 
         if (isInitialLoad) {
             showGroupSelectionModal();
@@ -98,8 +89,7 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
     selection.currentGroupId = groupId;
 
     // Find and display the group name
-    // The selected group could be an admin group or a player group. Check both.
-    const group = groups[groupId] || playerGroups[groupId];
+    const group = groups.find(g => g.id === groupId);
     document.getElementById('currentGroupNameDisplay').textContent = group ? group.name : '';
 
     document.getElementById('schedulesList').innerHTML = '';
@@ -112,20 +102,16 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
     scheduleDetailsContainer.classList.add('hidden');
     scheduleDetailsContainer.classList.remove('flex', 'flex-col');
     selection.selectedSchedule = null;
-    
-    // Fetch data specific to the selected group
-    // --- Tab Visibility Logic ---
+
     const courtManagementTabBtn = document.getElementById('courtManagementTabBtn');
     const isAdmin = isCurrentUserAdminOfSelectedGroup();
     if (courtManagementTabBtn) {
         courtManagementTabBtn.style.display = isAdmin ? '' : 'none';
 
-        // If the courts tab is active but should be hidden, switch to the groups tab.
         if (!isAdmin && courtManagementTabBtn.classList.contains('active')) {
             document.getElementById('groupManagementTabBtn').click();
         }
     }
-    // --- End Tab Visibility Logic ---
 
 
     if (groupId) {
@@ -143,13 +129,12 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
         courts = {};
     }
 
-    // Re-render all components with the new group-specific data
     renderGroupsList();
     renderSchedulesList();
     renderCourtsList();
     renderAllPlayers();
 
-    if (group && !isInitialLoad) { // Only proceed if a valid group is selected
+    if (group && !isInitialLoad) {
         const groupSchedules = Object.values(schedules).filter(s => s.groupId === group.id);
         if (groupSchedules.length > 0) {
             showScheduleDetails(groupSchedules[0]);
@@ -212,7 +197,7 @@ export async function createNewGroup() {
     try {
         const newGroup = await api.createGroup({ name: groupName });
         await reloadData(); // Reload all data to get the new group
-        
+
         // Explicitly re-render the group list in the admin tab
         renderGroupsList();
 
@@ -274,7 +259,7 @@ export async function createNewSchedule() {
     const recurring = document.getElementById('createScheduleIsRecurringSelect').checked;
     const frequency = document.getElementById('createScheduleFrequencySelect').value;
     const courtsDiv = document.getElementById('createScheduleCourtsInput');
-    
+
     const selectedCourts = Array.from(courtsDiv.querySelectorAll('input[type="checkbox"]:checked')).map(cb => {
         const gameTypeSelect = cb.closest('div').querySelector('.court-gametype-select');
         return {
@@ -303,8 +288,8 @@ export async function createNewSchedule() {
         time,
         duration,
         recurring,
-        frequency, 
-        recurrenceCount, 
+        frequency,
+        recurrenceCount,
         maxPlayersCount
     };
 
@@ -330,7 +315,7 @@ export async function createNewSchedule() {
 export async function saveScheduleChanges() {
     const { scheduleBeingEdited } = ui;
     if (!scheduleBeingEdited) return;
-    
+
     // Store old values BEFORE they are updated from the form
     const oldCourts = (scheduleBeingEdited.courts || []).map(c => ({
         courtId: c.courtId,
@@ -357,7 +342,7 @@ export async function saveScheduleChanges() {
             gameType: gameTypeSelect.value
         };
     });
-    
+
     let frequency, recurrenceCount;
     if (recurring) {
         frequency = document.getElementById('editScheduleFrequencySelect').value;
@@ -398,7 +383,7 @@ export async function saveScheduleChanges() {
     showLoading(true);
     try {
         const updatedSchedule = await api.updateSchedule(scheduleBeingEdited.id, payload);
-        
+
         // Update local data with the response from the server
         schedules[updatedSchedule.id] = updatedSchedule;
         selection.selectedSchedule = updatedSchedule;
@@ -496,15 +481,14 @@ export function logout() {
         console.error('Logout failed:', err);
         // As a fallback, clear local state and redirect
         localStorage.clear();
-        
+
         // Redirect with a flag to prevent auto-login
         Window.location.href = '/?logged_out=true'; // Redirect with a flag to prevent auto-login
     });
 }
 
 export function requestAccountDeletion() {
-    // Condition: User must not be in any groups or an admin of any groups.
-    if (Object.keys(playerGroups).length > 0 || Object.keys(groups).length > 0) {
+    if (Object.keys(groups).length > 0) {
         showMessageBox(
             'Deletion Not Allowed',
             'You cannot delete your account while you are a member or an administrator of any groups. Please leave all groups and/or transfer admin rights before deleting your account.'
@@ -524,8 +508,8 @@ export function requestAccountDeletion() {
                 showMessageBox('Error', error.message || 'Failed to delete account.');
             } finally {
                 showLoading(false);
-        }
-    });
+            }
+        });
 }
 
 export async function submitSupportRequest() {
