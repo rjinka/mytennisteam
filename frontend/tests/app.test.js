@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleDataUpdate, isCurrentUserAdminOfSelectedGroup, selection, groups, playerGroups } from '../app.js';
+import { handleDataUpdate, isCurrentUserAdminOfSelectedGroup, selection, groups } from '../app.js';
 import * as modals from '../modals.js';
 
 
@@ -50,7 +50,7 @@ describe('app.js', () => {
         localStorage.clear();
         selection.currentGroupId = null;
         selection.selectedSchedule = null;
-        groups = [];
+        groups = {};
     });
 
     describe('handleDataUpdate', () => {
