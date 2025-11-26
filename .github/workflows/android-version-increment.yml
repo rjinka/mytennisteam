@@ -19,7 +19,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -44,4 +44,4 @@ jobs:
           # Read the new version from the properties file
           new_version=$(grep "VERSION_NAME" version.properties | sed 's/VERSION_NAME=//')
           git commit -m "Chore: auto-increment android version to $new_version [skip ci]"
-          git push
+          git push --follow-tags
