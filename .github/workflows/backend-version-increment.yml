@@ -92,15 +92,7 @@ jobs:
           head: ${{ env.BRANCH_NAME }}
           labels: "auto-version-bump"
 
-      - name: Debug PR number
-        run: echo "create_pr.pull-request-number='${{ steps.create_pr.outputs.pull-request-number }}'"
-
-      - name: No PR created - skip auto-merge
-        if: ${{ steps.create_pr.outputs.pull-request-number == '' || steps.create_pr.outputs.pull-request-number == '0' }}
-        run: echo "No PR created by create-pull-request (maybe no changes). Skipping auto-merge steps."
-
       - name: Enable auto-merge for backend PR
-        if: ${{ steps.create_pr.outputs.pull-request-number != '' && steps.create_pr.outputs.pull-request-number != '0' }}
         uses: peter-evans/enable-pull-request-automerge@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -108,7 +100,6 @@ jobs:
           merge-method: merge
 
       - name: Print PR mergeable state (for debugging)
-        if: ${{ steps.create_pr.outputs.pull-request-number != '' && steps.create_pr.outputs.pull-request-number != '0' }}
         run: |
           apt-get update && apt-get install -y jq
           PR=${{ steps.create_pr.outputs.pull-request-number }}
@@ -118,7 +109,6 @@ jobs:
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/pulls/$PR | jq -r '.mergeable_state' || true
 
       - name: Wait for PR checks and mergeability
-        if: ${{ steps.create_pr.outputs.pull-request-number != '' && steps.create_pr.outputs.pull-request-number != '0' }}
         id: wait_for_checks
         run: |
           apt-get update && apt-get install -y jq
@@ -147,7 +137,7 @@ jobs:
           echo "ready=$ready" >> $GITHUB_OUTPUT
 
       - name: Merge PR when checks are passing (or skip)
-        if: ${{ steps.create_pr.outputs.pull-request-number != '' && steps.create_pr.outputs.pull-request-number != '0' && steps.wait_for_checks.outputs.ready == 'true' }}
+        if: steps.wait_for_checks.outputs.ready == 'true'
         uses: actions/github-script@v6
         env:
           PR_NUMBER: ${{ steps.create_pr.outputs.pull-request-number }}
