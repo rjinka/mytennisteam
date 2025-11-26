@@ -52,7 +52,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_ADMIN_PAT }}
-          commit-message: "Chore: auto-increment android version to ${{ steps.increment.outputs.new_version }} [skip ci]"
+          commit-message: "Chore: auto-increment android version to ${{ steps.increment.outputs.new_version }}"
           branch: version-bump/android-${{ github.run_number }}
           delete-branch: true
           title: "🤖 Auto-increment Android version to ${{ steps.increment.outputs.new_version }}"

@@ -37,7 +37,7 @@ jobs:
         run: |
           cd frontend
           # Run npm version and capture the new version
-          new_version=$(npm version minor -m "Chore(frontend): auto-increment minor version to %s [skip ci]" | sed 's/v//')
+          new_version=$(npm version minor -m "Chore(frontend): auto-increment minor version to %s" | sed 's/v//')
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
@@ -45,7 +45,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_ADMIN_PAT }}
-          commit-message: "Chore(frontend): auto-increment minor version to ${{ steps.increment.outputs.new_version }} [skip ci]"
+          commit-message: "Chore(frontend): auto-increment minor version to ${{ steps.increment.outputs.new_version }}"
           branch: version-bump/frontend-${{ github.run_number }}
           delete-branch: true
           title: "🤖 Auto-increment Frontend version to ${{ steps.increment.outputs.new_version }}"
