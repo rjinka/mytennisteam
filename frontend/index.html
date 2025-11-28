@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <title>My Tennis Team</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
+
 <body>
     <div id="signInContainer" style="display: flex; justify-content: center; align-items: center; height: 100vh;">
         <div class="w-full max-w-sm p-4">
@@ -15,208 +17,473 @@
             <p class="text-center text-white mb-8">Please sign in to continue</p>
             <div id="g_id_onload"
                 data-client_id="589338885263-r81svr3ihbat1elcfefm94051md1esvv.apps.googleusercontent.com"
-                data-auto_prompt="false"
-                data-ux_mode="redirect" 
-                data-login_uri="%VITE_API_BASE_URL%/api/auth/google">
+                data-auto_prompt="false" data-ux_mode="redirect" data-login_uri="%VITE_API_BASE_URL%/api/auth/google">
             </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-shape="rectangular"
-                 data-theme="outline"
-                 data-text="sign_in_with"
-                 data-size="large"
-                 data-logo_alignment="left">
+            <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                data-text="sign_in_with" data-size="large" data-logo_alignment="left">
             </div>
         </div>
     </div>
 
-
-
     <div id="mainContainer" class="hidden" style="display: none;">
         <div id="loadingOverlay" class="loading-overlay hidden">
             <svg class="loading-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke-width="2"/>
-                <path d="M3.9375 9C5.4375 12.5 8.5625 15 12 15C15.4375 15 18.5625 12.5 20.0625 9" stroke-width="2" stroke-linecap="round"/>
-                <path d="M3.9375 15C5.4375 11.5 8.5625 9 12 9C15.4375 9 18.5625 11.5 20.0625 15" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="12" r="10" stroke-width="2" />
+                <path d="M3.9375 9C5.4375 12.5 8.5625 15 12 15C15.4375 15 18.5625 12.5 20.0625 9" stroke-width="2"
+                    stroke-linecap="round" />
+                <path d="M3.9375 15C5.4375 11.5 8.5625 9 12 9C15.4375 9 18.5625 11.5 20.0625 15" stroke-width="2"
+                    stroke-linecap="round" />
             </svg>
         </div>
 
         <div class="container mx-auto p-4 relative">
-            <h1 class="text-3xl font-bold text-gray-800 text-center mb-4">My Tennis Team</h1>
-            <div id="user-actions-container" class="absolute top-4 right-4 z-10 flex items-center gap-2 backdrop-blur-sm p-2 rounded-full shadow-md">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-4 mt-8 sm:mt-0">My Tennis Team</h1>
+            <div id="user-actions-container"
+                class="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 flex items-center gap-2 backdrop-blur-sm p-2 rounded-full shadow-md scale-90 sm:scale-100">
                 <button id="contactSupportBtn" title="Contact Support" class="btn-icon-only">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                 </button>
                 <button id="logoutBtn" title="Logout" class="btn-icon-only">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                 </button>
-                <button id="deleteAccountBtn" title="Delete Account" class="btn-icon-only text-red-500 hover:text-red-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <button id="deleteAccountBtn" title="Delete Account"
+                    class="btn-icon-only text-red-500 hover:text-red-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
             </div>
             <h2 id="currentGroupNameDisplay" class="text-xl font-semibold text-gray-600 text-center -mt-2 mb-4"></h2>
-            <div class="tab-nav flex flex-col sm:flex-row w-full">
+            <div class="tab-nav w-full">
                 <button id="groupManagementTabBtn" class="tab-btn active w-full" title="Groups">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path fill="#64B5F6" d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                        <path fill="#64B5F6"
+                            d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z" />
                     </svg>
                     <span>Groups</span>
                 </button>
                 <button id="courtManagementTabBtn" class="tab-btn w-full" title="Courts">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path fill="#FFB74D" d="M20 6H4V4h16v2zm0 14H4V8h16v12zM6 10h2v2H6v-2zm0 4h2v2H6v-2zm0 4h2v2H6v-2zm4-8h2v2h-2v-2zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-8h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+                        <path fill="#FFB74D"
+                            d="M20 6H4V4h16v2zm0 14H4V8h16v12zM6 10h2v2H6v-2zm0 4h2v2H6v-2zm0 4h2v2H6v-2zm4-8h2v2h-2v-2zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2zm4-8h2v2h-2v-2zm0 4h2v2h-2v-2z" />
                     </svg>
                     <span>Courts</span>
                 </button>
                 <button id="scheduleManagementTabBtn" class="tab-btn w-full" title="Schedules">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path fill="#E57373" d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/>
-                        <path fill="#81C784" d="M7 12h5v5H7z"/>
+                        <path fill="#E57373"
+                            d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z" />
+                        <path fill="#81C784" d="M7 12h5v5H7z" />
                     </svg>
                     <span>Schedules</span>
                 </button>
                 <button id="playerManagementTabBtn" class="tab-btn w-full" title="Players">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                        <path fill="#81C784" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        <path fill="#81C784"
+                            d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
                     </svg>
                     <span>Players</span>
                 </button>
             </div>
-            <div id="createGroupModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Create New Group</h3>
-                    <div class="flex flex-col gap-3">
-                        <label for="newGroupNameInput" class="text-gray-700 font-medium">Group Name:</label>
-                        <input type="text" id="newGroupNameInput" class="input-field" placeholder="Enter group name">
-                    </div>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="cancelCreateGroupBtn" class="btn btn-secondary">Cancel</button>
-                        <button id="confirmCreateGroupBtn" class="btn btn-primary">Create Group</button>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Contact Support Modal -->
-            <div id="contactSupportModalOverlay" class="modal-overlay">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="text-lg font-semibold">Contact Support</h3>
-                        <button id="closeContactSupportModal" class="modal-close-btn">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-4">Please describe the issue you are experiencing. Your current group information will be sent along with your message if applicable.</p>
-                        <textarea id="supportMessageTextarea" class="w-full p-2 border rounded" rows="6" placeholder="Enter your message here..."></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button id="submitSupportRequestBtn" class="btn btn-primary">Submit</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Edit Group Modal -->
-            <div id="editGroupModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Edit Group Name</h3>
-                    <div class="flex flex-col gap-3">
-                        <label for="editGroupNameInput" class="text-gray-700 font-medium">Group Name:</label>
-                        <input type="text" id="editGroupNameInput" class="input-field">
-                    </div>
-                    <div class="flex flex-col gap-3 mt-4">
-                        <label class="text-gray-700 font-medium">Group Admins:</label>
-                        <div id="groupAdminsList" class="flex flex-col gap-2 max-h-48 overflow-y-auto border p-2 rounded-md">
-                            <!-- Player list with checkboxes will be populated here -->
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="cancelEditGroupBtn" class="btn btn-secondary">Cancel</button>
-                        <button id="confirmEditGroupBtn" class="btn btn-primary">Save Changes</button>
-                    </div>
-                </div>
-            </div>
-            <!-- Group Selection Modal -->
-            <div id="groupSelectionModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Select Your Group</h3>
-                    <div id="modalGroupButtonsContainer" class="flex flex-col gap-3 w-full">
-                        <!-- Group buttons will be populated here by app.js -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create Court Modal -->
-            <div id="createCourtModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-l font-semibold text-gray-800 text-center mb-4">Create New Court</h3>
-                    <div class="flex flex-col gap-3">
-                        <label for="newCourtNameInput" class="text-gray-700 font-medium">Court Name:</label>
-                        <input type="text" id="newCourtNameInput" class="input-field" placeholder="Enter court name">
-                    </div>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="cancelCreateCourtBtn" class="btn btn-secondary">Cancel</button>
-                        <button id="confirmCreateCourtBtn" class="btn btn-primary">Create Court</button>
-                    </div>
-                </div>
-            </div>
-            <!-- Edit Couse Modal -->
-            <div id="editCourtModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Edit Court</h3>
-                    <div class="flex flex-col gap-3">
-                        <label for="editCourtNameInput" class="text-gray-700 font-medium">Court Name:</label>
-                        <input type="text" id="editCourtNameInput" class="input-field">
-                    </div>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="cancelEditCourtBtn" class="btn btn-secondary">Cancel</button>
-                        <button id="confirmEditCourtBtn" class="btn btn-primary">Save Court</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add Player Modal -->
-            <div id="addPlayerModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Invite New Player</h3>
-                    <div class="flex flex-col gap-3">
-                        <label for="invitePlayerEmailInput" class="text-gray-700 font-medium">Player's Email:</label>
-                        <input type="email" id="invitePlayerEmailInput" class="input-field" placeholder="Enter player's email">
-                    </div>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="cancelInvitePlayerBtn" class="btn btn-secondary">Cancel</button>
-                        <button id="confirmInvitePlayerBtn" class="btn btn-primary">Send Invitation</button>
-                    </div>
-                </div>
-            </div>
-            <div id="editPlayerModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-md">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center">Edit Player Details</h3>
-                    <div class="flex flex-col gap-3">
-                        <label for="editPlayerNameInput" class="text-gray-700 font-medium">Player Name:</label>
-                        <input type="text" id="editPlayerNameInput" class="input-field" placeholder="Player Name">
-                    </div>
-                    <!-- Choose list of schedules from this group -->
-                        <div class="flex flex-col gap-2">
-                            <label class="text-gray-700 font-medium">Available Schedules:</label>
-                            <div id="modifyAvailableSchedulesList" class="flex flex-col gap-1">
-                                <!-- Schedule checkboxes will be loaded by app.js -->
+            <div class="tab-content-wrapper">
+                <!-- Schedule Management Tab Content -->
+                <div id="scheduleManagementTabContent" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <div class="card lg:col-span-1">
+                            <div id="schedulesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 mb-4">
                             </div>
                         </div>
-                    <div class="flex justify-end gap-3 mt-4">
-                        <button id="cancelEditBtn" class="btn btn-secondary">Cancel</button>
-                        <button id="savePlayerChangesBtn" class="btn btn-primary">Save Changes</button>
+                        <div id="scheduleDetailsContainer" class="card lg:col-span-2 hidden">
+                            <div class="flex flex-col flex-grow">
+                                <h2 class="text-xl font-semibold text-gray-700 mb-2">Current <span
+                                        id="currentDayDisplay"></span> Lineup <span id="recurrenceInfoContainer">(<span
+                                            id="recurrenceTypeDisplay">Week</span>
+                                        <span id="currentNum">1</span>)</span></h2>
+                                <div id="playingPlayersContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                </div>
+                                <p class="text-xl font-semibold text-gray-700 mt-4 mb-2">Bench Players:</p>
+                                <div id="benchPlayersContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+                            </div>
+                            <button id="generateRotationBtn"
+                                class="btn btn-primary mt-6 self-center w-full md:w-1/2">Generate
+                                Rotation</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Admin Tab Content -->
+                <div id="groupManagementTabContent" class="tab-content">
+                    <div class="card">
+                        <div id="groupsList"
+                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                            <!-- Groups will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Court Management Tab Content -->
+                <div id="courtManagementTabContent" class="tab-content hidden">
+                    <div class="card">
+                        <div id="courtsList"
+                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                        </div>
+                    </div>
+                </div>
+                <!-- Player Management Tab Content -->
+                <div id="playerManagementTabContent" class="tab-content hidden">
+                    <div class="card">
+                        <div id="allPlayersGrid"
+                            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Player Stats Modal -->
-            <div id="playerStatsModalOverlay" class="modal-overlay">
-                <div class="modal-content w-full max-w-3xl">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Stats for <span id="statsPlayerName"></span></h3>
+        <!-- Modals -->
+        <div id="createGroupModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Create New Group</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="newGroupNameInput" class="text-gray-700 font-medium">Group Name:</label>
+                    <input type="text" id="newGroupNameInput" class="input-field" placeholder="Enter group name">
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelCreateGroupBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmCreateGroupBtn" class="btn btn-primary">Create Group</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Support Modal -->
+        <div id="contactSupportModalOverlay" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="text-lg font-semibold">Contact Support</h3>
+                    <button id="closeContactSupportModal" class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-4">Please describe the issue you are experiencing. Your current group information
+                        will be sent along with your message if applicable.</p>
+                    <textarea id="supportMessageTextarea" class="w-full p-2 border rounded" rows="6"
+                        placeholder="Enter your message here..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button id="submitSupportRequestBtn" class="btn btn-primary">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Group Modal -->
+        <div id="editGroupModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Edit Group Name</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="editGroupNameInput" class="text-gray-700 font-medium">Group Name:</label>
+                    <input type="text" id="editGroupNameInput" class="input-field">
+                </div>
+                <div class="flex flex-col gap-3 mt-4">
+                    <label class="text-gray-700 font-medium">Group Admins:</label>
+                    <div id="groupAdminsList"
+                        class="flex flex-col gap-2 max-h-48 overflow-y-auto border p-2 rounded-md">
+                        <!-- Player list with checkboxes will be populated here -->
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelEditGroupBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmEditGroupBtn" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Group Selection Modal -->
+        <div id="groupSelectionModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-lg font-semibold text-gray-800 text-center mb-4">Select Your Group</h3>
+                <div id="modalGroupButtonsContainer" class="flex flex-col gap-3 w-full">
+                    <!-- Group buttons will be populated here by app.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Court Modal -->
+        <div id="createCourtModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-l font-semibold text-gray-800 text-center mb-4">Create New Court</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="newCourtNameInput" class="text-gray-700 font-medium">Court Name:</label>
+                    <input type="text" id="newCourtNameInput" class="input-field" placeholder="Enter court name">
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelCreateCourtBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmCreateCourtBtn" class="btn btn-primary">Create Court</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Court Modal -->
+        <div id="editCourtModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Edit Court</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="editCourtNameInput" class="text-gray-700 font-medium">Court Name:</label>
+                    <input type="text" id="editCourtNameInput" class="input-field">
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelEditCourtBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmEditCourtBtn" class="btn btn-primary">Save Court</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Player Modal -->
+        <div id="addPlayerModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Invite New Player</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="invitePlayerEmailInput" class="text-gray-700 font-medium">Player's
+                        Email:</label>
+                    <input type="email" id="invitePlayerEmailInput" class="input-field"
+                        placeholder="Enter player's email">
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelInvitePlayerBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmInvitePlayerBtn" class="btn btn-primary">Send Invitation</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="editPlayerModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center">Edit Player Details</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="editPlayerNameInput" class="text-gray-700 font-medium">Player
+                        Name:</label>
+                    <input type="text" id="editPlayerNameInput" class="input-field" placeholder="Player Name">
+                </div>
+                <!-- Choose list of schedules from this group -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-gray-700 font-medium">Available Schedules:</label>
+                    <div id="modifyAvailableSchedulesList" class="flex flex-col gap-1">
+                        <!-- Schedule checkboxes will be loaded by app.js -->
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelEditBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="savePlayerChangesBtn" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Stats Modal -->
+        <div id="playerStatsModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-3xl">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Stats for <span
+                        id="statsPlayerName"></span></h3>
+                <div id="playerStatsContainer" class="overflow-x-auto">
+                    <table class="min-w-full bg-white border-collapse rounded-lg">
+                        <thead>
+                            <tr class="table-header rounded-t-lg">
+                                <th class="rounded-tl-lg p-2">Schedule</th>
+                                <th class="p-2">Total Played</th>
+                                <th class="p-2">Total Benched</th>
+                                <th class="rounded-tr-lg p-2">History</th>
+                            </tr>
+                        </thead>
+                        <tbody id="playerStatsModalBody"></tbody>
+                    </table>
+                </div>
+                <button id="closePlayerStatsBtn" class="btn btn-secondary mt-4 w-full">Close</button>
+            </div>
+        </div>
+
+        <!-- Schedule Stats Modal -->
+        <div id="scheduleStatsModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-4xl">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Stats for <span
+                        id="statsScheduleName"></span></h3>
+                <div id="scheduleStatsContainer" class="overflow-x-auto">
+                    <table class="min-w-full bg-white border-collapse rounded-lg">
+                        <thead>
+                            <tr class="table-header rounded-t-lg">
+                                <th class="rounded-tl-lg p-2">Player Name</th>
+                                <th class="p-2">Availability</th>
+                                <th class="p-2">Times Played</th>
+                                <th class="p-2">Times on Bench</th>
+                                <th class="rounded-tr-lg p-2">Last Played</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleStatsModalBody"></tbody>
+                    </table>
+                </div>
+                <button id="closeScheduleStatsBtn" class="btn btn-secondary mt-4 w-full">Close</button>
+            </div>
+        </div>
+
+        <div id="createScheduleModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Add New Schedule</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="createScheduleNameInput" class="text-gray-700 font-medium">Schedule
+                        Name:</label>
+                    <input type="text" id="createScheduleNameInput" class="input-field"
+                        placeholder="e.g., Morning Match">
+                    <label for="createScheduleDayInput" class="text-gray-700 font-medium">Day:</label>
+                    <select id="createScheduleDayInput" class="input-field">
+                        <option value=0>Sunday</option>
+                        <option value=1>Monday</option>
+                        <option value=2>Tuesday</option>
+                        <option value=3>Wednesday</option>
+                        <option value=4>Thursday</option>
+                        <option value=5>Friday</option>
+                        <option value=6>Saturday</option>
+                    </select>
+                    <!-- Choose the time slot in the future -->
+                    <label for="createScheduleTimeInput" class="text-gray-700 font-medium">Time
+                        Slot:</label>
+                    <input type="time" id="createScheduleTimeInput" class="input-field" value="09:00">
+                    <label for="createScheduleDurationInput" class="text-gray-700 font-medium">Duration
+                        (In
+                        Minutes):</label>
+                    <input type="number" id="createScheduleDurationInput" class="input-field" value="60" min="30"
+                        max="3600">
+                    <label for="createScheduleCourtsInput" class="text-gray-700 font-medium">Courts:</label>
+                    <div id="createScheduleCourtsInput" class="flex flex-col gap-2">
+                        <!-- Court checkboxes will be loaded from DB by app.js -->
+                    </div>
+                    <label for="createScheduleIsRecurringSelect" class="flex items-center gap-2 mt-2">
+                        <input type="checkbox" id="createScheduleIsRecurringSelect"> Make this a
+                        recurring schedule
+                    </label>
+                    <div id="createScheduleRecurrenceOptions" class="hidden flex-col gap-3">
+                        <label for="createScheduleFrequencySelect" class="text-gray-700 font-medium">Recurrence:</label>
+                        <select id="createScheduleFrequencySelect" class="input-field">
+                            <option value=0>None</option>
+                            <option value=1>Daily</option>
+                            <option value=2>Weekly</option>
+                            <option value=3>Bi-Weekly</option>
+                            <option value=4>Monthly</option>
+                        </select>
+                        <div id="createScheduleRecurrenceCountContainer" class="hidden flex-col gap-3">
+                            <label for="createScheduleRecurrenceCountInput" class="text-gray-700 font-medium">Number
+                                of Occurrences:</label>
+                            <input type="number" id="createScheduleRecurrenceCountInput" class="input-field" value="8"
+                                min="1" max="52">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelCreateScheduleBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmCreateScheduleBtn" class="btn btn-primary">Add Schedule</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Schedule Modal -->
+        <div id="editScheduleModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Edit Schedule</h3>
+                <div class="flex flex-col gap-3">
+                    <label for="editScheduleNameInput" class="text-gray-700 font-medium">Schedule
+                        Name:</label>
+                    <input type="text" id="editScheduleNameInput" class="input-field" placeholder="e.g., Morning Match">
+                    <label for="editScheduleDayInput" class="text-gray-700 font-medium">Day:</label>
+                    <select id="editScheduleDayInput" class="input-field">
+                        <option value=0>Sunday</option>
+                        <option value=1>Monday</option>
+                        <option value=2>Tuesday</option>
+                        <option value=3>Wednesday</option>
+                        <option value=4>Thursday</option>
+                        <option value=5>Friday</option>
+                        <option value=6>Saturday</option>
+                    </select>
+                    <label for="editScheduleTimeInput" class="text-gray-700 font-medium">Time
+                        Slot:</label>
+                    <input type="time" id="editScheduleTimeInput" class="input-field">
+                    <label for="editScheduleDurationInput" class="text-gray-700 font-medium">Duration
+                        (In
+                        Minutes):</label>
+                    <input type="number" id="editScheduleDurationInput" class="input-field" min="30" max="3600">
+                    <label for="editScheduleCourtsInput" class="text-gray-700 font-medium">Courts:</label>
+                    <div id="editScheduleCourtsInput" class="flex flex-col gap-2">
+                        <!-- Court checkboxes will be loaded from DB by app.js -->
+                    </div>
+                    <label for="editIsRecurring" class="flex items-center gap-2 mt-2">
+                        <input type="checkbox" id="editIsRecurring"> Make this a recurring schedule
+                    </label>
+                    <div id="editScheduleRecurrenceOptions" class="hidden flex-col gap-3">
+                        <label for="editScheduleFrequencySelect" class="text-gray-700 font-medium">Recurrence:</label>
+                        <select id="editScheduleFrequencySelect" class="input-field">
+                            <option value=0>None</option>
+                            <option value=1>Daily</option>
+                            <option value=2>Weekly</option>
+                            <option value=3>Bi-Weekly</option>
+                            <option value=4>Monthly</option>
+                        </select>
+                        <div id="editScheduleRecurrenceCountContainer" class="hidden flex-col gap-3">
+                            <label for="editScheduleRecurrenceCountInput" class="text-gray-700 font-medium">Number
+                                of Occurrences:</label>
+                            <input type="number" id="editScheduleRecurrenceCountInput" class="input-field" min="1"
+                                max="52">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="cancelEditScheduleBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmEditScheduleBtn" class="btn btn-primary">Save Schedule</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Signups Modal -->
+        <div id="scheduleSignupsModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-lg relative">
+                <button id="closeScheduleSignupsBtn" class="absolute top-2 right-2 btn-icon-only">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Schedule Sign-ups</h3>
+                <div id="scheduleSignupsContainer" class="overflow-y-auto max-h-96">
+                    <!-- Sign-ups will be rendered here -->
+                </div>
+                <div class="flex justify-end gap-3 mt-4">
+                    <button id="completePlanningBtn" class="btn btn-primary">Complete Planning</button>
+                    <button id="deleteScheduleFromSignupsBtn" class="btn btn-danger">Delete
+                        Schedule</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="swapModalOverlay" class="modal-overlay">
+            <div class="modal-content w-full max-w-md">
+                <h3 id="swapModalTitle" class="text-xl font-semibold text-gray-800 text-center">Swap Player
+                </h3>
+                <p class="text-gray-600 text-center">Swap <span id="playerBeingSwappedName" class="font-bold"></span>
+                    with:</p>
+                <select id="swapPlayerSelect" class="modal-select"></select>
+                <label class="flex items-center gap-2 mt-2">
+                    <input type="checkbox" id="swapWithBackupCheckbox" class="form-checkbox h-4 w-4 text-blue-600">
+                    <span>Swap with a Backup Player</span>
+                </label>
+                <div id="backupSwapContainer" class="hidden flex-col gap-2 mt-2">
+                    <label for="backupPlayerSelect" class="text-gray-700 font-medium">Backup Player:</label>
+                    <select id="backupPlayerSelect" class="modal-select"></select>
+                </div>
+                <p id="swapMessage" class="text-sm text-red-600 text-center hidden"></p>
+                <div class="flex justify-end gap-3 mt-4">
+                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Stats for <span
+                            id="statsPlayerName"></span></h3>
                     <div id="playerStatsContainer" class="overflow-x-auto">
                         <table class="min-w-full bg-white border-collapse rounded-lg">
                             <thead>
@@ -233,10 +500,12 @@
                     <button id="closePlayerStatsBtn" class="btn btn-secondary mt-4 w-full">Close</button>
                 </div>
             </div>
+
             <!-- Schedule Stats Modal -->
             <div id="scheduleStatsModalOverlay" class="modal-overlay">
                 <div class="modal-content w-full max-w-4xl">
-                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Stats for <span id="statsScheduleName"></span></h3>
+                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Stats for <span
+                            id="statsScheduleName"></span></h3>
                     <div id="scheduleStatsContainer" class="overflow-x-auto">
                         <table class="min-w-full bg-white border-collapse rounded-lg">
                             <thead>
@@ -254,12 +523,15 @@
                     <button id="closeScheduleStatsBtn" class="btn btn-secondary mt-4 w-full">Close</button>
                 </div>
             </div>
+
             <div id="createScheduleModalOverlay" class="modal-overlay">
                 <div class="modal-content w-full max-w-md">
                     <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Add New Schedule</h3>
                     <div class="flex flex-col gap-3">
-                        <label for="createScheduleNameInput" class="text-gray-700 font-medium">Schedule Name:</label>
-                        <input type="text" id="createScheduleNameInput" class="input-field" placeholder="e.g., Morning Match">
+                        <label for="createScheduleNameInput" class="text-gray-700 font-medium">Schedule
+                            Name:</label>
+                        <input type="text" id="createScheduleNameInput" class="input-field"
+                            placeholder="e.g., Morning Match">
                         <label for="createScheduleDayInput" class="text-gray-700 font-medium">Day:</label>
                         <select id="createScheduleDayInput" class="input-field">
                             <option value=0>Sunday</option>
@@ -271,19 +543,25 @@
                             <option value=6>Saturday</option>
                         </select>
                         <!-- Choose the time slot in the future -->
-                        <label for="createScheduleTimeInput" class="text-gray-700 font-medium">Time Slot:</label>
+                        <label for="createScheduleTimeInput" class="text-gray-700 font-medium">Time
+                            Slot:</label>
                         <input type="time" id="createScheduleTimeInput" class="input-field" value="09:00">
-                        <label for="createScheduleDurationInput" class="text-gray-700 font-medium">Duration (In Minutes):</label>
-                        <input type="number" id="createScheduleDurationInput" class="input-field" value="60" min="30" max="3600">
+                        <label for="createScheduleDurationInput" class="text-gray-700 font-medium">Duration
+                            (In
+                            Minutes):</label>
+                        <input type="number" id="createScheduleDurationInput" class="input-field" value="60" min="30"
+                            max="3600">
                         <label for="createScheduleCourtsInput" class="text-gray-700 font-medium">Courts:</label>
                         <div id="createScheduleCourtsInput" class="flex flex-col gap-2">
                             <!-- Court checkboxes will be loaded from DB by app.js -->
                         </div>
                         <label for="createScheduleIsRecurringSelect" class="flex items-center gap-2 mt-2">
-                            <input type="checkbox" id="createScheduleIsRecurringSelect"> Make this a recurring schedule
+                            <input type="checkbox" id="createScheduleIsRecurringSelect"> Make this a
+                            recurring schedule
                         </label>
                         <div id="createScheduleRecurrenceOptions" class="hidden flex-col gap-3">
-                            <label for="createScheduleFrequencySelect" class="text-gray-700 font-medium">Recurrence:</label>
+                            <label for="createScheduleFrequencySelect"
+                                class="text-gray-700 font-medium">Recurrence:</label>
                             <select id="createScheduleFrequencySelect" class="input-field">
                                 <option value=0>None</option>
                                 <option value=1>Daily</option>
@@ -292,8 +570,10 @@
                                 <option value=4>Monthly</option>
                             </select>
                             <div id="createScheduleRecurrenceCountContainer" class="hidden flex-col gap-3">
-                                <label for="createScheduleRecurrenceCountInput" class="text-gray-700 font-medium">Number of Occurrences:</label>
-                                <input type="number" id="createScheduleRecurrenceCountInput" class="input-field" value="8" min="1" max="52">
+                                <label for="createScheduleRecurrenceCountInput" class="text-gray-700 font-medium">Number
+                                    of Occurrences:</label>
+                                <input type="number" id="createScheduleRecurrenceCountInput" class="input-field"
+                                    value="8" min="1" max="52">
                             </div>
                         </div>
                     </div>
@@ -303,13 +583,16 @@
                     </div>
                 </div>
             </div>
+
             <!-- Edit Schedule Modal -->
             <div id="editScheduleModalOverlay" class="modal-overlay">
                 <div class="modal-content w-full max-w-md">
                     <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Edit Schedule</h3>
                     <div class="flex flex-col gap-3">
-                        <label for="editScheduleNameInput" class="text-gray-700 font-medium">Schedule Name:</label>
-                        <input type="text" id="editScheduleNameInput" class="input-field" placeholder="e.g., Morning Match">
+                        <label for="editScheduleNameInput" class="text-gray-700 font-medium">Schedule
+                            Name:</label>
+                        <input type="text" id="editScheduleNameInput" class="input-field"
+                            placeholder="e.g., Morning Match">
                         <label for="editScheduleDayInput" class="text-gray-700 font-medium">Day:</label>
                         <select id="editScheduleDayInput" class="input-field">
                             <option value=0>Sunday</option>
@@ -320,9 +603,12 @@
                             <option value=5>Friday</option>
                             <option value=6>Saturday</option>
                         </select>
-                        <label for="editScheduleTimeInput" class="text-gray-700 font-medium">Time Slot:</label>
+                        <label for="editScheduleTimeInput" class="text-gray-700 font-medium">Time
+                            Slot:</label>
                         <input type="time" id="editScheduleTimeInput" class="input-field">
-                        <label for="editScheduleDurationInput" class="text-gray-700 font-medium">Duration (In Minutes):</label>
+                        <label for="editScheduleDurationInput" class="text-gray-700 font-medium">Duration
+                            (In
+                            Minutes):</label>
                         <input type="number" id="editScheduleDurationInput" class="input-field" min="30" max="3600">
                         <label for="editScheduleCourtsInput" class="text-gray-700 font-medium">Courts:</label>
                         <div id="editScheduleCourtsInput" class="flex flex-col gap-2">
@@ -332,7 +618,8 @@
                             <input type="checkbox" id="editIsRecurring"> Make this a recurring schedule
                         </label>
                         <div id="editScheduleRecurrenceOptions" class="hidden flex-col gap-3">
-                            <label for="editScheduleFrequencySelect" class="text-gray-700 font-medium">Recurrence:</label>
+                            <label for="editScheduleFrequencySelect"
+                                class="text-gray-700 font-medium">Recurrence:</label>
                             <select id="editScheduleFrequencySelect" class="input-field">
                                 <option value=0>None</option>
                                 <option value=1>Daily</option>
@@ -341,8 +628,10 @@
                                 <option value=4>Monthly</option>
                             </select>
                             <div id="editScheduleRecurrenceCountContainer" class="hidden flex-col gap-3">
-                                <label for="editScheduleRecurrenceCountInput" class="text-gray-700 font-medium">Number of Occurrences:</label>
-                                <input type="number" id="editScheduleRecurrenceCountInput" class="input-field" min="1" max="52">
+                                <label for="editScheduleRecurrenceCountInput" class="text-gray-700 font-medium">Number
+                                    of Occurrences:</label>
+                                <input type="number" id="editScheduleRecurrenceCountInput" class="input-field" min="1"
+                                    max="52">
                             </div>
                         </div>
                     </div>
@@ -353,92 +642,55 @@
                 </div>
             </div>
 
-            <div class="tab-content-wrapper">
-                <!-- Schedule Management Tab Content -->
-                <div id="scheduleManagementTabContent" class="tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                        <div class="card lg:col-span-1">
-                            <div id="schedulesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 mb-4"></div>
-                        </div>
-                        <div id="scheduleDetailsContainer" class="card lg:col-span-2 hidden">
-                            <div class="flex flex-col flex-grow">
-                                <h2 class="text-xl font-semibold text-gray-700 mb-2">Current <span id="currentDayDisplay"></span> Lineup <span id="recurrenceInfoContainer">(<span id="recurrenceTypeDisplay">Week</span> <span id="currentNum">1</span>)</span></h2>
-                                <div id="playingPlayersContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
-                                <p class="text-xl font-semibold text-gray-700 mt-4 mb-2">Bench Players:</p>
-                                <div id="benchPlayersContainer" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
-                            </div>
-                            <button id="generateRotationBtn" class="btn btn-primary mt-6 self-center w-full md:w-1/2">Generate Rotation</button>
-                        </div>
+            <!-- Schedule Signups Modal -->
+            <div id="scheduleSignupsModalOverlay" class="modal-overlay">
+                <div class="modal-content w-full max-w-lg relative">
+                    <button id="closeScheduleSignupsBtn" class="absolute top-2 right-2 btn-icon-only">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Schedule Sign-ups</h3>
+                    <div id="scheduleSignupsContainer" class="overflow-y-auto max-h-96">
+                        <!-- Sign-ups will be rendered here -->
                     </div>
-                </div>
-                <!-- Admin Tab Content -->
-                <div id="groupManagementTabContent" class="tab-content">
-                    <div class="card">
-                        <div id="groupsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                            <!-- Groups will be rendered here -->
-                        </div>
-                    </div>
-                </div>
-                <!-- Player Management Tab Content -->
-                <div id="playerManagementTabContent" class="tab-content hidden">
-                    <div class="card">
-                        <div id="allPlayersGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                        </div>
-                    </div>
-                </div>
-                <!-- Court Management Tab Content -->
-                <div id="courtManagementTabContent" class="tab-content hidden">
-                    <div class="card">
-                        <div id="courtsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                        </div>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button id="completePlanningBtn" class="btn btn-primary">Complete Planning</button>
+                        <button id="deleteScheduleFromSignupsBtn" class="btn btn-danger">Delete
+                            Schedule</button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Schedule Signups Modal -->
-        <div id="scheduleSignupsModalOverlay" class="modal-overlay">
-            <div class="modal-content w-full max-w-lg relative">
-                <button id="closeScheduleSignupsBtn" class="absolute top-2 right-2 btn-icon-only">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <h3 class="text-xl font-semibold text-gray-800 text-center mb-4">Schedule Sign-ups</h3>
-                <div id="scheduleSignupsContainer" class="overflow-y-auto max-h-96">
-                    <!-- Sign-ups will be rendered here -->
-                </div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button id="completePlanningBtn" class="btn btn-primary">Complete Planning</button>
-                    <button id="deleteScheduleFromSignupsBtn" class="btn btn-danger">Delete Schedule</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="swapModalOverlay" class="modal-overlay">
-            <div class="modal-content w-full max-w-md">
-                <h3 id="swapModalTitle" class="text-xl font-semibold text-gray-800 text-center">Swap Player</h3>
-                <p class="text-gray-600 text-center">Swap <span id="playerBeingSwappedName" class="font-bold"></span> with:</p>
-                <select id="swapPlayerSelect" class="modal-select"></select>
-                <label class="flex items-center gap-2 mt-2">
-                    <input type="checkbox" id="swapWithBackupCheckbox" class="form-checkbox h-4 w-4 text-blue-600">
-                    <span>Swap with a Backup Player</span>
-                </label>
-                <div id="backupSwapContainer" class="hidden flex-col gap-2 mt-2">
-                    <label for="backupPlayerSelect" class="text-gray-700 font-medium">Backup Player:</label>
-                    <select id="backupPlayerSelect" class="modal-select"></select>
-                </div>
-                <p id="swapMessage" class="text-sm text-red-600 text-center hidden"></p>
-                <div class="flex justify-end gap-3 mt-4">
-                    <button id="cancelSwapBtn" class="btn btn-secondary">Cancel</button>
-                    <button id="confirmSwapBtn" class="btn btn-primary">Confirm Swap</button>
+            <div id="swapModalOverlay" class="modal-overlay">
+                <div class="modal-content w-full max-w-md">
+                    <h3 id="swapModalTitle" class="text-xl font-semibold text-gray-800 text-center">Swap Player
+                    </h3>
+                    <p class="text-gray-600 text-center">Swap <span id="playerBeingSwappedName"
+                            class="font-bold"></span>
+                        with:</p>
+                    <select id="swapPlayerSelect" class="modal-select"></select>
+                    <label class="flex items-center gap-2 mt-2">
+                        <input type="checkbox" id="swapWithBackupCheckbox" class="form-checkbox h-4 w-4 text-blue-600">
+                        <span>Swap with a Backup Player</span>
+                    </label>
+                    <div id="backupSwapContainer" class="hidden flex-col gap-2 mt-2">
+                        <label for="backupPlayerSelect" class="text-gray-700 font-medium">Backup Player:</label>
+                        <select id="backupPlayerSelect" class="modal-select"></select>
+                    </div>
+                    <p id="swapMessage" class="text-sm text-red-600 text-center hidden"></p>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button id="cancelSwapBtn" class="btn btn-secondary">Cancel</button>
+                        <button id="confirmSwapBtn" class="btn btn-primary">Confirm Swap</button>
+                    </div>
                 </div>
             </div>
         </div>
         <span id="version-display" class="text-xs text-gray-400 fixed bottom-2 right-2"></span>
-    </div>
 
 
-    <script type="module" src="./main.js"></script> 
+        <script type="module" src="./main.js"></script>
 </body>
+
 </html>
