@@ -331,6 +331,7 @@ export const showPlayerStatsModal = async (player) => {
         const scheduleName = schedule ? `${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})` : 'Unknown Schedule';
 
         const row = statsBody.insertRow();
+        row.className = 'table-row';
         row.innerHTML = `
             <td class="p-2 border-t">${scheduleName}</td>
             <td class="p-2 border-t text-center">${stats.weeksPlayed}</td>
