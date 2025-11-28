@@ -154,7 +154,6 @@ body::before {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 1.25rem;
     border-radius: 16px;
     box-shadow: var(--shadow-sm);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -858,27 +857,13 @@ body.modal-open {
     max-width: 700px;
 }
 
-.tab-content-wrapper {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-}
-
-.tab-content {
-    grid-column: 1 / -1;
-    grid-row: 1 / -1;
-    flex-direction: column;
-    gap: 1.5rem;
-    animation: fadeIn 0.4s ease-out;
-}
-
-#allPlayersGrid {
-    align-content: start;
-}
-
 #mainContainer {
     height: 100%;
     width: 100%;
+}
+
+.grid-cols-1 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 /* --- Mobile Bottom Tab Navigation --- */
