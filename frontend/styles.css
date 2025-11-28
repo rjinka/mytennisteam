@@ -862,14 +862,14 @@ body.modal-open {
     width: 100%;
 }
 
-.grid-cols-1 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 /* --- Mobile Bottom Tab Navigation --- */
 @media (max-width: 640px) {
     body {
         padding-bottom: 80px;
+    }
+
+    #allPlayersGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     }
 
     #version-display {
