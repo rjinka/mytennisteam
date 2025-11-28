@@ -1,4 +1,4 @@
-import { setCurrentGroup, groups, courts, schedules, players, ui, playerGroups, isCurrentUserAdminOfSelectedGroup } from './app.js';
+import { setCurrentGroup, groups, courts, schedules, players, ui, isCurrentUserAdminOfSelectedGroup } from './app.js';
 import { getDerivedStats } from './rotation.js';
 import { showMessageBox, renderAllPlayers, showLoading } from './ui.js';
 import * as api from './api.js';
@@ -8,32 +8,9 @@ const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 export const showGroupSelectionModal = async () => {
     const modalOverlay = document.getElementById('groupSelectionModalOverlay');
     const buttonsContainer = document.getElementById('modalGroupButtonsContainer');
-
-    const adminGroupsArray = Object.values(groups);
-    let groupsToShow = [];
-
-    if (adminGroupsArray.length > 0) {
-        // If the user is an admin of any group, combine all groups for selection.
-        const allGroups = { ...groups, ...playerGroups };
-        groupsToShow = Object.values(allGroups);
-
-        // Auto-select only if there's exactly one group in total.
-        if (groupsToShow.length === 1) {
-            const singleGroup = groupsToShow[0];
-            await setCurrentGroup(singleGroup.id);
-            modalOverlay.classList.remove('show');
-            document.body.classList.remove('modal-open');
-            return; // Exit before showing the modal
-        }
-    } else {
-        // If the user is not an admin of any group, only show the groups they are a player in.
-        // In this case, we always show the modal to avoid confusion, even if there's only one.
-        groupsToShow = Object.values(playerGroups);
-    }
-
     buttonsContainer.innerHTML = '';
 
-    if (groupsToShow.length === 0) {
+    if (Object.keys(groups).length === 0) {
         // If no groups exist, don't show the modal. Instead, switch to the admin tab.
         const groupManagementTabBtn = document.getElementById('groupManagementTabBtn');
         if (groupManagementTabBtn) {
@@ -53,19 +30,27 @@ export const showGroupSelectionModal = async () => {
         // Explicitly hide the group selection modal overlay since it won't be used.
         modalOverlay.classList.remove('show');
         return; // Exit before showing the modal
-    } else {
-        groupsToShow.forEach((group) => {
-            const button = document.createElement('button');
-            button.className = 'btn btn-primary w-full';
-            button.textContent = group.name;
-            button.onclick = async () => {
-                await setCurrentGroup(group.id);
-                modalOverlay.classList.remove('show');
-                document.body.classList.remove('modal-open');
-            };
-            buttonsContainer.appendChild(button);
-        });
     }
+
+    if (Object.keys(groups).length === 1) {
+        const singleGroup = Object.values(groups)[0];
+        await setCurrentGroup(singleGroup.id);
+        modalOverlay.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        return; // Exit before showing the modal
+    }
+
+    Object.values(groups).forEach((group) => {
+        const button = document.createElement('button');
+        button.className = 'btn btn-primary w-full';
+        button.textContent = group.name;
+        button.onclick = async () => {
+            await setCurrentGroup(group.id);
+            modalOverlay.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        };
+        buttonsContainer.appendChild(button);
+    });
 
     document.body.classList.add('modal-open');
     modalOverlay.classList.add('show');
@@ -346,6 +331,7 @@ export const showPlayerStatsModal = async (player) => {
         const scheduleName = schedule ? `${schedule.name} (${weekdayNames[schedule.day]} at ${schedule.time})` : 'Unknown Schedule';
 
         const row = statsBody.insertRow();
+        row.className = 'table-row';
         row.innerHTML = `
             <td class="p-2 border-t">${scheduleName}</td>
             <td class="p-2 border-t text-center">${stats.weeksPlayed}</td>
@@ -364,7 +350,7 @@ export const showSwapModalForSchedule = (player, direction, schedule) => {
 
     document.getElementById('playerBeingSwappedName').textContent = player.user.name;
     document.getElementById('swapModalTitle').textContent = `Swap ${player.user.name} (${direction === 'moveToBench' ? 'Playing' : 'Bench'})`;
-    
+
     const swapPlayerSelect = document.getElementById('swapPlayerSelect');
     const swapMessage = document.getElementById('swapMessage');
     const confirmSwapBtn = document.getElementById('confirmSwapBtn');

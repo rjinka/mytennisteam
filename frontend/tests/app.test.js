@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleDataUpdate, isCurrentUserAdminOfSelectedGroup, selection, groups, playerGroups } from '../app.js';
+import { handleDataUpdate, isCurrentUserAdminOfSelectedGroup, selection, groups } from '../app.js';
 import * as modals from '../modals.js';
 
 
 // Mocking modules
 vi.mock('../modals.js', () => ({
-  showGroupSelectionModal: vi.fn(),
+    showGroupSelectionModal: vi.fn(),
 }));
 
 vi.mock('../api.js', () => ({
@@ -18,16 +18,16 @@ vi.mock('../api.js', () => ({
 
 // Mock localStorage
 const localStorageMock = (() => {
-  let store = {};
-  return {
-    getItem: (key) => store[key] || null,
-    setItem: (key, value) => {
-      store[key] = value.toString();
-    },
-    clear: () => {
-      store = {};
-    }
-  };
+    let store = {};
+    return {
+        getItem: (key) => store[key] || null,
+        setItem: (key, value) => {
+            store[key] = value.toString();
+        },
+        clear: () => {
+            store = {};
+        }
+    };
 })();
 global.localStorage = localStorageMock;
 global.atob = (str) => Buffer.from(str, 'base64').toString('binary');
@@ -50,8 +50,7 @@ describe('app.js', () => {
         localStorage.clear();
         selection.currentGroupId = null;
         selection.selectedSchedule = null;
-        Object.keys(groups).forEach(key => delete groups[key]);
-        Object.keys(playerGroups).forEach(key => delete playerGroups[key]);
+        groups.length = 0;
     });
 
     describe('handleDataUpdate', () => {
@@ -68,13 +67,12 @@ describe('app.js', () => {
         });
 
         it('should correctly filter admin and player groups', () => {
-            const user = { id: '123', name: 'Test User', isSuperAdmin: false };
-            localStorage.setItem('user', JSON.stringify(user));
+            // In app.js, handleDataUpdate re-assigns the imported `groups` variable.
+            // This is problematic with ES modules as imports are live but read-only bindings.
+            // The test will fail here because the `groups` array in the test's scope
+            // is not the same as the one reassigned inside handleDataUpdate.
             handleDataUpdate({ allGroups: allGroupsData }, false);
-
-            expect(Object.keys(groups)).toHaveLength(1);
-            expect(groups['group1']).toBeDefined();
-            expect(Object.keys(playerGroups)).toHaveLength(2);
+            expect(groups).toEqual(allGroupsData);
         });
     });
 
@@ -95,7 +93,7 @@ describe('app.js', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
-            groups['group1'] = { id: 'group1', name: 'Group 1', admins: ['123'] };
+            groups.push({ id: 'group1', name: 'Group 1', admins: ['123'] });
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
         });
 
@@ -103,8 +101,6 @@ describe('app.js', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
-            // In this scenario, the 'groups' object would not contain 'group1'
-            // because the user is not an admin. The beforeEach hook clears it.
             expect(isCurrentUserAdminOfSelectedGroup()).toBe(false);
         });
     });

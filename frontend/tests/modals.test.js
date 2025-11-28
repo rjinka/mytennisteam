@@ -5,7 +5,6 @@ import * as app from '../app.js';
 // Mock the app module
 vi.mock('../app.js', () => ({
     groups: {},
-    playerGroups: {},
     courts: {},
     schedules: {},
     selection: {
@@ -39,11 +38,11 @@ describe('modals.js', () => {
 
     describe('showGroupSelectionModal', () => {
         it('should show the group selection modal', () => {
-            app.groups = { group1: { id: 'group1', name: 'Group 1' } };
-            app.playerGroups = { group2: { id: 'group2', name: 'Group 2' } };
+            app.groups = { group1: { id: 'group1', name: 'Group 1' }, group2: { id: 'group2', name: 'Group 2' } };
             showGroupSelectionModal();
             const modal = document.getElementById('groupSelectionModalOverlay');
             expect(modal.classList.contains('show')).toBe(true);
+            expect(document.getElementById('modalGroupButtonsContainer').children.length).toBe(2);
         });
     });
 

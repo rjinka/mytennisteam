@@ -1,4 +1,4 @@
-import { setCurrentGroup, groups, playerGroups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup } from './app.js';
+import { setCurrentGroup, groups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup } from './app.js';
 import { addEditGroupListeners, addRemoveGroupListeners, addShareGroupListeners, addScheduleActionListeners } from './events.js';
 import { populateScheduleCourtsDropdown } from './modals.js';
 import { addSwapButtonListenersForSchedule } from './events.js';
@@ -9,7 +9,7 @@ import { getRotationButtonState } from './api.js';
 
 const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-export const showLoading = (show) => { 
+export const showLoading = (show) => {
     const overlay = document.getElementById('loadingOverlay');
     overlay.classList.toggle('hidden', !show);
     overlay.classList.toggle('flex', show); // Ensure flex is applied when shown
@@ -57,12 +57,10 @@ export const renderGroupsList = async () => {
     if (!groupsList) return;
     groupsList.innerHTML = '';
 
-    // Combine admin groups and player groups, ensuring no duplicates
-    const allUserGroups = { ...playerGroups, ...groups };
-    const sortedGroups = Object.values(allUserGroups).sort((a, b) => a.name.localeCompare(b.name));
+    const sortedGroups = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
     sortedGroups.forEach((group) => {
-        const isAdmin = !!groups[group.id]; // Check if the group exists in the admin groups list
+        const isAdmin = isCurrentUserAdminOfSelectedGroup();
 
         const card = document.createElement('div');
         card.className = 'player-item flex justify-between items-center text-sm cursor-pointer p-3 md:flex-col md:justify-between md:p-2 md:h-full';
@@ -96,8 +94,8 @@ export const renderGroupsList = async () => {
         groupsList.appendChild(card);
     });
 
-    
-    
+
+
     const createGroupBtn = document.createElement('button');
     createGroupBtn.id = 'createGroupBtn';
     createGroupBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer p-4 md:p-2';
@@ -106,7 +104,7 @@ export const renderGroupsList = async () => {
         document.getElementById('createGroupModalOverlay').classList.add('show');
     };
     groupsList.appendChild(createGroupBtn);
-    
+
     addEditGroupListeners();
     addRemoveGroupListeners();
     addShareGroupListeners();
@@ -204,7 +202,7 @@ function renderPlayerList(container, playerIds, itemClass, action, emptyMessage,
     if (playerIds.length === 0) {
         container.innerHTML = `<p class="col-span-full text-center text-gray-500 p-4">${emptyMessage}</p>`;
         return;
-    } 
+    }
 
     const currentUser = JSON.parse(localStorage.getItem('user'));
     const isAdmin = isCurrentUserAdminOfSelectedGroup();
@@ -217,8 +215,8 @@ function renderPlayerList(container, playerIds, itemClass, action, emptyMessage,
 
             const playerDiv = document.createElement('div');
             playerDiv.className = `player-item ${itemClass} flex justify-between items-center`;
-            
-            const buttonHtml = canSwap 
+
+            const buttonHtml = canSwap
                 ? `<button class="action-btn" data-player-id="${player.id}" data-action="${action}">Swap</button>`
                 : '';
 
@@ -233,9 +231,7 @@ export const renderSchedulesList = () => {
     if (!schedulesList) return;
     schedulesList.innerHTML = '';
 
-    // The selected group could be an admin group or a player group. Check both.
-    const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupSchedules = Object.values(schedules).filter(s => s.groupId === selectedGroup?.id);
+    const groupSchedules = Object.values(schedules).filter(s => s.groupId === selection.currentGroupId);
 
     groupSchedules.forEach(schedule => {
         const day = weekdayNames[schedule.day];
@@ -304,9 +300,7 @@ export const renderCourtsList = () => {
         return;
     }
 
-    // The selected group could be an admin group or a player group. Check both.
-    const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupCourts = Object.values(courts).filter(c => c.groupId === selectedGroup?.id);
+    const groupCourts = Object.values(courts).filter(c => c.groupId === selection.currentGroupId);
     groupCourts.forEach(court => {
         const card = document.createElement('div');
         card.className = 'player-item flex justify-between items-center text-sm p-3 md:flex-col md:justify-between md:p-2';
@@ -337,7 +331,6 @@ export const renderCourtsList = () => {
         }
         document.getElementById('createCourtModalOverlay').classList.add('show');
     };
-
     addRemoveCourtListeners();
     addEditCourtListeners();
 };
@@ -345,39 +338,37 @@ export const renderCourtsList = () => {
 export const renderAllPlayers = () => {
     const allPlayersGrid = document.getElementById('allPlayersGrid');
     allPlayersGrid.innerHTML = '';
-    // The selected group could be an admin group or a player group. Check both.
-    const selectedGroup = groups[selection.currentGroupId] || playerGroups[selection.currentGroupId];
-    const groupPlayers = Object.values(players).filter(p => p.groupId === selectedGroup?.id);
+    const groupPlayers = Object.values(players).filter(p => p.groupId === selection.currentGroupId);
+
     groupPlayers.sort((a, b) => a.user.name.localeCompare(b.user.name)).forEach(player => {
         const card = document.createElement('div');
-        // Use the user's picture as a background image for the card
-        const pictureUrl = player.user?.picture || 'https://via.placeholder.com/150'; // Fallback image
-        card.className = 'player-item flex flex-col justify-end items-center text-sm p-2 rounded-lg shadow-md bg-cover bg-center text-white relative overflow-hidden h-24 md:h-32';
-        card.style.backgroundImage = `url(${pictureUrl})`;
+        const pictureUrl = player.user?.picture || 'https://via.placeholder.com/150';
+
+        card.className = 'player-item flex flex-col justify-between items-center text-sm p-2 rounded-lg shadow-md bg-white h-auto min-h-[180px] relative';
 
         const isOwnProfile = player.userId === JSON.parse(localStorage.getItem('user')).id;
         const isAdmin = isCurrentUserAdminOfSelectedGroup();
 
         card.innerHTML = `
-            <div class="absolute top-0 left-0 p-2 bg-black bg-opacity-50 rounded-br-lg">
-                <span class="name-text text-base font-bold text-white">${player.user.name}</span>
+            <div class="flex flex-col items-center w-full mt-2">
+                <img src="${pictureUrl}" alt="${player.user.name}" class="player-avatar mb-3">
+                <span class="name-text text-base font-bold text-gray-800 text-center px-2">${player.user.name}</span>
             </div>
-            <div class="absolute bottom-0 right-0 p-1">
-                <div class="flex gap-1 bg-black bg-opacity-50 rounded-full p-1">
-                    <button data-id="${player.id}" class="view-stats-btn text-white hover:text-green-300 p-1" title="View Stats">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            
+            <div class="flex gap-1 mt-2 mb-1">
+                <button data-id="${player.id}" class="view-stats-btn btn-icon-only w-8 h-8" title="View Stats">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                </button>
+                ${isOwnProfile || isAdmin ? `
+                    <button data-id="${player.id}" class="edit-player-btn btn-icon-only w-8 h-8 text-blue-600" title="Edit Player">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg>
                     </button>
-                    ${isOwnProfile || isAdmin ? `
-                        <button data-id="${player.id}" class="edit-player-btn text-white hover:text-blue-300 p-1" title="Edit Player">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg>
-                        </button>
-                    ` : ''}
-                    ${isAdmin ? `
-                        <button data-id="${player.id}" class="remove-player-btn text-white hover:text-red-300 p-1" title="Delete Player">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
-                    ` : ''}
-                </div>
+                ` : ''}
+                ${isAdmin ? `
+                    <button data-id="${player.id}" class="remove-player-btn btn-icon-only w-8 h-8 text-red-600" title="Delete Player">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                ` : ''}
             </div>
         `;
         allPlayersGrid.appendChild(card);

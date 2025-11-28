@@ -5,7 +5,6 @@ import * as app from '../app.js';
 // Mock the app module
 vi.mock('../app.js', () => ({
     groups: {},
-    playerGroups: {},
     schedules: {},
     courts: {},
     players: {},
