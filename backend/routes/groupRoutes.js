@@ -89,8 +89,6 @@ router.put('/:id', protect, async (req, res) => {
             return res.status(403).json({ msg: 'User not authorized' });
         }
 
-        group = null;
-
         group.name = name || group.name;
         await group.save();
         res.json(group);
