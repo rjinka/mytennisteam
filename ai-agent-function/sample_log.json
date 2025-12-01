@@ -1,0 +1,16 @@
+{
+  "jsonPayload": {
+    "serviceContext": {
+      "service": "my-tennis-app"
+    },
+    "message": "java.lang.NullPointerException: Attempt to invoke virtual method 'java.lang.String com.ramjin.mytennisteam.models.User.getName()' on a null object reference at com.ramjin.mytennisteam.services.UserProcessor.processUser(UserProcessor.java:42) at com.ramjin.mytennisteam.controllers.ApiController.handleRequest(ApiController.java:115) at java.base.java.lang.Thread.run(Thread.java:833)"
+  },
+  "resource": {
+    "type": "gae_app",
+    "labels": {
+      "project_id": "your-gcp-project"
+    }
+  },
+  "severity": "ERROR",
+  "logName": "projects/your-gcp-project/logs/appengine.googleapis.com%2Fstderr"
+}
