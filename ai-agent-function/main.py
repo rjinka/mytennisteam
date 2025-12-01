@@ -8,6 +8,7 @@ import hashlib
 import re
 
 import vertexai
+from threading import Thread
 from vertexai.generative_models import GenerativeModel
 from github import Github, GithubException
 
@@ -43,29 +44,32 @@ def generate_error_fingerprint(log_entry: Dict[str, Any]) -> tuple[str, str | No
     # This is more reliable than just using the first line of the error.
     root_cause_line = None
     file_name = None
-    line_number = None
     stack_lines = stack_trace.split('\n')
+
+    # Iterate through stack lines to find the first parsable line for file/line info
     for line in stack_lines:
         line = line.strip()
-        # Look for lines like "at com.mycompany.app.MyClass.myMethod(MyClass.java:123)"
-        if line.startswith("at ") and APP_PACKAGE_PREFIX in line:
-            root_cause_line = line
-            break # We found the most relevant line
-    
-    # Try to parse file and line number from the root cause line
-    if root_cause_line:
-        match = re.search(r'\(([^:]+):(\d+)\)', root_cause_line)
-        if match:
-            file_name, line_number_str = match.groups()
-            line_number = int(line_number_str)
+        if not line.startswith("at "):
+            continue
 
-    # If no app-specific line was found, fall back to the first line of the trace
-    if not root_cause_line and len(stack_lines) > 1:
-        # Find the first 'at ...' line as a fallback
-        for line in stack_lines:
-            if line.strip().startswith("at "):
-                root_cause_line = line.strip()
-                break
+        # Try parsing Node.js format: at /path/to/file.js:123:45
+        node_match = re.search(r'(?:at |at file:\/\/)(?:.*\()?(.*?\.(?:js|ts)):(\d+):\d+', line)
+        if node_match:
+            path_from_trace, line_number_str = node_match.groups()
+            # The path might be absolute like '/workspace/routes/file.js'. We want the relative part.
+            # This finds the first directory that is common (like 'routes', 'src', 'api') and takes everything after.
+            common_dirs = ['routes', 'src', 'api', 'lib']
+            for common_dir in common_dirs:
+                if f'/{common_dir}/' in path_from_trace:
+                    relative_path = path_from_trace.split(f'/{common_dir}/', 1)[1]
+                    file_name = f"backend/{common_dir}/{relative_path}"
+                    break
+            else: # If no common dir is found, just take the basename as a fallback
+                file_name = os.path.basename(path_from_trace)
+            root_cause_line = line
+            break # Found a parsable line, exit loop
+
+    line_number = int(line_number_str) if 'line_number_str' in locals() and line_number_str else None
 
     # If we still have nothing, use the exception type itself.
     if not root_cause_line:
@@ -83,31 +87,26 @@ def get_source_code_from_github(file_name: str) -> tuple[str | None, str | None]
     if not GITHUB_TOKEN or not file_name:
         return None, None
     
+    print(f"  - Attempting to fetch source code for '{file_name}'...")
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO_NAME)
 
-        # --- STRATEGY 1: Direct Path Construction (More Reliable) ---
-        # For an Android project, the path is usually structured like this.
-        # We get the package from the APP_PACKAGE_PREFIX env var.
-        package_path = APP_PACKAGE_PREFIX.replace('.', '/')
-        # This assumes a standard Android/Java project structure.
-        # You might need to adjust this if your structure is different.
-        constructed_path = f"app/src/main/java/{package_path}/services/{file_name}"
-        print(f"  - Attempting to fetch file directly at: '{constructed_path}'")
+        # --- STRATEGY 1: Try to fetch the file directly using the (relative) path. ---
         try:
-            file_contents = repo.get_contents(constructed_path)
-            print("  - Direct fetch successful.")
+            file_contents = repo.get_contents(file_name)
+            print(f"  - Direct fetch for '{file_name}' successful.")
             return file_contents.path, file_contents.decoded_content.decode("utf-8")
         except GithubException as e:
             if e.status == 404:
-                print("  - Direct fetch failed (404). Falling back to code search.")
+                print(f"  - Direct fetch for '{file_name}' failed (404). Falling back to code search.")
             else:
                 raise e # Re-raise other GitHub errors
 
-        # --- STRATEGY 2: Fallback to Code Search ---
-        print(f"  - Attempting to find '{file_name}' via code search...")
-        query = f"filename:{file_name} repo:{GITHUB_REPO_NAME}"
+        # --- STRATEGY 2: Fallback to Code Search using only the basename ---
+        # We search for the full path first, which is more specific.
+        print(f"  - Attempting to find a file with path '{file_name}' via code search...")
+        query = f"path:{file_name} repo:{GITHUB_REPO_NAME}"
         results = g.search_code(query)
         if results.totalCount > 0:
             code_file = results[0]
@@ -290,13 +289,13 @@ def create_pull_request(
         return None
 
 
-def entrypoint(event: Dict[str, Any]) -> None:
+def entrypoint(event: Dict[str, Any]):
     """
-    Cloud Function entry point triggered by a Pub/Sub message.
+    Dispatcher function triggered by Pub/Sub via an HTTP request.
     
-    Args:
-         event (dict):  The dictionary with data specific to this type of event.
-                        For HTTP triggers, this is a Flask Request object.
+    This function acknowledges the message immediately by returning 200 OK,
+    then starts a background thread to do the actual processing.
+    This prevents Pub/Sub from redelivering the message and causing duplicate runs.
     """
     print("Function triggered")
 
@@ -313,40 +312,53 @@ def entrypoint(event: Dict[str, Any]) -> None:
         print(f"Error: Invalid payload format. Expected 'message' with 'data'. Payload: {pubsub_envelope}")
         return "Invalid payload format", 400
 
-    # 2. Generate a fingerprint for the error and check for existing PRs
-    error_fingerprint, file_name, line_number = generate_error_fingerprint(log_entry)
-    print(f"Step 2: Generated error fingerprint: {error_fingerprint}")
-    print("file name", file_name)
-    print("line number", line_number)
-
-    if check_for_existing_pr(error_fingerprint):
-        print("  - An open PR for this error already exists. Halting execution.")
+    # Perform a quick de-duplication check before starting the thread.
+    # This avoids spinning up threads for errors that are already being processed.
+    fingerprint, _, _ = generate_error_fingerprint(log_entry)
+    if check_for_existing_pr(fingerprint):
+        print("  - An open PR for this error already exists. Acknowledging message and halting.")
         return "Existing PR found, halting.", 200
-    else:
-        print("  - No existing PR found. Proceeding...")
 
-    # 3. Get source code context if available
-    source_file_path, source_code = None, None
-    if file_name:
-        source_file_path, source_code = get_source_code_from_github(file_name)
+    # Start the long-running process in a background thread.
+    # Pass the decoded log_entry and the fingerprint to the worker.
+    worker_thread = Thread(target=process_error_log, args=(log_entry, fingerprint))
+    worker_thread.start()
 
-    # 4. Analyze the error with an AI model (if no existing PR was found)
-    analysis_result = analyze_error_with_ai(log_entry, source_file_path, source_code, line_number)
+    # Immediately acknowledge the Pub/Sub message.
+    print("Acknowledged Pub/Sub message. Processing will continue in the background.")
+    return "Processing started in background.", 202
 
-    print("analysis_result", analysis_result)
-    print("source_file_path", source_file_path)
-    print("source_code", source_code)
 
-    # 5. Create a Pull Request with the suggested fix
-    # We use the 'source_file_path' we found, not one from the AI, to prevent hallucinations.
-    if analysis_result and source_file_path:
-        create_pull_request(analysis_result, error_fingerprint, source_file_path)
-    elif not source_file_path:
-        print("Skipping PR creation because the source file could not be located in the repository.")
-    else:
-        print("AI analysis did not yield a confident fix. Skipping PR creation.")
+def process_error_log(log_entry: Dict[str, Any], error_fingerprint: str):
+    """
+    This is the worker function that performs all the heavy lifting.
+    It's called by the entrypoint and runs in a background thread.
+    """
+    # The main logic is wrapped in a try/except block.
+    try:
+        # The fingerprint was already generated, we just need file_name and line_number.
+        _, file_name, line_number = generate_error_fingerprint(log_entry)
+        print(f"Background Worker: Starting analysis for fingerprint {error_fingerprint}")
+        print("file name", file_name)
+        print("line number", line_number)
 
-    return "Processing complete.", 200
+        # Get source code context if available
+        source_file_path, source_code = None, None
+        if file_name:
+            source_file_path, source_code = get_source_code_from_github(file_name)
+
+        # Analyze the error with an AI model
+        analysis_result = analyze_error_with_ai(log_entry, source_file_path, source_code, line_number)
+
+        # Create a Pull Request with the suggested fix
+        if analysis_result and source_file_path:
+            create_pull_request(analysis_result, error_fingerprint, source_file_path)
+        elif not source_file_path:
+            print("Skipping PR creation because the source file could not be located in the repository.")
+        else:
+            print("AI analysis did not yield a confident fix. Skipping PR creation.")
+    except Exception as e:
+        print(f"An unhandled exception occurred during processing: {e}")
 
 def check_for_existing_pr(fingerprint: str) -> bool:
     """Checks if an open PR with the given error fingerprint already exists."""
