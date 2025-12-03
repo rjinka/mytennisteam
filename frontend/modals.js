@@ -157,6 +157,7 @@ export const showEditScheduleModal = (schedule) => {
 
 export const showScheduleStatsModal = async (schedule) => {
     document.getElementById('statsScheduleName').textContent = schedule.name;
+    document.getElementById('scheduleCurrentDayDisplay').textContent = `${weekdayNames[schedule.day]}'s at ${schedule.time}`;
     const statsBody = document.getElementById('scheduleStatsModalBody');
     statsBody.innerHTML = '';
 
