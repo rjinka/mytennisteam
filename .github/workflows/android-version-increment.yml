@@ -46,13 +46,17 @@ jobs:
           # Read the new version from the properties file
           new_version=$(grep "VERSION_NAME" version.properties | sed 's/VERSION_NAME=//')
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          git add version.properties
+          git commit -m "Chore(android): auto-increment version to $new_version"
+          git tag "android/v$new_version"
+          git push --tags
 
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_ADMIN_PAT }}
-          commit-message: "Chore: auto-increment android version to ${{ steps.increment.outputs.new_version }}"
+          commit-message: "Chore(android): auto-increment version to ${{ steps.increment.outputs.new_version }}"
           branch: version-bump/android-${{ github.run_number }}
           delete-branch: true
           title: "🤖 Auto-increment Android version to ${{ steps.increment.outputs.new_version }}"
@@ -76,4 +80,3 @@ jobs:
           gh pr merge --auto --squash "${{ steps.cpr.outputs.pull-request-number }}"
         env:
           GH_TOKEN: ${{ secrets.MY_ADMIN_PAT }}
-

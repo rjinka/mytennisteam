@@ -3,7 +3,7 @@ name: Deploy Backend to GCP App Engine
 on:
   push:
     tags:
-      - 'v*.*.*' # Trigger on version tags like v1.0.0, v1.2.3, etc.
+      - 'backend/v*' # Trigger on backend version tags
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
