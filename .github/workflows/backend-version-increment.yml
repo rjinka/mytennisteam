@@ -36,8 +36,10 @@ jobs:
         id: increment
         run: |
           cd backend
-          # Run npm version and capture the new version
-          new_version=$(npm version minor -m "Chore(backend): auto-increment minor version to %s" | sed 's/v//')
+          # Run npm version with a custom tag prefix and capture the new version
+          new_tag=$(npm version minor --tag-version-prefix "backend/v" -m "Chore(backend): auto-increment minor version to %s")
+          new_version=$(echo "$new_tag" | sed 's/backend\/v//')
+          git push --tags
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
@@ -69,4 +71,3 @@ jobs:
           gh pr merge --auto --squash "${{ steps.cpr.outputs.pull-request-number }}"
         env:
           GH_TOKEN: ${{ secrets.MY_ADMIN_PAT }}
-

@@ -3,7 +3,7 @@ name: Deploy Frontend to Firebase
 on:
   push:
     tags:
-      - 'v*' # Trigger on version tags
+      - 'frontend/v*' # Trigger on frontend version tags
 
 jobs:
   deploy:
