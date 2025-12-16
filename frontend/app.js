@@ -28,7 +28,6 @@ export function isCurrentUserAdminOfSelectedGroup(groupId) {
     const user = JSON.parse(userString);
 
     if (user.isSuperAdmin) return true;
-    if (!selection.currentGroupId) return false;
     if (!groupId) return false;
 
     return groups.filter(g => g.id === groupId && g.admins.includes(user.id)).length > 0;
