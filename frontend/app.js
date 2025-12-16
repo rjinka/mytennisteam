@@ -22,15 +22,15 @@ export const ui = {
     groupBeingEdited: null,
 };
 
-export function isCurrentUserAdminOfSelectedGroup() {
+export function isCurrentUserAdminOfSelectedGroup(groupId) {
     const userString = localStorage.getItem('user');
     if (!userString) return false;
     const user = JSON.parse(userString);
 
     if (user.isSuperAdmin) return true;
-    if (!selection.currentGroupId) return false;
+    if (!groupId) return false;
 
-    return groups.filter(g => g.id === selection.currentGroupId && g.admins.includes(user.id)).length > 0;
+    return groups.filter(g => g.id === groupId && g.admins.includes(user.id)).length > 0;
 }
 
 export async function reloadData() {
@@ -104,7 +104,7 @@ export async function setCurrentGroup(groupId, isInitialLoad = false) {
     selection.selectedSchedule = null;
 
     const courtManagementTabBtn = document.getElementById('courtManagementTabBtn');
-    const isAdmin = isCurrentUserAdminOfSelectedGroup();
+    const isAdmin = isCurrentUserAdminOfSelectedGroup(groupId);
     if (courtManagementTabBtn) {
         courtManagementTabBtn.style.display = isAdmin ? '' : 'none';
 
@@ -664,3 +664,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('signInContainer').style.display = 'flex';
     }
 });
+
+export async function joinGroupWithCode() {
+    const codeInput = document.getElementById('joinGroupCodeInput');
+    const joinCode = codeInput.value.trim();
+    if (!joinCode || joinCode.length !== 6) {
+        showMessageBox('Error', 'Please enter a valid 6-digit code.');
+        return;
+    }
+
+    showLoading(true);
+    try {
+        const result = await api.joinGroupByCode(joinCode);
+        showMessageBox('Success', result.msg);
+        document.body.classList.remove('modal-open');
+        document.getElementById('joinGroupModalOverlay').classList.remove('show');
+        await reloadData();
+    } catch (error) {
+        console.error('Error joining group:', error);
+        showMessageBox('Error', error.message || 'Failed to join group.');
+    } finally {
+        showLoading(false);
+    }
+}

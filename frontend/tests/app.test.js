@@ -79,14 +79,14 @@ describe('app.js', () => {
     describe('isCurrentUserAdminOfSelectedGroup', () => {
         it('should return false if no group is selected', () => {
             selection.currentGroupId = null;
-            expect(isCurrentUserAdminOfSelectedGroup()).toBe(false);
+            expect(isCurrentUserAdminOfSelectedGroup(selection.currentGroupId)).toBe(false);
         });
 
         it('should return true for a super admin', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: true };
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
-            expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
+            expect(isCurrentUserAdminOfSelectedGroup(selection.currentGroupId)).toBe(true);
         });
 
         it('should return true for a regular admin of the selected group', () => {
@@ -94,14 +94,14 @@ describe('app.js', () => {
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
             groups.push({ id: 'group1', name: 'Group 1', admins: ['123'] });
-            expect(isCurrentUserAdminOfSelectedGroup()).toBe(true);
+            expect(isCurrentUserAdminOfSelectedGroup(selection.currentGroupId)).toBe(true);
         });
 
         it('should return false if the user is not an admin of the selected group', () => {
             const user = { id: '123', name: 'Test User', isSuperAdmin: false };
             localStorage.setItem('user', JSON.stringify(user));
             selection.currentGroupId = 'group1';
-            expect(isCurrentUserAdminOfSelectedGroup()).toBe(false);
+            expect(isCurrentUserAdminOfSelectedGroup(selection.currentGroupId)).toBe(false);
         });
     });
 });

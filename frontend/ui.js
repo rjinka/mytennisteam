@@ -1,6 +1,6 @@
 import { setCurrentGroup, groups, selection, ui, players, schedules, courts, isCurrentUserAdminOfSelectedGroup } from './app.js';
 import { addEditGroupListeners, addRemoveGroupListeners, addShareGroupListeners, addScheduleActionListeners } from './events.js';
-import { populateScheduleCourtsDropdown } from './modals.js';
+import { populateScheduleCourtsDropdown, showJoinGroupModal } from './modals.js';
 import { addSwapButtonListenersForSchedule } from './events.js';
 import { addNewPlayer, addRemovePlayerListeners, addEditPlayerListeners, addViewStatsListeners } from './events.js';
 import { addRemoveCourtListeners, addEditCourtListeners } from './events.js';
@@ -60,7 +60,7 @@ export const renderGroupsList = async () => {
     const sortedGroups = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
     sortedGroups.forEach((group) => {
-        const isAdmin = isCurrentUserAdminOfSelectedGroup();
+        const isAdmin = isCurrentUserAdminOfSelectedGroup(group.id);
 
         const card = document.createElement('div');
         card.className = 'player-item flex justify-between items-center text-sm cursor-pointer p-3 md:flex-col md:justify-between md:p-2 md:h-full';
@@ -104,6 +104,15 @@ export const renderGroupsList = async () => {
         document.getElementById('createGroupModalOverlay').classList.add('show');
     };
     groupsList.appendChild(createGroupBtn);
+
+    const joinGroupBtn = document.createElement('button');
+    joinGroupBtn.id = 'joinGroupBtn';
+    joinGroupBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer p-4 md:p-2';
+    joinGroupBtn.textContent = 'Join Group';
+    joinGroupBtn.onclick = () => {
+        showJoinGroupModal();
+    };
+    groupsList.appendChild(joinGroupBtn);
 
     addEditGroupListeners();
     addRemoveGroupListeners();
@@ -204,10 +213,11 @@ function renderPlayerList(container, playerIds, itemClass, action, emptyMessage,
     }
 
     const currentUser = JSON.parse(localStorage.getItem('user'));
-    const isAdmin = isCurrentUserAdminOfSelectedGroup();
+    
 
     playerIds.forEach(id => {
         const player = players[id];
+        const isAdmin = isCurrentUserAdminOfSelectedGroup(player.groupId);
         if (player) {
             const isOwnCard = player.userId === currentUser.id;
             const canSwap = isAdmin || isOwnCard;
@@ -247,7 +257,7 @@ export const renderSchedulesList = () => {
                 <button data-action="stats" class="text-white hover:text-green-300 p-1" title="View Stats">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                 </button>
-                ${isCurrentUserAdminOfSelectedGroup() ? `
+                ${isCurrentUserAdminOfSelectedGroup(selection.currentGroupId) ? `
                     ${schedule.status === 'PLANNING' ? `
                     <button data-action="view-signups" class="text-white hover:text-yellow-300 p-1" title="View Sign-ups">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -266,7 +276,7 @@ export const renderSchedulesList = () => {
         schedulesList.appendChild(card);
     });
 
-    if (isCurrentUserAdminOfSelectedGroup()) {
+    if (isCurrentUserAdminOfSelectedGroup(selection.currentGroupId)) {
         const createScheduleBtn = document.createElement('button');
         createScheduleBtn.id = 'createScheduleBtn';
         createScheduleBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer h-24 md:h-32';
@@ -346,7 +356,7 @@ export const renderAllPlayers = () => {
         card.className = 'player-item flex flex-col justify-between items-center text-sm p-2 rounded-lg shadow-md bg-white h-auto min-h-[180px] relative';
 
         const isOwnProfile = player.userId === JSON.parse(localStorage.getItem('user')).id;
-        const isAdmin = isCurrentUserAdminOfSelectedGroup();
+        const isAdmin = isCurrentUserAdminOfSelectedGroup(selection.currentGroupId);
 
         card.innerHTML = `
             <div class="flex flex-col items-center w-full mt-2">
@@ -373,7 +383,7 @@ export const renderAllPlayers = () => {
         allPlayersGrid.appendChild(card);
     });
 
-    if (isCurrentUserAdminOfSelectedGroup()) {
+    if (isCurrentUserAdminOfSelectedGroup(selection.currentGroupId)) {
         const addPlayerBtn = document.createElement('button');
         addPlayerBtn.id = 'addPlayerBtn';
         addPlayerBtn.className = 'player-item btn-add-new flex items-center justify-center font-semibold cursor-pointer h-24 md:h-32';

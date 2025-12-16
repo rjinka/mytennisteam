@@ -218,7 +218,7 @@ export const updateCourt = async (courtId, courtData) => {
         method: 'PUT',
         body: JSON.stringify(courtData),
     });
-    if (!response.ok) { 
+    if (!response.ok) {
         const errorData = await response.json();
         throw new ApiError(errorData.msg || 'Failed to update court', response.status);
     }
@@ -367,3 +367,14 @@ export async function submitSupport(data) {
     }
     return response.json();
 }
+export const joinGroupByCode = async (joinCode) => {
+    const response = await fetchWithAuth(`${API_BASE_URL}/groups/join-by-code`, {
+        method: 'POST',
+        body: JSON.stringify({ joinCode }),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError(errorData.msg || 'Failed to join group', response.status);
+    }
+    return response.json();
+};

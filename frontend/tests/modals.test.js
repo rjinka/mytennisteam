@@ -42,7 +42,7 @@ describe('modals.js', () => {
             showGroupSelectionModal();
             const modal = document.getElementById('groupSelectionModalOverlay');
             expect(modal.classList.contains('show')).toBe(true);
-            expect(document.getElementById('modalGroupButtonsContainer').children.length).toBe(2);
+            expect(document.getElementById('modalGroupButtonsContainer').children.length).toBe(3);
         });
     });
 
