@@ -53,7 +53,7 @@ describe('ui.js', () => {
             app.groups = { group1: { id: 'group1', name: 'Group 1' } };
             renderGroupsList();
             const groupsList = document.getElementById('groupsList');
-            expect(groupsList.children.length).toBe(2); // 1 group + 1 create button
+            expect(groupsList.children.length).toBe(3); // 1 group + 1 create button + join group button
             expect(groupsList.textContent).toContain('Group 1');
         });
     });
