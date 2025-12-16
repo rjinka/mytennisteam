@@ -72,6 +72,28 @@ export function setupGlobalEventListeners() {
     };
     document.getElementById('confirmCreateGroupBtn').onclick = () => app.createNewGroup();
 
+    // Join Group Modal
+    const openJoinGroupModalBtn = document.getElementById('openJoinGroupModalBtn');
+    if (openJoinGroupModalBtn) {
+        openJoinGroupModalBtn.onclick = () => {
+            // Close the group selection modal first
+            document.getElementById('groupSelectionModalOverlay').classList.remove('show');
+            // Then show the join group modal
+            import('./modals.js').then(modals => modals.showJoinGroupModal());
+        };
+    }
+
+    document.getElementById('cancelJoinGroupBtn').onclick = () => {
+        document.getElementById('joinGroupModalOverlay').classList.remove('show');
+        // Re-open the group selection modal if the user hasn't selected a group yet
+        if (!app.selection.currentGroupId) {
+            import('./modals.js').then(modals => modals.showGroupSelectionModal());
+        } else {
+            document.body.classList.remove('modal-open');
+        }
+    };
+    document.getElementById('confirmJoinGroupBtn').onclick = app.joinGroupWithCode;
+
     document.getElementById('cancelEditGroupBtn').onclick = () => {
         document.body.classList.remove('modal-open');
         document.getElementById('editGroupModalOverlay').classList.remove('show');
@@ -417,18 +439,21 @@ export const addShareGroupListeners = () => {
     document.querySelectorAll('.share-group-btn').forEach(button => {
         button.onclick = (event) => {
             const groupId = event.currentTarget.dataset.id;
-            const joinUrl = `${window.location.origin}/?groupId=${groupId}`;
+            const group = app.groups.find(g => g.id === groupId);
+            const joinCode = group ? group.joinCode : 'N/A';
 
             // A simple modal to show the link and a copy button
             const modalHtml = `
                 <div class="flex flex-col gap-4">
-                    <p class="text-gray-700">Share this link with others to let them join the group:</p>
-                    <input type="text" readonly value="${joinUrl}" class="input-field bg-gray-100" id="groupJoinLinkInput">
-                    <button id="copyGroupLinkBtn" class="btn btn-secondary">Copy Link</button>
+                    <p class="text-gray-700">Share this unique code with others to let them join the group:</p>
+                    <div class="bg-gray-100 p-4 rounded text-center">
+                        <span class="text-3xl font-bold tracking-widest text-blue-600">${joinCode}</span>
+                    </div>
+                    <button id="copyGroupCodeBtn" class="btn btn-secondary">Copy Code</button>
                 </div>
             `;
             showMessageBox('Share Group', modalHtml);
-            document.getElementById('copyGroupLinkBtn').onclick = () => app.copyToClipboard(joinUrl, 'Link copied to clipboard!');
+            document.getElementById('copyGroupCodeBtn').onclick = () => app.copyToClipboard(joinCode, 'Code copied to clipboard!');
         };
     });
 };

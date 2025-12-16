@@ -22,6 +22,12 @@ const groupSchema = new mongoose.Schema({
         required: true,
         default: [],
     },
+    // A unique 6-digit code for joining the group.
+    joinCode: {
+        type: String,
+        unique: true,
+        sparse: true,
+    },
 }, {
     timestamps: true,
     // Enable virtuals to be included in toJSON and toObject outputs
@@ -29,7 +35,7 @@ const groupSchema = new mongoose.Schema({
     toObject: { virtuals: true },
 });
 
-groupSchema.virtual('id').get(function() { return this._id.toHexString(); });
+groupSchema.virtual('id').get(function () { return this._id.toHexString(); });
 
 const Group = mongoose.model('Group', groupSchema);
 

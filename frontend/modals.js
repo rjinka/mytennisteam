@@ -52,6 +52,15 @@ export const showGroupSelectionModal = async () => {
         buttonsContainer.appendChild(button);
     });
 
+    const joinBtn = document.createElement('button');
+    joinBtn.className = 'btn btn-secondary w-full mt-4';
+    joinBtn.textContent = 'Join Group via Code';
+    joinBtn.onclick = () => {
+        modalOverlay.classList.remove('show');
+        showJoinGroupModal();
+    };
+    buttonsContainer.appendChild(joinBtn);
+
     document.body.classList.add('modal-open');
     modalOverlay.classList.add('show');
 };
@@ -227,7 +236,7 @@ export const showEditPlayerModal = (player) => {
     document.getElementById('editPlayerNameInput').value = player.user.name;
     const modifyAvailableSchedulesList = document.getElementById('modifyAvailableSchedulesList');
     modifyAvailableSchedulesList.innerHTML = '';
-    const isAdmin = isCurrentUserAdminOfSelectedGroup();
+    const isAdmin = isCurrentUserAdminOfSelectedGroup(player.groupId);
     Object.values(schedules).forEach(schedule => {
         const playerAvailability = player.availability?.find(a => a.scheduleId === schedule.id);
         const isChecked = !!playerAvailability;
@@ -467,4 +476,10 @@ export const showScheduleSignupsModal = async (schedule) => {
 
     document.body.classList.add('modal-open');
     modalOverlay.classList.add('show');
+};
+
+export const showJoinGroupModal = () => {
+    document.getElementById('joinGroupCodeInput').value = '';
+    document.body.classList.add('modal-open');
+    document.getElementById('joinGroupModalOverlay').classList.add('show');
 };

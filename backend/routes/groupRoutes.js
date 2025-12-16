@@ -59,6 +59,7 @@ router.post('/', protect, async (req, res) => {
             name,
             createdBy: req.user._id,
             admins: [req.user._id], // The creator is the first admin
+            joinCode: Array.from(Array(6), () => Math.floor(Math.random() * 36).toString(36)).join('').toUpperCase(), // Generate a 6-char alphanumeric code
         });
         const group = await newGroup.save();
 
@@ -229,6 +230,36 @@ router.post('/:groupId/invite', protect, async (req, res) => {
         res.status(200).json({ msg: 'Invitation sent successfully!' });
     } catch (error) {
         console.error('Error sending invitation:', error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
+// @route   POST /api/groups/join-by-code
+// @desc    Join a group via a 6-digit code
+// @access  Private
+router.post('/join-by-code', protect, async (req, res) => {
+    const { joinCode } = req.body;
+    const userId = req.user._id;
+
+    if (!joinCode || joinCode.length !== 6) {
+        return res.status(400).json({ msg: 'Invalid join code.' });
+    }
+
+    try {
+        const group = await Group.findOne({ joinCode });
+        if (!group) {
+            return res.status(404).json({ msg: 'Group not found with this code.' });
+        }
+
+        const existingPlayer = await Player.findOne({ userId: userId, groupId: group._id });
+        if (existingPlayer) {
+            return res.status(200).json({ msg: `You are already a member of ${group.name}.` });
+        }
+
+        await Player.create({ userId: userId, groupId: group._id });
+        res.status(200).json({ msg: `Welcome! You have successfully joined ${group.name}.` });
+    } catch (error) {
+        console.error('Error joining group by code:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });
