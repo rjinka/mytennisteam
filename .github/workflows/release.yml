@@ -1,0 +1,133 @@
+name: Release and Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/**'
+      - '**.md'
+
+jobs:
+  release:
+    if: ${{ startsWith(github.event.head_commit.message, 'Merge pull request') && !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: 'write'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_ADMIN_PAT }}
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            android:
+              - 'android/**'
+
+      - name: Setup Node.js
+        if: ${{ steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Increment Backend Version
+        if: ${{ steps.filter.outputs.backend == 'true' }}
+        id: backend_version
+        run: |
+          cd backend
+          new_tag=$(npm version minor --no-git-tag-version)
+          new_version=$(echo "$new_tag" | sed 's/v//')
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag=backend/v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Increment Frontend Version
+        if: ${{ steps.filter.outputs.frontend == 'true' }}
+        id: frontend_version
+        run: |
+          cd frontend
+          new_tag=$(npm version minor --no-git-tag-version)
+          new_version=$(echo "$new_tag" | sed 's/v//')
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag=frontend/v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Increment Android Version
+        if: ${{ steps.filter.outputs.android == 'true' }}
+        id: android_version
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew incrementVersion
+          new_version=$(grep "VERSION_NAME" version.properties | sed 's/VERSION_NAME=//')
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag=android/v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Commit and Push Changes
+        id: commit_push
+        run: |
+          git add .
+          if git diff --staged --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes to commit"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            commit_msg="Chore: auto-increment versions [skip ci]"
+            if [ "${{ steps.filter.outputs.backend }}" == "true" ]; then
+              commit_msg="$commit_msg"$'\n'"- Backend: ${{ steps.backend_version.outputs.version }}"
+              git tag ${{ steps.backend_version.outputs.tag }}
+            fi
+            if [ "${{ steps.filter.outputs.frontend }}" == "true" ]; then
+              commit_msg="$commit_msg"$'\n'"- Frontend: ${{ steps.frontend_version.outputs.version }}"
+              git tag ${{ steps.frontend_version.outputs.tag }}
+            fi
+            if [ "${{ steps.filter.outputs.android }}" == "true" ]; then
+              commit_msg="$commit_msg"$'\n'"- Android: ${{ steps.android_version.outputs.version }}"
+              git tag ${{ steps.android_version.outputs.tag }}
+            fi
+            git commit -m "$commit_msg"
+            git push origin main --tags
+          fi
+
+      - name: Authenticate to Google Cloud (Backend)
+        if: ${{ steps.filter.outputs.backend == 'true' }}
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK (Backend)
+        if: ${{ steps.filter.outputs.backend == 'true' }}
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Deploy Backend to App Engine
+        if: ${{ steps.filter.outputs.backend == 'true' }}
+        working-directory: ./backend
+        run: |
+          # Replace dots with hyphens for App Engine version ID
+          VERSION_ID=$(echo "${{ steps.backend_version.outputs.version }}" | sed 's/\./-/g')
+          gcloud app deploy --quiet --version=$VERSION_ID --project=${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy Frontend to Firebase
+        if: ${{ steps.filter.outputs.frontend == 'true' }}
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_FE_SERVICE_ACCOUNT_KEY }}'
+          channelId: live
+          projectId: ${{ secrets.FIREBASE_FE_PROJECT_ID }}
+          entryPoint: ./frontend
