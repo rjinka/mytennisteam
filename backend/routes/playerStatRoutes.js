@@ -36,7 +36,7 @@ router.get('/schedule/:scheduleId', protect, async (req, res) => {
                 path: 'playerId',
                 populate: { path: 'user', select: 'name picture' }
             });
-         if (!stats) {
+        if (!stats) {
             // no stats exist for a schedule
             return res.json({ stats: [] });
         }

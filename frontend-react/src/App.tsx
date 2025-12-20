@@ -6,6 +6,8 @@ import Login from './components/Login.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import LoadingOverlay from './components/LoadingOverlay.tsx';
 import VersionDisplay from './components/VersionDisplay.tsx';
+import { SocketProvider } from './context/SocketContext';
+import { SocketListener } from './context/SocketListener';
 
 const AppContent: React.FC = () => {
   const { user, setUser, loading, setLoading } = useAppContext();
@@ -35,8 +37,11 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AppProvider>
-      <AppContent />
-      <VersionDisplay />
+      <SocketProvider>
+        <SocketListener />
+        <AppContent />
+        <VersionDisplay />
+      </SocketProvider>
       <Toaster
         position="bottom-center"
         toastOptions={{

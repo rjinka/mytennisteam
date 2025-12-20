@@ -120,17 +120,12 @@ const PlayersView: React.FC = () => {
         }
     };
 
-    const updateAvailability = (scheduleId: string, type: 'Rotation' | 'Permanent' | 'Backup') => {
+    const updateAvailability = (scheduleId: string, type: 'Rotation' | 'Permanent' | 'Backup' | '') => {
         setFormData(prev => {
-            const existing = prev.availability.find(a => a.scheduleId === scheduleId);
-            let newAvailability;
-            if (existing) {
-                newAvailability = prev.availability.map(a =>
-                    a.scheduleId === scheduleId ? { ...a, type } : a
-                );
-            } else {
-                newAvailability = [...prev.availability, { scheduleId, type }];
-            }
+            const otherAvailabilities = prev.availability.filter(a => a.scheduleId !== scheduleId);
+            const newAvailability = type
+                ? [...otherAvailabilities, { scheduleId, type: type as any }]
+                : otherAvailabilities;
             return { ...prev, availability: newAvailability };
         });
     };
@@ -312,12 +307,13 @@ const PlayersView: React.FC = () => {
                                                         </p>
                                                     </div>
                                                     <select
-                                                        value={currentType}
+                                                        value={availability?.type || ''}
                                                         onChange={(e) => updateAvailability(schedule.id, e.target.value as any)}
                                                         disabled={isDisabled}
                                                         title={isDisabled ? "Only admins can change availability for active or completed schedules" : ""}
                                                         className={`bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#667eea] transition-colors ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                                     >
+                                                        <option value="">Not Signed Up</option>
                                                         <option value="Rotation">Rotation</option>
                                                         <option value="Permanent">Permanent</option>
                                                         <option value="Backup">Backup</option>
