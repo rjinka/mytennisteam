@@ -39,6 +39,7 @@ export interface ScheduleCourt {
 }
 
 export interface Schedule {
+    occurrenceNumber: number;
     id: string;
     name: string;
     groupId: string;

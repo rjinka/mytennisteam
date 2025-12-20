@@ -17,6 +17,7 @@ export const SocketListener: React.FC = () => {
 
         socket.on('scheduleUpdated', () => {
             refreshCurrentGroupData();
+            toast.success('Schedule updated', { icon: '📅' });
         });
 
         socket.on('scheduleDeleted', () => {

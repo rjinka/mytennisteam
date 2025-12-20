@@ -19,6 +19,10 @@ const SchedulesView: React.FC = () => {
         text: 'Generate Rotation',
         disabled: false
     });
+    const [isSignupsModalOpen, setIsSignupsModalOpen] = useState(false);
+    const [isSignupsListModalOpen, setIsSignupsListModalOpen] = useState(false);
+    const [signupsList, setSignupsList] = useState<any[]>([]);
+    const [isLoadingSignups, setIsLoadingSignups] = useState(false);
 
     const getPlayerName = (id: string) => {
         const player = players.find(p => (p.id || (p as any)._id) === id);
@@ -76,14 +80,18 @@ const SchedulesView: React.FC = () => {
 
     const handleGenerateRotation = async (id: string) => {
         try {
-            await api.generateRotation(id);
-            toast.success('Rotation generated successfully');
+            const updatedSchedule = await api.generateRotation(id);
+            if (updatedSchedule.status === 'COMPLETED') {
+                toast.success('Schedule finished successfully');
+            } else {
+                toast.success('Rotation generated successfully');
+            }
             await refreshCurrentGroupData();
             // Refresh button state
             const state = await api.getRotationButtonState(id);
             setRotationButtonStatus(state);
         } catch (error) {
-            toast.error('Failed to generate rotation.');
+            toast.error('Failed to update schedule.');
         }
     };
 
@@ -172,18 +180,97 @@ const SchedulesView: React.FC = () => {
 
             setIsScheduleModalOpen(false);
 
+            await refreshCurrentGroupData();
+
             // Explicitly set the selected ID to the saved schedule's ID
             const newId = savedSchedule?.id || (savedSchedule as any)?._id;
             if (newId) {
                 setSelectedScheduleId(newId);
             }
-
-            await refreshCurrentGroupData();
         } catch (error) {
             console.error(error);
             toast.error(editingScheduleId ? 'Failed to update schedule' : 'Failed to create schedule');
         }
     };
+
+    const handleViewSignups = async () => {
+        if (!selectedScheduleId) return;
+        setIsLoadingSignups(true);
+        setIsSignupsListModalOpen(true);
+        try {
+            const signups = await api.getScheduleSignups(selectedScheduleId);
+            setSignupsList(signups);
+        } catch (error) {
+            toast.error('Failed to fetch signups');
+            setIsSignupsListModalOpen(false);
+        } finally {
+            setIsLoadingSignups(false);
+        }
+    };
+
+    const handleUpdateSignupAvailability = async (playerId: string, type: string | null) => {
+        if (!selectedScheduleId) return;
+        try {
+            const player = players.find(p => (p.id || (p as any)._id) === playerId);
+            if (!player) return;
+
+            const existingAvailability = player.availability || [];
+            const otherAvailabilities = existingAvailability.filter(a =>
+                (a.scheduleId.toString() !== selectedScheduleId)
+            );
+
+            const newAvailability = type
+                ? [...otherAvailabilities, { scheduleId: selectedScheduleId, type: type as any }]
+                : otherAvailabilities;
+
+            await api.updatePlayer(playerId, {
+                availability: newAvailability
+            });
+            await refreshCurrentGroupData();
+
+            // Refresh rotation button state
+            if (isAdmin && selectedScheduleId) {
+                const state = await api.getRotationButtonState(selectedScheduleId);
+                setRotationButtonStatus(state);
+            }
+
+            // If signups list is open, refresh it too
+            if (isSignupsListModalOpen) {
+                const signups = await api.getScheduleSignups(selectedScheduleId);
+                setSignupsList(signups);
+            }
+
+            toast.success(type ? `Availability set to ${type}` : 'Availability removed');
+        } catch (error) {
+            console.error('Error updating availability:', error);
+            toast.error('Failed to update availability');
+        }
+    };
+
+    const handleCompletePlanning = async () => {
+        if (!selectedScheduleId) return;
+        try {
+            await api.completePlanning(selectedScheduleId);
+            toast.success('Planning completed');
+            await refreshCurrentGroupData();
+            if (isAdmin) {
+                const state = await api.getRotationButtonState(selectedScheduleId);
+                setRotationButtonStatus(state);
+            }
+        } catch (error) {
+            console.error('Error completing planning:', error);
+            toast.error('Failed to complete planning');
+        }
+    };
+
+    const scheduleSignups = players.map(p => {
+        const availability = p.availability?.find(a => a.scheduleId === selectedScheduleId);
+        return {
+            playerId: p.id || (p as any)._id,
+            playerName: p.name,
+            availabilityType: availability ? availability.type : null
+        };
+    });
 
     const handleViewStats = async () => {
         if (!selectedSchedule) return;
@@ -271,7 +358,14 @@ const SchedulesView: React.FC = () => {
                             <div className="flex flex-col gap-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div>
-                                        <h3 className="text-2xl font-bold">{selectedSchedule.name}</h3>
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-2xl font-bold">{selectedSchedule.name}</h3>
+                                            {selectedSchedule.recurring && (
+                                                <span className="text-sm bg-[#667eea]/20 text-[#667eea] px-3 py-1 rounded-full font-medium">
+                                                    Occurrence #{selectedSchedule.occurrenceNumber}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-white/40">{days[selectedSchedule.day]} at {selectedSchedule.time}</p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-3">
@@ -289,7 +383,7 @@ const SchedulesView: React.FC = () => {
                                             )}
                                             {isAdmin && selectedSchedule.status === 'PLANNING' && (
                                                 <button
-                                                    onClick={() => toast.success('Sign-ups (Coming Soon)')}
+                                                    onClick={handleViewSignups}
                                                     className="p-2 rounded-md hover:bg-white/10 text-white/60 hover:text-white transition-colors"
                                                     title="Sign-ups"
                                                 >
@@ -363,6 +457,41 @@ const SchedulesView: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
+
+                                {selectedSchedule.status === 'PLANNING' && (
+                                    <div className="bg-[#667eea]/10 border border-[#667eea]/20 rounded-2xl p-6 animate-fadeIn">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-full bg-[#667eea]/20 flex items-center justify-center text-[#667eea]">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-lg">Schedule Signup</h4>
+                                                    <p className="text-sm text-white/60">Set your availability for this schedule</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['Rotation', 'Permanent', 'Backup'].map((type) => {
+                                                    const isSelected = currentPlayer?.availability?.some(a => a.scheduleId === selectedScheduleId && a.type === type);
+                                                    return (
+                                                        <button
+                                                            key={type}
+                                                            onClick={() => handleUpdateSignupAvailability(currentPlayerId, isSelected ? null : type)}
+                                                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${isSelected
+                                                                ? 'bg-[#667eea] text-white shadow-[0_0_15px_rgba(102,126,234,0.4)]'
+                                                                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                                                }`}
+                                                        >
+                                                            {type}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
@@ -809,6 +938,78 @@ const SchedulesView: React.FC = () => {
                         <div className="mt-8 pt-6 border-t border-white/10">
                             <button
                                 onClick={() => setIsStatsModalOpen(false)}
+                                className="w-full py-3 rounded-xl font-medium bg-white/5 hover:bg-white/10 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Schedule Sign-ups List Modal (Admin) */}
+            {isSignupsListModalOpen && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1a1b26] p-8 rounded-2xl w-full max-w-lg border border-white/10 shadow-2xl animate-scaleIn max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h3 className="text-2xl font-bold">Schedule Sign-ups</h3>
+                                <p className="text-white/40">{selectedSchedule?.name}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsSignupsListModalOpen(false)}
+                                className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {isLoadingSignups ? (
+                            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                <div className="w-12 h-12 border-4 border-[#667eea] border-t-transparent rounded-full animate-spin"></div>
+                                <p className="text-white/40">Loading sign-ups...</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {scheduleSignups.length === 0 ? (
+                                    <div className="text-center py-12 opacity-40">
+                                        <p className="text-lg italic">No players in this group.</p>
+                                    </div>
+                                ) : (
+                                    scheduleSignups.map((signup) => (
+                                        <div key={signup.playerId} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                                            <span className="font-medium">{signup.playerName}</span>
+                                            <select
+                                                value={signup.availabilityType || ''}
+                                                onChange={(e) => handleUpdateSignupAvailability(signup.playerId, e.target.value || null)}
+                                                className="bg-[#1a1b26] border border-white/10 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-[#667eea] appearance-none"
+                                            >
+                                                <option value="">Not Signed Up</option>
+                                                <option value="Rotation">Rotation</option>
+                                                <option value="Permanent">Permanent</option>
+                                                <option value="Backup">Backup</option>
+                                            </select>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        <div className="mt-8 pt-6 border-t border-white/10 flex flex-col gap-3">
+                            {isAdmin && selectedSchedule?.status === 'PLANNING' && (
+                                <button
+                                    onClick={() => {
+                                        handleCompletePlanning();
+                                        setIsSignupsListModalOpen(false);
+                                    }}
+                                    className="w-full py-3 rounded-xl font-bold bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(22,163,74,0.4)] transition-all"
+                                >
+                                    Complete Planning
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setIsSignupsListModalOpen(false)}
                                 className="w-full py-3 rounded-xl font-medium bg-white/5 hover:bg-white/10 transition-colors"
                             >
                                 Close

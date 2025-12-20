@@ -87,6 +87,8 @@ export const api = {
         body: JSON.stringify({ playerInId, playerOutId }),
     }).then(handleResponse<Schedule>),
     getRotationButtonState: (id: string) => fetchWithAuth(`${API_BASE_URL}/schedules/${id}/rotation-button-state`).then(handleResponse<{ visible: boolean, text: string, disabled: boolean, reason?: string }>),
+    getScheduleSignups: (scheduleId: string) => fetchWithAuth(`${API_BASE_URL}/schedules/${scheduleId}/signups`).then(handleResponse<any[]>),
+    completePlanning: (scheduleId: string) => fetchWithAuth(`${API_BASE_URL}/schedules/${scheduleId}/complete-planning`, { method: 'POST' }).then(handleResponse<Schedule>),
 
     // Players
     getPlayers: (groupId: string) => fetchWithAuth(`${API_BASE_URL}/players/${groupId}`)
