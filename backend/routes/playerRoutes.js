@@ -57,8 +57,9 @@ router.put('/:id', protect, async (req, res) => {
 
             if (oldType !== newType) { // Covers additions, removals, and type changes
                 const schedule = await Schedule.findById(scheduleId);
-                if (schedule && (schedule.status === 'ACTIVE' || schedule.status === 'COMPLETED')) {
-                    return res.status(400).json({ msg: `Cannot change availability for schedule "${schedule.name}" because it is active or completed.` });
+                // Admins can bypass the restriction on active/completed schedules
+                if (!isAdmin && schedule && (schedule.status === 'ACTIVE' || schedule.status === 'COMPLETED')) {
+                    return res.status(400).json({ msg: `Cannot change availability for schedule "${schedule.name}" because it is active or completed. Please contact an admin to make changes.` });
                 }
             }
         }

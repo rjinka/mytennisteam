@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Public Routes (before CORS) ---
 // The Google Auth route must be before the strict CORS policy to accept POSTs from Google's servers.
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes);
 
 // --- CORS Configuration ---
 // Define the list of allowed origins (domains)
@@ -63,6 +63,7 @@ app.get('/', (req, res) => {
 });
 
 // --- Protected API Routes (after CORS) ---
+app.use('/api/auth', authRoutes);
 app.use('/api/version', versionRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/courts', courtRoutes);
@@ -108,7 +109,7 @@ const startServer = async () => {
 
 // Start the server only if this file is run directly (not when imported for tests)
 if (process.env.NODE_ENV !== 'test') {
-  startServer();
+    startServer();
 }
 
 export { app, startServer };

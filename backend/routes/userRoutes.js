@@ -1,10 +1,9 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
-import User from '../models/userModel.js'; // Assuming you have a User model
-import Group from '../models/groupModel.js'; // Assuming you have a Group model
-import Player from '../models/playerModel.js'; // Assuming you have a Player model
+import User from '../models/userModel.js';
+import Group from '../models/groupModel.js';
+import Player from '../models/playerModel.js';
 import sendEmail from '../utils/sendEmail.js';
-
 
 const router = express.Router();
 
@@ -27,11 +26,11 @@ router.get('/me', protect, async (req, res) => {
 router.delete('/me', protect, async (req, res) => {
     try {
         const userId = req.user.id;
-        
+
         // Conditions:
         // 1. User must not be in any groups or an admin of any groups.
-        const groupCount = await Group.countDocuments({ admins : { $in : [userId]}  })
-        
+        const groupCount = await Group.countDocuments({ admins: { $in: [userId] } })
+
         if (groupCount > 0) {
             res.status(400);
             throw new Error('You cannot delete your account while you are a member or an administrator of any groups. Please leave all groups and/or transfer admin rights before deleting your account.');
@@ -41,7 +40,7 @@ router.delete('/me', protect, async (req, res) => {
         const playerCount = await Player.countDocuments({ userId: userId });
         if (playerCount > 0) {
             res.status(400);
-            throw new Error('You cannot delete your accout while you are player for an active group. Please contact your group admins to remove you from the group.');
+            throw new Error('You cannot delete your account while you are player for an active group. Please contact your group admins to remove you from the group.');
         }
 
         const user = await User.findById(userId);
@@ -49,15 +48,32 @@ router.delete('/me', protect, async (req, res) => {
             res.status(404);
             throw new Error('User not found');
         }
-        
+
         await User.findByIdAndDelete(userId);
 
+        // Clear auth cookie
+        res.cookie('token', '', {
+            httpOnly: true,
+            expires: new Date(0),
+        });
+
         // Send an email to inform user account has been deleted
-         await sendEmail({ email: user.email, subject: `Your account has been deleted`, message: `Sorry to see you go. Your account has been permanently deleted.` });
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: `Your account has been deleted`,
+                message: `Sorry to see you go. Your account has been permanently deleted.`
+            });
+        } catch (emailError) {
+            console.error('Failed to send deletion email:', emailError);
+            // Don't fail the whole request if just the email fails
+        }
 
         res.json({ msg: 'Your account has been successfully deleted.' });
     } catch (error) {
-        res.status(500).json({ msg: 'Server Error' });
+        console.error('Error deleting user:', error);
+        const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+        res.status(statusCode).json({ msg: error.message || 'Server Error' });
     }
 });
 

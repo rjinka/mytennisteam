@@ -69,7 +69,7 @@ router.post('/', protect, async (req, res) => {
 
         const schedule = new Schedule(newScheduleData);
         await schedule.save();
-        res.status(201).json(newScheduleData); // Return the newly created schedule
+        res.status(201).json(schedule); // Return the newly created schedule document
     } catch (error) {
         console.error('Error creating schedule:', error);
         res.status(500).json({ msg: 'Server Error' });
@@ -288,13 +288,18 @@ router.put('/:id/swap', protect, async (req, res) => {
             return res.status(400).json({ msg: 'Invalid swap. The player to be replaced is not in the playing lineup.' });
         }
 
-        // Remove playerOut from playing and add to bench
+        // Remove playerOut from playing
         schedule.playingPlayersIds.pull(playerOutId);
-        schedule.benchPlayersIds.push(playerOutId);
+
+        // Only add playerOut to bench if they are NOT a backup
+        const playerOutAvailability = playerOut.availability.find(a => a.scheduleId.equals(schedule._id));
+        if (playerOutAvailability?.type !== 'Backup') {
+            schedule.benchPlayersIds.addToSet(playerOutId);
+        }
 
         // Remove playerIn from bench (if they were there) and add to playing
         schedule.benchPlayersIds.pull(playerInId);
-        schedule.playingPlayersIds.push(playerInId);
+        schedule.playingPlayersIds.addToSet(playerInId);
 
         await schedule.save();
         res.status(200).json(schedule); // Return the updated schedule
@@ -322,7 +327,7 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
         }
 
         // --- Rotation Generation Logic ---
-        const playersInGroup = await Player.find({ groupid: schedule.groupid });
+        const playersInGroup = await Player.find({ groupId: schedule.groupId });
         const availablePlayers = playersInGroup.filter(p =>
             p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup')
         );

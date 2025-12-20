@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-success: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+  --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  @apply font-sans text-white antialiased;
+  background: var(--gradient-background);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  min-height: 100vh;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.glass {
+  @apply backdrop-blur-md bg-white/10 border border-white/20 shadow-xl;
+}
+
+.glass-card {
+  @apply glass rounded-2xl p-6 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-2xl;
+}
+
+.btn-primary {
+  @apply px-6 py-2 rounded-xl font-bold uppercase tracking-wider transition-all duration-300 bg-gradient-to-r from-[#667eea] to-[#764ba2] hover:scale-105 active:scale-95 shadow-lg hover:shadow-[#667eea]/50;
+}
+
+.btn-secondary {
+  @apply px-6 py-2 rounded-xl font-bold uppercase tracking-wider transition-all duration-300 bg-white/10 hover:bg-white/20 border border-white/20;
+}
+
+.input-field {
+  @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#667eea]/50 transition-all;
+}
