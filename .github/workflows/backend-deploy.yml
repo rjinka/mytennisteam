@@ -1,0 +1,39 @@
+name: Backend Deploy
+on:
+  workflow_run:
+    workflows: ["Backend Version"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: 'write'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          fetch-depth: 0
+
+      - name: Authenticate to Google Cloud
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Deploy Backend to App Engine
+        working-directory: ./backend
+        run: |
+          # Read version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          # Replace dots with hyphens for App Engine version ID
+          VERSION_ID=$(echo "$VERSION" | sed 's/\./-/g')
+          gcloud app deploy --quiet --version=$VERSION_ID --project=${{ secrets.GCP_PROJECT_ID }}
