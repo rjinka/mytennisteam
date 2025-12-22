@@ -4,6 +4,7 @@ import Player from '../models/playerModel.js';
 import Group from '../models/groupModel.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { isGroupAdmin } from '../utils/util.js';
+import { emitToGroup } from '../socket.js';
 
 
 const router = express.Router();
@@ -32,7 +33,7 @@ router.get('/', protect, async (req, res) => {
 // @route GET /api/courts/:groupId
 // @desc Get all courts for a group
 // @access private
-router.get('/:groupId', protect, async( req, res) => {
+router.get('/:groupId', protect, async (req, res) => {
     try {
         const { groupId } = req.params;
 
@@ -41,11 +42,11 @@ router.get('/:groupId', protect, async( req, res) => {
         if (!group) {
             return res.status(404).json({ msg: 'Group not found' });
         }
-        
+
         // Get all courts for a group
         const courts = await Court.find({ groupId: groupId });
         res.json(courts);
-        } catch (error) {
+    } catch (error) {
         console.error(`Error fetching courts for group ${req.params.groupId}:`, error);
         res.status(500).json({ msg: 'Server Error' });
     }
@@ -73,6 +74,7 @@ router.post('/', protect, async (req, res) => {
         });
 
         const court = await newCourt.save();
+        emitToGroup(groupId, 'courtCreated', court);
         res.status(201).json(court);
     } catch (error) {
         console.error('Error creating court:', error);
@@ -90,6 +92,7 @@ router.put('/:id', protect, async (req, res) => {
         if (!court) {
             return res.status(404).json({ msg: 'Court not found' });
         }
+        emitToGroup(court.groupId, 'courtUpdated', court);
         res.json(court);
     } catch (error) {
         console.error('Error updating court:', error);
@@ -117,6 +120,7 @@ router.delete('/:id', protect, async (req, res) => {
         }
 
         await court.deleteOne();
+        emitToGroup(court.groupId, 'courtDeleted', req.params.id);
         res.json({ msg: 'Court removed' });
     } catch (error) {
         console.error('Error deleting court:', error);

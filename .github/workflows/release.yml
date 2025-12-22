@@ -31,7 +31,7 @@ jobs:
             backend:
               - 'backend/**'
             frontend:
-              - 'frontend/**'
+              - 'frontend-react/**'
             android:
               - 'android/**'
 
@@ -60,7 +60,7 @@ jobs:
         if: ${{ steps.filter.outputs.frontend == 'true' }}
         id: frontend_version
         run: |
-          cd frontend
+          cd frontend-react
           new_tag=$(npm version minor --no-git-tag-version)
           new_version=$(echo "$new_tag" | sed 's/v//')
           echo "version=$new_version" >> $GITHUB_OUTPUT
@@ -130,4 +130,4 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_FE_SERVICE_ACCOUNT_KEY }}'
           channelId: live
           projectId: ${{ secrets.FIREBASE_FE_PROJECT_ID }}
-          entryPoint: ./frontend
+          entryPoint: ./frontend-react

@@ -5,6 +5,7 @@ import Player from '../models/playerModel.js';
 import PlayerStat from '../models/playerStatModel.js';
 import Group from '../models/groupModel.js';
 import { isGroupAdmin } from '../utils/util.js';
+import { emitToGroup } from '../socket.js';
 
 const router = express.Router();
 
@@ -13,17 +14,10 @@ const router = express.Router();
 // @access  Private
 router.get('/', protect, async (req, res) => {
     try {
-        // 1. Find all groups the user is a player in.
         const playerEntries = await Player.find({ userId: req.user.id });
         const groupIds = playerEntries.map(p => p.groupId);
-
-        // 2. Find all schedules that belong to those groups.
         const schedules = await Schedule.find({ groupId: { $in: groupIds } });
-
-        if (!schedules) {
-            return res.json([]);
-        }
-        res.json(schedules);
+        res.json(schedules || []);
     } catch (error) {
         console.error('Error fetching schedules:', error);
         res.status(500).json({ msg: 'Server Error' });
@@ -36,15 +30,10 @@ router.get('/', protect, async (req, res) => {
 router.get('/:groupId', protect, async (req, res) => {
     try {
         const { groupId } = req.params;
-
-        // Authorization check: User must be a member of the group to view its courts.
         const group = await Group.findById(groupId);
-        if (!group) {
-            return res.status(404).json({ msg: 'Group not found' });
-        }
-
-        const schdeules = await Schedule.find({ groupId: group.id });
-        res.json(schdeules);
+        if (!group) return res.status(404).json({ msg: 'Group not found' });
+        const schedules = await Schedule.find({ groupId: group.id });
+        res.json(schedules);
     } catch (error) {
         console.error(`Error fetching schedules for group ${req.params.groupId}:`, error);
         res.status(500).json({ msg: 'Server Error' });
@@ -55,21 +44,15 @@ router.get('/:groupId', protect, async (req, res) => {
 // @desc    Create a new schedule
 router.post('/', protect, async (req, res) => {
     const newScheduleData = req.body;
-
     try {
-        // Authorization check: Only group admins can create a schedule
         const group = await Group.findById(newScheduleData.groupId);
-        if (!group) {
-            return res.status(404).json({ msg: 'Group not found' });
-        }
-
-        if (!isGroupAdmin(req.user, group)) {
-            return res.status(403).json({ msg: 'User not authorized to create a schedule for this group' });
-        }
+        if (!group) return res.status(404).json({ msg: 'Group not found' });
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
 
         const schedule = new Schedule(newScheduleData);
         await schedule.save();
-        res.status(201).json(newScheduleData); // Return the newly created schedule
+        emitToGroup(newScheduleData.groupId.toString(), 'scheduleCreated', schedule);
+        res.status(201).json(schedule);
     } catch (error) {
         console.error('Error creating schedule:', error);
         res.status(500).json({ msg: 'Server Error' });
@@ -78,44 +61,52 @@ router.post('/', protect, async (req, res) => {
 
 // @route   PUT /api/schedules/:id
 // @desc    Update an existing schedule
-// @access  Public
 router.put('/:id', protect, async (req, res) => {
     const { id: scheduleId } = req.params;
     const updatedScheduleData = req.body;
-
     try {
-        // The 'name' field will be in updatedScheduleData
         let schedule = await Schedule.findById(scheduleId);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
 
-        // Authorization check: Only group admins can edit
         const group = await Group.findById(schedule.groupId);
-        if (!isGroupAdmin(req.user, group)) {
-            return res.status(403).json({ msg: 'User not authorized to edit this schedule' });
-        }
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
 
-        // --- Handle schedule completed  logic ---
         const oldRecurrenceCount = schedule.recurrenceCount || 0;
         const newRecurrenceCount = updatedScheduleData.recurrenceCount;
-
-        // Check if the schedule is now completed
-        const isOneTimeFinished = !updatedScheduleData.recurring && updatedScheduleData.isRotationGenerated;
-        const isRecurringFinished = updatedScheduleData.recurring && updatedScheduleData.frequency > 0 && updatedScheduleData.occurrenceNumber > updatedScheduleData.recurrenceCount;
+        const isOneTimeFinished = !updatedScheduleData.recurring && schedule.isRotationGenerated;
+        const isRecurringFinished = updatedScheduleData.recurring && updatedScheduleData.frequency > 0 && updatedScheduleData.occurrenceNumber > schedule.recurrenceCount;
 
         if (isOneTimeFinished || isRecurringFinished) {
             updatedScheduleData.status = 'COMPLETED';
-
-        }
-        // If user extends a completed schedule, re-activate it
-        else if (schedule.status === 'COMPLETED' && newRecurrenceCount > oldRecurrenceCount) {
+            updatedScheduleData.playingPlayersIds = [];
+            updatedScheduleData.benchPlayersIds = [];
+        } else if (schedule.status === 'COMPLETED' && newRecurrenceCount > oldRecurrenceCount) {
             updatedScheduleData.status = 'ACTIVE';
+            // Regenerate the player lineup here
+            const playersInGroup = await Player.find({ groupId: group.id });
+            const availablePlayers = playersInGroup.filter(p => p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup'));
+
+            if (availablePlayers.length === 0) {
+                updatedScheduleData.playingPlayersIds = [];
+                updatedScheduleData.benchPlayersIds = [];
+            } else if (availablePlayers.length <= updatedScheduleData.maxPlayersCount) {
+                updatedScheduleData.playingPlayersIds = availablePlayers.map(p => p.id);
+                updatedScheduleData.benchPlayersIds = [];
+            } else {
+                const permanentPlayers = availablePlayers.filter(p => p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent');
+                let playingLineup = [...permanentPlayers];
+                const rotationPlayers = availablePlayers.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
+                rotationPlayers.sort(() => Math.random() - 0.5);
+                const needed = updatedScheduleData.maxPlayersCount - playingLineup.length;
+                if (needed > 0) playingLineup.push(...rotationPlayers.slice(0, needed));
+                updatedScheduleData.playingPlayersIds = playingLineup.map(p => p._id);
+                updatedScheduleData.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !updatedScheduleData.playingPlayersIds.some(pId => pId.equals(id)));
+            }
+
         }
 
-        // Merge the existing schedule with the updated data
         schedule = await Schedule.findByIdAndUpdate(scheduleId, updatedScheduleData, { new: true });
-
+        emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', schedule);
         res.status(200).json(schedule);
     } catch (error) {
         console.error('Error updating schedule:', error);
@@ -125,29 +116,17 @@ router.put('/:id', protect, async (req, res) => {
 
 // @route   DELETE /api/schedules/:id
 // @desc    Delete a schedule
-// @access  Public
 router.delete('/:id', protect, async (req, res) => {
     try {
         const schedule = await Schedule.findById(req.params.id);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
-        // Authorization check: Only group admins can delete
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
         const group = await Group.findById(schedule.groupId);
-        const isAdmin = isGroupAdmin(req.user, group);
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
 
-        if (!isAdmin) {
-            return res.status(403).json({ msg: 'User not authorized to delete this schedule' });
-        }
-
-        // 1. Delete all PlayerStat documents associated with this schedule
         await PlayerStat.deleteMany({ scheduleId: schedule.id });
-
-        // 2. Remove the scheduleId from all players' selectedScheduleList
-        await Player.updateMany({}, {
-            $pull: { availability: { scheduleId: schedule.id } }
-        });
+        await Player.updateMany({}, { $pull: { availability: { scheduleId: schedule.id } } });
         await schedule.deleteOne();
+        emitToGroup(group.id.toString(), 'scheduleDeleted', req.params.id);
         res.json({ msg: 'Schedule removed' });
     } catch (error) {
         console.error('Error deleting schedule:', error);
@@ -156,33 +135,22 @@ router.delete('/:id', protect, async (req, res) => {
 });
 
 // @route   GET /api/schedules/:scheduleId/signups
-// @desc    Get all players signed up for a schedule
-// @access  Private (Admin only)
 router.get('/:scheduleId/signups', protect, async (req, res) => {
     try {
         const schedule = await Schedule.findById(req.params.scheduleId);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
-
-        // Authorization check: Only group admins can view signups
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
         const group = await Group.findById(schedule.groupId);
-        if (!isGroupAdmin(req.user, group)) {
-            return res.status(403).json({ msg: 'User not authorized to view signups for this schedule' });
-        }
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
 
-        // Find all players who have this schedule in their availability
-        const players = await Player.find({ 'availability.scheduleId': schedule.id }).populate('userId', 'name');
-
+        const players = await Player.find({ groupId: schedule.groupId }).populate('userId', 'name');
         const signups = players.map(player => {
             const availability = player.availability.find(a => a.scheduleId.equals(schedule.id));
             return {
                 playerId: player.id,
-                playerName: player.userId.name,
-                availabilityType: availability.type,
+                playerName: player.userId?.name || 'Unknown',
+                availabilityType: availability ? availability.type : null,
             };
         });
-
         res.json(signups);
     } catch (error) {
         console.error('Error fetching schedule signups:', error);
@@ -191,65 +159,40 @@ router.get('/:scheduleId/signups', protect, async (req, res) => {
 });
 
 // @route   POST /api/schedules/:scheduleId/complete-planning
-// @desc    Completes the planning phase for a schedule and generates the initial lineup
-// @access  Private (Admin only)
 router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
     try {
         const schedule = await Schedule.findById(req.params.scheduleId);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
-
-        if (schedule.status !== 'PLANNING') {
-            return res.status(400).json({ msg: 'Schedule is not in planning phase' });
-        }
-
-        // Authorization check
+        if (!schedule || schedule.status !== 'PLANNING') return res.status(400).json({ msg: 'Invalid schedule' });
         const group = await Group.findById(schedule.groupId);
-        if (!isGroupAdmin(req.user, group)) {
-            return res.status(403).json({ msg: 'User not authorized to complete planning for this schedule' });
-        }
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
 
-        // --- Rotation Generation Logic (similar to /generate) ---
         const playersInGroup = await Player.find({ groupId: schedule.groupId });
-        const availablePlayers = playersInGroup.filter(p =>
-            p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup')
-        );
+        const availablePlayers = playersInGroup.filter(p => p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup'));
 
         if (availablePlayers.length === 0) {
-            // Not enough players, but still move to ACTIVE
             schedule.playingPlayersIds = [];
             schedule.benchPlayersIds = [];
         } else if (availablePlayers.length <= schedule.maxPlayersCount) {
             schedule.playingPlayersIds = availablePlayers.map(p => p.id);
             schedule.benchPlayersIds = [];
         } else {
-            const permanentPlayers = availablePlayers.filter(p =>
-                p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent'
-            );
-
+            const permanentPlayers = availablePlayers.filter(p => p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent');
             let playingLineup = [...permanentPlayers];
             const rotationPlayers = availablePlayers.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
-
-            // Simple random selection for the first time.
             rotationPlayers.sort(() => Math.random() - 0.5);
-
             const needed = schedule.maxPlayersCount - playingLineup.length;
-            if (needed > 0) {
-                playingLineup.push(...rotationPlayers.slice(0, needed));
-            }
-
+            if (needed > 0) playingLineup.push(...rotationPlayers.slice(0, needed));
             schedule.playingPlayersIds = playingLineup.map(p => p._id);
             schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
         }
 
-        const today = new Date();
-
         schedule.status = 'ACTIVE';
         schedule.isRotationGenerated = true;
-        schedule.lastRotationGeneratedDate = today;
+        schedule.lastRotationGeneratedDate = new Date();
+        schedule.lastGeneratedOccurrenceNumber = schedule.occurrenceNumber || 1;
 
         const updatedSchedule = await schedule.save();
+        emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', updatedSchedule);
         res.status(200).json(updatedSchedule);
     } catch (error) {
         console.error('Error completing planning:', error);
@@ -258,46 +201,27 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
 });
 
 // @route   PUT /api/schedules/:id/swap
-// @desc    Swap players between playing and bench for a specific schedule
 router.put('/:id/swap', protect, async (req, res) => {
-    const scheduleId = req.params.id; // This 'id' comes from the URL parameter
     const { playerInId, playerOutId } = req.body;
-
     try {
-        let schedule = await Schedule.findById(scheduleId);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
+        let schedule = await Schedule.findById(req.params.id);
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
 
-        // Validate players exist
-        const [playerIn, playerOut] = await Promise.all([
-            Player.findById(playerInId),
-            Player.findById(playerOutId)
-        ]);
-        if (!playerIn || !playerOut) {
-            return res.status(404).json({ msg: 'One or both players not found.' });
-        }
+        const [playerIn, playerOut] = await Promise.all([Player.findById(playerInId), Player.findById(playerOutId)]);
+        if (!playerIn || !playerOut) return res.status(404).json({ msg: 'Players not found' });
 
-        // Get player positions
-        const playerOutIsPlaying = schedule.playingPlayersIds.some(id => id.equals(playerOutId));
+        if (!schedule.playingPlayersIds.some(id => id.equals(playerOutId))) return res.status(400).json({ msg: 'Invalid swap' });
 
-        // --- Refactored Swap Logic ---
-
-        // Player 'playerOut' must be in the playing list.
-        if (!playerOutIsPlaying) {
-            return res.status(400).json({ msg: 'Invalid swap. The player to be replaced is not in the playing lineup.' });
-        }
-
-        // Remove playerOut from playing and add to bench
         schedule.playingPlayersIds.pull(playerOutId);
-        schedule.benchPlayersIds.push(playerOutId);
+        const playerOutAvailability = playerOut.availability.find(a => a.scheduleId.equals(schedule._id));
+        if (playerOutAvailability?.type !== 'Backup') schedule.benchPlayersIds.addToSet(playerOutId);
 
-        // Remove playerIn from bench (if they were there) and add to playing
         schedule.benchPlayersIds.pull(playerInId);
-        schedule.playingPlayersIds.push(playerInId);
+        schedule.playingPlayersIds.addToSet(playerInId);
 
         await schedule.save();
-        res.status(200).json(schedule); // Return the updated schedule
+        emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', schedule);
+        res.status(200).json(schedule);
     } catch (error) {
         console.error('Error swapping players:', error);
         res.status(500).json({ msg: 'Server Error' });
@@ -305,36 +229,68 @@ router.put('/:id/swap', protect, async (req, res) => {
 });
 
 // @route   POST /api/schedules/:id/generate
-// @desc    Generates the player rotation for the next week/occurrence of a schedule
-// @access  Private (Admin only)
 router.post('/:scheduleId/generate', protect, async (req, res) => {
     try {
         const schedule = await Schedule.findById(req.params.scheduleId);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
-
-        // Authorization check
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
         const group = await Group.findById(schedule.groupId);
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
 
-        if (!isGroupAdmin(req.user, group)) {
-            return res.status(403).json({ msg: 'User not authorized to generate rotation for this schedule' });
+        const today = new Date();
+        const todayDate = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()} ${today.getFullYear()}`;
+
+        // Helper to record stats for the CURRENT lineup
+        const recordCurrentStats = async () => {
+            const occurrenceToRecord = schedule.lastGeneratedOccurrenceNumber || schedule.occurrenceNumber || 1;
+            for (const playerId of [...schedule.playingPlayersIds, ...schedule.benchPlayersIds]) {
+                const status = schedule.playingPlayersIds.some(pId => pId.equals(playerId)) ? 'played' : 'benched';
+                await PlayerStat.findOneAndUpdate(
+                    { playerId: playerId, scheduleId: schedule.id },
+                    { $push: { stats: { occurrenceNumber: occurrenceToRecord, status: status, date: todayDate } } },
+                    { upsert: true, new: true }
+                );
+            }
+        };
+
+        // If rotation is already generated, we are either finishing the schedule or generating the next rotation
+        if (schedule.isRotationGenerated) {
+            // Case 1: Non-recurring schedule. Clicking this means "Finish Schedule".
+            if (!schedule.recurring) {
+                await recordCurrentStats();
+                schedule.status = 'COMPLETED';
+                schedule.benchPlayersIds = [];
+                schedule.playingPlayersIds = [];
+                const updatedSchedule = await schedule.save();
+                emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', updatedSchedule);
+                return res.status(200).json(updatedSchedule);
+            }
+
+            // Case 2: Recurring schedule. Clicking this means "Generate NEXT Rotation" (or Finish if last).
+            // We must record stats for the PREVIOUS (current) rotation first.
+            await recordCurrentStats();
+
+            // If we have reached the end of recurrences, finish the schedule
+            if (schedule.frequency > 0 && schedule.occurrenceNumber >= schedule.recurrenceCount) {
+                schedule.status = 'COMPLETED';
+                schedule.benchPlayersIds = [];
+                schedule.playingPlayersIds = [];
+                const updatedSchedule = await schedule.save();
+                emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', updatedSchedule);
+                return res.status(200).json(updatedSchedule);
+            }
         }
 
-        // --- Rotation Generation Logic ---
-        const playersInGroup = await Player.find({ groupid: schedule.groupid });
-        const availablePlayers = playersInGroup.filter(p =>
-            p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup')
-        );
+        // --- Generate New Rotation Logic ---
+
+        const playersInGroup = await Player.find({ groupId: schedule.groupId });
+        const availablePlayers = playersInGroup.filter(p => p.availability?.some(a => a.scheduleId.equals(schedule.id) && a.type !== 'Backup'));
 
         if (availablePlayers.length <= schedule.maxPlayersCount) {
             schedule.playingPlayersIds = availablePlayers.map(p => p.id);
             schedule.benchPlayersIds = [];
         } else {
-            const playerStats = await Promise.all(
-                availablePlayers.map(p => PlayerStat.findOne({ playerId: p.id, scheduleId: schedule.id }))
-            );
-
+            // Fetch stats to determine fairness
+            const playerStats = await Promise.all(availablePlayers.map(p => PlayerStat.findOne({ playerId: p.id, scheduleId: schedule.id })));
             const getDerivedStats = (history) => {
                 if (!history || history.length === 0) return { playedLastTime: false, weeksOnBench: 0, weeksPlayed: 0 };
                 const sorted = [...history].sort((a, b) => b.occurrenceNumber - a.occurrenceNumber);
@@ -347,37 +303,20 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
 
             const playersWithStats = availablePlayers.map(p => {
                 const statsDoc = playerStats.find(ps => ps && ps.playerId.equals(p.id));
-                return {
-                    ...p.toObject(),
-                    derivedStats: getDerivedStats(statsDoc ? statsDoc.stats : [])
-                };
+                return { ...p.toObject(), derivedStats: getDerivedStats(statsDoc ? statsDoc.stats : []) };
             });
 
-            const permanentPlayers = playersWithStats.filter(p =>
-                p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent'
-            );
-
+            const permanentPlayers = playersWithStats.filter(p => p.availability?.find(a => a.scheduleId.equals(schedule.id))?.type === 'Permanent');
             let playingLineup = [...permanentPlayers];
             const rotationPlayers = playersWithStats.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
 
-            // Prioritize players who didn't play last time
             let mustPlay = rotationPlayers.filter(p => !p.derivedStats.playedLastTime);
-            mustPlay.sort((a, b) => {
-                if (b.derivedStats.weeksOnBench !== a.derivedStats.weeksOnBench) return b.derivedStats.weeksOnBench - a.derivedStats.weeksOnBench;
-                if (a.derivedStats.weeksPlayed !== b.derivedStats.weeksPlayed) return a.derivedStats.weeksPlayed - b.derivedStats.weeksPlayed;
-                return Math.random() - 0.5;
-            });
-
+            mustPlay.sort((a, b) => (b.derivedStats.weeksOnBench - a.derivedStats.weeksOnBench) || (a.derivedStats.weeksPlayed - b.derivedStats.weeksPlayed) || (Math.random() - 0.5));
             playingLineup.push(...mustPlay);
 
-            // Fill remaining spots
             if (playingLineup.length < schedule.maxPlayersCount) {
                 let canPlay = rotationPlayers.filter(p => !playingLineup.some(pl => pl._id.equals(p._id)));
-                canPlay.sort((a, b) => {
-                    if (b.derivedStats.weeksOnBench !== a.derivedStats.weeksOnBench) return b.derivedStats.weeksOnBench - a.derivedStats.weeksOnBench;
-                    if (a.derivedStats.weeksPlayed !== b.derivedStats.weeksPlayed) return a.derivedStats.weeksPlayed - b.derivedStats.weeksPlayed;
-                    return Math.random() - 0.5;
-                });
+                canPlay.sort((a, b) => (b.derivedStats.weeksOnBench - a.derivedStats.weeksOnBench) || (a.derivedStats.weeksPlayed - b.derivedStats.weeksPlayed) || (Math.random() - 0.5));
                 playingLineup.push(...canPlay);
             }
 
@@ -385,42 +324,19 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
             schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
         }
 
-        // --- Finalize Stats and Update Schedule State ---
-        const today = new Date();
-        const todayDate = `${today.toLocaleString('en-US', { month: 'short' })} ${today.getDate()} ${today.getFullYear()}`;
-        const currentOccurrenceNumber = schedule.occurrenceNumber || 1;
-
-        const allPlayersForStatUpdate = [...schedule.playingPlayersIds, ...schedule.benchPlayersIds];
-
-        for (const playerId of allPlayersForStatUpdate) {
-            const status = schedule.playingPlayersIds.some(pId => pId.equals(playerId)) ? 'played' : 'benched';
-            await PlayerStat.findOneAndUpdate(
-                { playerId: playerId, scheduleId: schedule.id },
-                {
-                    $push: { stats: { occurrenceNumber: currentOccurrenceNumber, status: status, date: todayDate } }
-                },
-                { upsert: true, new: true }
-            );
+        // Update Schedule Metadata
+        if (schedule.recurring && schedule.isRotationGenerated) {
+            schedule.occurrenceNumber += 1;
         }
 
-        // Update schedule state
-        schedule.lastGeneratedOccurrenceNumber = currentOccurrenceNumber;
+        schedule.lastGeneratedOccurrenceNumber = schedule.occurrenceNumber;
         schedule.isRotationGenerated = true;
         schedule.lastRotationGeneratedDate = today;
-
-
-        if (schedule.recurring) {
-            schedule.occurrenceNumber += 1;
-            if (schedule.frequency > 0 && schedule.occurrenceNumber > schedule.recurrenceCount) {
-                schedule.status = 'COMPLETED';
-            }
-        } else {
-            schedule.status = 'COMPLETED'; // One-time schedules are completed after one generation
-        }
+        schedule.status = 'ACTIVE';
 
         const updatedSchedule = await schedule.save();
+        emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', updatedSchedule);
         res.status(200).json(updatedSchedule);
-
     } catch (error) {
         console.error('Error generating rotation:', error);
         res.status(500).json({ msg: 'Server Error' });
@@ -428,79 +344,48 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
 });
 
 // @route   GET /api/schedules/:id/rotation-button-state
-// @desc    Get the display state for the generate rotation button
-// @access  Private (Admin only)
 router.get('/:id/rotation-button-state', protect, async (req, res) => {
     try {
         const schedule = await Schedule.findById(req.params.id);
-        if (!schedule) {
-            return res.status(404).json({ msg: 'Schedule not found' });
-        }
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
+        const group = await Group.findById(schedule.groupId);
+        if (!isGroupAdmin(req.user, group)) return res.json({ visible: false });
 
-        const group = await Group.findById(schedule.groupId)
-        const isAdmin = isGroupAdmin(req.user, group);
-
-
-        if (!isAdmin) {
-            return res.json({ visible: false });
-        }
-
-        let buttonState = {
-            visible: true,
-            text: 'Generate Rotation',
-            disabled: false,
-        };
-
-        if (schedule.status === 'PLANNING') {
-            buttonState.text = 'Finish Planning';
-            buttonState.disabled = true;
-            buttonState.visible = false;
-            return res.json(buttonState);
-        }
-
-        if (schedule.status === 'COMPLETED') {
-            buttonState.text = 'Schedule Finished';
-            buttonState.disabled = true;
-            return res.json(buttonState);
-        }
+        let buttonState = { visible: true, text: 'Generate Rotation', disabled: false };
+        if (schedule.status === 'PLANNING') return res.json({ ...buttonState, visible: false, disabled: true, text: 'Finish Planning' });
+        if (schedule.status === 'COMPLETED') return res.json({ ...buttonState, disabled: true, text: 'Schedule Finished' });
 
         if (!schedule.isRotationGenerated) {
-            // If no rotation has ever been generated, the button should be enabled.
-            buttonState.text = !schedule.recurring ? 'Finish Schedule' : 'Generate Rotation';
-            buttonState.disabled = false;
+            buttonState.text = 'Generate Rotation';
         } else {
-            // A rotation has been generated, so calculate when the next one is due.
-            const lastDate = new Date(schedule.lastRotationGeneratedDate);
-            const nextAvailableDate = new Date(lastDate);
-            nextAvailableDate.setHours(0, 0, 0, 0); // Normalize to the start of the day
-
-            const frequency = parseInt(schedule.frequency);
-            switch (frequency) {
-                case 1: // Daily
-                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 1);
-                    break;
-                case 2: // Weekly
-                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 7);
-                    break;
-                case 3: // Bi-Weekly
-                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 14);
-                    break;
-                case 4: // Monthly
-                    nextAvailableDate.setMonth(nextAvailableDate.getMonth() + 1);
-                    break;
-                default: // Non-recurring or invalid frequency
-                    buttonState.text = 'Rotation Generated';
-                    buttonState.disabled = true;
-                    return res.json(buttonState);
+            if (!schedule.recurring) {
+                buttonState.text = 'Finish Schedule';
+                buttonState.disabled = false;
+                return res.json(buttonState);
             }
 
+            const lastDate = new Date(schedule.lastRotationGeneratedDate);
+            const nextAvailableDate = new Date(lastDate);
+            nextAvailableDate.setHours(0, 0, 0, 0);
+            const frequency = parseInt(schedule.frequency);
+            switch (frequency) {
+                case 1: nextAvailableDate.setDate(nextAvailableDate.getDate() + 1); break;
+                case 2: nextAvailableDate.setDate(nextAvailableDate.getDate() + 7); break;
+                case 3: nextAvailableDate.setDate(nextAvailableDate.getDate() + 14); break;
+                case 4: nextAvailableDate.setMonth(nextAvailableDate.getMonth() + 1); break;
+                default: return res.json({ ...buttonState, text: 'Rotation Generated', disabled: true });
+            }
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-
             buttonState.disabled = today < nextAvailableDate;
             buttonState.text = buttonState.disabled ? 'Rotation Generated' : 'Generate Rotation';
-        }
 
+            // Recurring Schedule
+            if (schedule.frequency > 0 && schedule.occurrenceNumber > schedule.recurrenceCount) {
+                buttonState.text = 'Finish Schedule';
+                buttonState.disabled = false;
+            }
+        }
         res.json(buttonState);
     } catch (error) {
         console.error('Error getting rotation button state:', error);

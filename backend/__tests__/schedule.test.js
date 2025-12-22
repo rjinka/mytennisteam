@@ -98,39 +98,39 @@ describe('Schedule Routes', () => {
 
   describe('GET /api/schedules/:scheduleId/signups', () => {
     it('should get all signups for a schedule', async () => {
-        await Player.updateOne({ _id: player._id }, { $push: { availability: { scheduleId: schedule._id, type: 'Rotation' } } });
-        const res = await request(app).get(`/api/schedules/${schedule._id}/signups`);
-        expect(res.statusCode).toBe(200);
-        expect(res.body.length).toBe(1);
-        expect(res.body[0].playerName).toBe('Test User');
-        expect(res.body[0].availabilityType).toBe('Rotation');
+      await Player.updateOne({ _id: player._id }, { $push: { availability: { scheduleId: schedule._id, type: 'Rotation' } } });
+      const res = await request(app).get(`/api/schedules/${schedule._id}/signups`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.length).toBe(1);
+      expect(res.body[0].playerName).toBe('Test User');
+      expect(res.body[0].availabilityType).toBe('Rotation');
     });
 
     it('should return 403 for non-admin', async () => {
-        await group.updateOne({ admins: [] });
-        const res = await request(app).get(`/api/schedules/${schedule._id}/signups`);
-        expect(res.statusCode).toBe(403);
+      await group.updateOne({ admins: [] });
+      const res = await request(app).get(`/api/schedules/${schedule._id}/signups`);
+      expect(res.statusCode).toBe(403);
     });
   });
 
   describe('POST /api/schedules/:scheduleId/complete-planning', () => {
     it('should complete planning for a schedule and set status to ACTIVE', async () => {
-        const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
-        expect(res.statusCode).toBe(200);
-        expect(res.body.status).toBe('ACTIVE');
-        expect(res.body.isRotationGenerated).toBe(true);
+      const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.status).toBe('ACTIVE');
+      expect(res.body.isRotationGenerated).toBe(true);
     });
 
     it('should return 400 if schedule is not in PLANNING status', async () => {
-        await schedule.updateOne({ status: 'ACTIVE' });
-        const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
-        expect(res.statusCode).toBe(400);
+      await schedule.updateOne({ status: 'ACTIVE' });
+      const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
+      expect(res.statusCode).toBe(400);
     });
 
     it('should return 403 for non-admin', async () => {
-        await group.updateOne({ admins: [] });
-        const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
-        expect(res.statusCode).toBe(403);
+      await group.updateOne({ admins: [] });
+      const res = await request(app).post(`/api/schedules/${schedule._id}/complete-planning`);
+      expect(res.statusCode).toBe(403);
     });
   });
 
@@ -146,7 +146,7 @@ describe('Schedule Routes', () => {
     });
 
     it('should return visible and disabled for admin if schedule is completed', async () => {
-      await schedule.updateOne({ status : 'COMPLETED' });
+      await schedule.updateOne({ status: 'COMPLETED' });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
       expect(res.body).toEqual({
@@ -162,6 +162,7 @@ describe('Schedule Routes', () => {
         lastRotationGeneratedDate: new Date(),
         frequency: '2', // Weekly
         status: 'ACTIVE',
+        recurring: true,
       });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);
@@ -180,6 +181,7 @@ describe('Schedule Routes', () => {
         lastRotationGeneratedDate: lastDate,
         frequency: '2', // Weekly
         status: 'ACTIVE',
+        recurring: true,
       });
       const res = await request(app).get(`/api/schedules/${schedule._id}/rotation-button-state`);
       expect(res.statusCode).toBe(200);

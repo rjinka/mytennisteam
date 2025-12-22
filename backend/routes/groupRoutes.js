@@ -10,7 +10,6 @@ import PlayerStat from '../models/playerStatModel.js';
 import Court from '../models/courtModel.js';
 import { isSuperAdmin, isGroupAdmin } from '../utils/util.js';
 
-
 const router = express.Router();
 
 // @route   GET /api/groups/player
@@ -264,5 +263,62 @@ router.post('/join-by-code', protect, async (req, res) => {
     }
 });
 
+
+// @route   POST /api/groups/:groupId/leave
+// @desc    Leave a group
+// @access  Private
+router.post('/:groupId/leave', protect, async (req, res) => {
+    try {
+        const group = await Group.findById(req.params.groupId);
+        if (!group) return res.status(404).json({ msg: 'Group not found' });
+
+        const player = await Player.findOne({ userId: req.user._id, groupId: group._id });
+        if (!player) return res.status(400).json({ msg: 'You are not a member of this group' });
+
+        // Check if player is active in any schedule
+        const activeSchedules = await Schedule.find({
+            groupId: group._id,
+            $or: [
+                { playingPlayersIds: player._id },
+                { benchPlayersIds: player._id }
+            ]
+        });
+
+        if (activeSchedules.length > 0) {
+            return res.status(400).json({
+                msg: 'You cannot leave the group because you are active in one or more schedules. Please contact your group admin to remove you from the active lineups first.'
+            });
+        }
+
+        // If user is an admin, check if they are the last one
+        const isAdmin = group.admins.some(adminId => adminId.equals(req.user._id));
+        if (isAdmin && group.admins.length === 1) {
+            return res.status(400).json({ msg: 'You are the last admin of this group. Please delete the group or transfer admin rights before leaving.' });
+        }
+
+        // 1. Remove from group admins if applicable
+        if (isAdmin) {
+            group.admins = group.admins.filter(adminId => !adminId.equals(req.user._id));
+            await group.save();
+        }
+
+        // 2. Remove player from all schedules in the group (redundant but safe)
+        await Schedule.updateMany(
+            { groupId: group._id },
+            { $pull: { playingPlayersIds: player._id, benchPlayersIds: player._id } }
+        );
+
+        // 3. Delete player stats
+        await PlayerStat.deleteMany({ playerId: player._id });
+
+        // 4. Delete player record
+        await player.deleteOne();
+
+        res.json({ msg: 'Successfully left the group' });
+    } catch (error) {
+        console.error('Error leaving group:', error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
 
 export default router;

@@ -83,22 +83,25 @@ describe('Player Routes', () => {
       expect(updatedSchedule.benchPlayersIds).not.toContainEqual(player._id);
     });
 
-    it('should return 400 if trying to change availability for a non-PLANNING schedule', async () => {
-        await schedule.updateOne({ status: 'ACTIVE' });
-        let res = await request(app)
-            .put(`/api/players/${player._id}`)
-            .send({
-                availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
-            });
-        expect(res.statusCode).toBe(400);
+    it('should return 400 if trying to change availability for a non-PLANNING schedule as a non-admin', async () => {
+      // Remove user from admins so they are only the "owner" of the player
+      await group.updateOne({ $set: { admins: [] } });
 
-        await schedule.updateOne({ status: 'COMPLETED' });
-        res = await request(app)
-            .put(`/api/players/${player._id}`)
-            .send({
-                availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
-            });
-        expect(res.statusCode).toBe(400);
+      await schedule.updateOne({ status: 'ACTIVE' });
+      let res = await request(app)
+        .put(`/api/players/${player._id}`)
+        .send({
+          availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
+        });
+      expect(res.statusCode).toBe(400);
+
+      await schedule.updateOne({ status: 'COMPLETED' });
+      res = await request(app)
+        .put(`/api/players/${player._id}`)
+        .send({
+          availability: [{ scheduleId: schedule._id, type: 'Permanent' }],
+        });
+      expect(res.statusCode).toBe(400);
     });
   });
 
@@ -111,9 +114,9 @@ describe('Player Routes', () => {
     });
 
     it('should return 403 if the user is not an admin', async () => {
-        await group.updateOne({$set: {admins: [new mongoose.Types.ObjectId()] }});
-        const res = await request(app).delete(`/api/players/${player._id}`);
-        expect(res.statusCode).toBe(403);
+      await group.updateOne({ $set: { admins: [new mongoose.Types.ObjectId()] } });
+      const res = await request(app).delete(`/api/players/${player._id}`);
+      expect(res.statusCode).toBe(403);
     });
   });
 });
