@@ -62,7 +62,7 @@ const ActiveGameDisplay: React.FC<ActiveGameDisplayProps> = ({
                             <h3 className="text-2xl font-bold">{selectedSchedule.name}</h3>
                             {selectedSchedule.recurring && (
                                 <span className="text-sm bg-[#667eea]/20 text-[#667eea] px-3 py-1 rounded-full font-medium">
-                                    Occurrence #{selectedSchedule.occurrenceNumber}
+                                    Week #{selectedSchedule.occurrenceNumber}
                                 </span>
                             )}
                         </div>
