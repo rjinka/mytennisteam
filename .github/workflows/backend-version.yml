@@ -1,0 +1,49 @@
+name: Backend Version
+on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  increment-version:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_ADMIN_PAT }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Increment Backend Version
+        id: backend_version
+        run: |
+          cd backend
+          new_tag=$(npm version minor --no-git-tag-version)
+          new_version=$(echo "$new_tag" | sed 's/v//')
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag=backend/v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Commit and Push Changes
+        run: |
+          git add backend/package.json backend/package-lock.json
+          commit_msg="Chore: auto-increment backend version [skip ci]"
+          commit_msg="$commit_msg"$'\n'"- Backend: ${{ steps.backend_version.outputs.version }}"
+          git commit -m "$commit_msg"
+          git tag ${{ steps.backend_version.outputs.tag }}
+          git push origin main --tags

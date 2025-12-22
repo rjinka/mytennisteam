@@ -1,0 +1,39 @@
+name: Frontend Deploy
+on:
+  workflow_run:
+    workflows: ["Frontend Version"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: 'write'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: cd frontend-react && npm install
+
+      - name: Deploy Frontend to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_FE_SERVICE_ACCOUNT_KEY }}'
+          channelId: live
+          projectId: ${{ secrets.FIREBASE_FE_PROJECT_ID }}
+          entryPoint: ./frontend-react

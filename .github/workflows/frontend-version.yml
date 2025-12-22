@@ -1,0 +1,49 @@
+name: Frontend Version
+on:
+  workflow_run:
+    workflows: ["Frontend CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  increment-version:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_ADMIN_PAT }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Increment Frontend Version
+        id: frontend_version
+        run: |
+          cd frontend-react
+          new_tag=$(npm version minor --no-git-tag-version)
+          new_version=$(echo "$new_tag" | sed 's/v//')
+          echo "version=$new_version" >> $GITHUB_OUTPUT
+          echo "tag=frontend/v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Commit and Push Changes
+        run: |
+          git add frontend-react/package.json frontend-react/package-lock.json
+          commit_msg="Chore: auto-increment frontend version [skip ci]"
+          commit_msg="$commit_msg"$'\n'"- Frontend: ${{ steps.frontend_version.outputs.version }}"
+          git commit -m "$commit_msg"
+          git tag ${{ steps.frontend_version.outputs.tag }}
+          git push origin main --tags

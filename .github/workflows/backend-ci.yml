@@ -3,8 +3,12 @@ name: Backend CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'backend/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'backend/**'
 
 jobs:
   tests:
@@ -21,3 +25,5 @@ jobs:
       run: cd backend && npm install
     - name: Run tests
       run: cd backend && npm test
+
+

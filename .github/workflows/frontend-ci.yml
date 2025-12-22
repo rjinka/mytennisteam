@@ -3,8 +3,12 @@ name: Frontend CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'frontend-react/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'frontend-react/**'
 
 jobs:
   tests:
@@ -21,3 +25,5 @@ jobs:
       run: cd frontend-react && npm install
     - name: Run tests
       run: cd frontend-react && npm test
+
+
