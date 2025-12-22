@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: cd frontend-react && npm install
 
+      - name: Build Frontend
+        run: cd frontend-react && npm run build
+
       - name: Deploy Frontend to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:

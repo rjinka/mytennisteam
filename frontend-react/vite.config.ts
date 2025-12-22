@@ -52,6 +52,3 @@ export default defineConfig(({ mode }) => {
     },
   };
 })
-
-
-//TODO remove this after testing

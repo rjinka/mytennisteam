@@ -42,4 +42,7 @@ jobs:
           commit_msg="$commit_msg"$'\n'"- Android: ${{ steps.android_version.outputs.version }}"
           git commit -m "$commit_msg"
           git tag ${{ steps.android_version.outputs.tag }}
+          
+          # Pull latest changes with rebase to handle concurrent updates
+          git pull --rebase origin main
           git push origin main --tags
