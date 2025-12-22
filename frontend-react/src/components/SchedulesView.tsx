@@ -74,15 +74,6 @@ const SchedulesView: React.FC = () => {
     });
     const backupPlayersIds = backupPlayers.map(p => p.id || (p as any)._id);
 
-    const scheduleSignups = players.map(p => {
-        const availability = p.availability?.find(a => a.scheduleId === selectedScheduleId);
-        return {
-            playerId: p.id || (p as any)._id,
-            playerName: p.name,
-            availabilityType: availability ? availability.type : null
-        };
-    });
-
     // Effect to handle initial selection and ensure selection is valid
     useEffect(() => {
         if (schedules.length > 0) {

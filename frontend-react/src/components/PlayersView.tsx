@@ -294,7 +294,6 @@ const PlayersView: React.FC = () => {
                                     ) : (
                                         schedules.map(schedule => {
                                             const availability = formData.availability.find(a => a.scheduleId === schedule.id);
-                                            const currentType = availability?.type || 'Rotation';
 
                                             const isDisabled = !isAdmin && (schedule.status === 'ACTIVE' || schedule.status === 'COMPLETED');
 
