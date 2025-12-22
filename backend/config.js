@@ -57,5 +57,3 @@ const initializeConfig = async () => {
 };
 
 export const config = await initializeConfig();
-
-//TODO: remove this after testing
