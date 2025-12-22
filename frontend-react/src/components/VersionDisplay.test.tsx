@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import VersionDisplay from './VersionDisplay';
 import { api } from '../api';
+import packageJson from '../../package.json';
 
 // Mock the api
 vi.mock('../api', () => ({
@@ -10,11 +11,13 @@ vi.mock('../api', () => ({
     },
 }));
 
+
+
 describe('VersionDisplay', () => {
     it('renders frontend version from package.json', () => {
         vi.mocked(api.getVersion).mockResolvedValue({ version: '1.5.0' });
         render(<VersionDisplay />);
-        expect(screen.getByText(/v1.6.0/i)).toBeInTheDocument();
+        expect(screen.getByText(new RegExp(`v${packageJson.version}`, 'i'))).toBeInTheDocument();
     });
 
     it('fetches and displays backend version', async () => {
