@@ -29,6 +29,10 @@ jobs:
       - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v2'
 
+      - name: Create app.yaml
+        working-directory: ./backend
+        run: echo "${{ secrets.GCP_APP_YAML }}" > app.yaml
+
       - name: Deploy Backend to App Engine
         working-directory: ./backend
         run: |
@@ -36,4 +40,4 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           # Replace dots with hyphens for App Engine version ID
           VERSION_ID=$(echo "$VERSION" | sed 's/\./-/g')
-          gcloud app deploy --quiet --version=$VERSION_ID --project=${{ secrets.GCP_PROJECT_ID }}
+          gcloud app deploy app.yaml --quiet --version=$VERSION_ID --project=${{ secrets.GCP_PROJECT_ID }}

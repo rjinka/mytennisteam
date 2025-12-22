@@ -9,7 +9,6 @@ interface ScheduleCardProps {
 }
 
 const ScheduleCard: React.FC<ScheduleCardProps> = ({ schedule, isSelected, onClick, days }) => {
-    const sId = schedule.id || (schedule as any)._id;
 
     return (
         <button
