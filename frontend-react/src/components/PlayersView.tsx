@@ -205,9 +205,6 @@ const PlayersView: React.FC = () => {
                                         <h4 className="font-bold text-xl text-white truncate leading-tight">
                                             {player.name || 'Unknown'}
                                         </h4>
-                                        <p className="text-sm text-white/40 truncate mt-1 font-medium">
-                                            {player.email}
-                                        </p>
                                     </div>
 
                                     {/* Action Buttons - Always visible but subtle */}
