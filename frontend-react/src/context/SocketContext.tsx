@@ -18,7 +18,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const socketUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
         const newSocket = io(socketUrl, {
             withCredentials: true,
-            transports: ['websocket', 'polling']
+            transports: ['polling', 'websocket']
         });
 
         newSocket.on('connect', () => {
