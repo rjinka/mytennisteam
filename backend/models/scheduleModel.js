@@ -19,7 +19,7 @@ const scheduleSchema = new mongoose.Schema({
         gameType: { type: String, required: true }
     }],
     // The day of the week for the schedule (0=Sunday, 6=Saturday).
-    day: { type: String, required: true },
+    day: { type: Number, required: true },
     // The start time of the schedule (e.g., "09:00").
     time: { type: String, required: true },
     // The duration of the schedule in minutes.
@@ -63,7 +63,7 @@ const scheduleSchema = new mongoose.Schema({
     toObject: { virtuals: true },
 });
 
-scheduleSchema.virtual('id').get(function() { return this._id.toHexString(); });
+scheduleSchema.virtual('id').get(function () { return this._id.toHexString(); });
 
 const Schedule = mongoose.model('Schedule', scheduleSchema);
 
