@@ -1,26 +1,27 @@
-import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { api } from '../api';
+import React, { useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 
+declare global {
+    interface Window {
+        google: any;
+    }
+}
+
 const Login: React.FC = () => {
-    // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
     const { setUser } = useAppContext();
 
-    const handleSuccess = async (credentialResponse: any) => {
-        try {
-            if (credentialResponse.credential) {
-                const user = await api.loginWithGoogle(credentialResponse.credential);
-                setUser(user);
-            }
-        } catch (error) {
-            console.error('Login Failed:', error);
-        }
-    };
+    useEffect(() => {
+        // Load the Google script manually to ensure it's available
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
 
-    const handleError = () => {
-        console.log('Login Failed');
-    };
+        return () => {
+            document.head.removeChild(script);
+        };
+    }, []);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -34,16 +35,24 @@ const Login: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="py-8 flex justify-center">
-                    <GoogleLogin
-                        onSuccess={handleSuccess}
-                        onError={handleError}
-                        theme="outline"
-                        size="large"
-                        shape="rectangular"
-                        text="signin_with"
-                        logo_alignment="left"
-                    />
+                <div className="py-8 flex flex-col items-center gap-4">
+                    {/* Standard Google Sign-In Button with login_uri */}
+                    <div id="g_id_onload"
+                        data-client_id={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+                        data-context="signin"
+                        data-ux_mode="redirect"
+                        data-login_uri="http://localhost:3000/api/auth/google"
+                        data-auto_prompt="false">
+                    </div>
+
+                    <div className="g_id_signin"
+                        data-type="standard"
+                        data-shape="rectangular"
+                        data-theme="outline"
+                        data-text="signin_with"
+                        data-size="large"
+                        data-logo_alignment="left">
+                    </div>
                 </div>
 
                 <p className="text-white/40 text-sm">

@@ -28,6 +28,8 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use('/api/auth', authRoutes);
+
 // --- CORS Configuration ---
 const allowedOrigins = [
     'http://localhost:5000',
@@ -61,7 +63,7 @@ app.get('/', (req, res) => {
 });
 
 // --- Protected API Routes ---
-app.use('/api/auth', authRoutes);
+
 app.use('/api/version', versionRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/courts', courtRoutes);
