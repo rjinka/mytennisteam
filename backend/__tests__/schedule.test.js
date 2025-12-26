@@ -65,7 +65,7 @@ describe('Schedule Routes', () => {
         .send({
           name: 'New Schedule',
           groupId: group._id,
-          day: 'Tuesday',
+          day: 2,
           time: '20:00',
           duration: 60,
           maxPlayersCount: 2,
