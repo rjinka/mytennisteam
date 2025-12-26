@@ -18,8 +18,6 @@ import supportRoutes from './routes/supportRoutes.js';
 import http from 'http';
 import { initSocket } from './socket.js';
 
-console.log(`Running in ${process.env.NODE_ENV || 'development'} mode.`);
-
 const app = express();
 const server = http.createServer(app);
 

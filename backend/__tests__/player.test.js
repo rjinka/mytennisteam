@@ -36,7 +36,7 @@ describe('Player Routes', () => {
       _id: scheduleId,
       groupId: groupId,
       name: 'Test Schedule',
-      day: 'Monday',
+      day: 1,
       time: '18:00',
       duration: 90,
       maxPlayersCount: 1,
