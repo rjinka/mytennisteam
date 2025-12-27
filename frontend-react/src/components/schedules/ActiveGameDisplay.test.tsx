@@ -63,7 +63,7 @@ describe('ActiveGameDisplay - Court Assignments', () => {
                 handleShuffle={vi.fn()}
                 days={[]}
                 getPlayerName={mockGetPlayerName}
-                currentPlayer={null}
+                currentPlayer={undefined}
             />
         );
 
@@ -109,7 +109,7 @@ describe('ActiveGameDisplay - Court Assignments', () => {
                 handleShuffle={vi.fn()}
                 days={[]}
                 getPlayerName={mockGetPlayerName}
-                currentPlayer={null}
+                currentPlayer={undefined}
             />
         );
 
