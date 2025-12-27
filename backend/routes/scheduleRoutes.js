@@ -9,6 +9,35 @@ import { emitToGroup } from '../socket.js';
 
 const router = express.Router();
 
+const assignPlayersToCourts = (schedule) => {
+    if (schedule.allowShuffle && schedule.courts.length > 1) {
+        const playingPlayers = [...schedule.playingPlayersIds];
+        // Shuffle them for the initial assignment
+        playingPlayers.sort(() => Math.random() - 0.5);
+
+        const assignments = [];
+        let playerIndex = 0;
+        for (const court of schedule.courts) {
+            const playersPerCourt = court.gameType === '1' ? 4 : 2;
+            const courtPlayers = playingPlayers.slice(playerIndex, playerIndex + playersPerCourt);
+
+            const courtAssignments = courtPlayers.map((pid, idx) => ({
+                playerId: pid,
+                side: idx % 2 === 0 ? 'Left' : 'Right'
+            }));
+
+            assignments.push({
+                courtId: court.courtId,
+                assignments: courtAssignments
+            });
+            playerIndex += playersPerCourt;
+        }
+        schedule.courtAssignments = assignments;
+    } else {
+        schedule.courtAssignments = [];
+    }
+};
+
 // @route   GET /api/schedules
 // @desc    Get all schedules for the groups the user is a member of
 // @access  Private
@@ -42,6 +71,7 @@ router.get('/:groupId', protect, async (req, res) => {
 
 // @route   POST /api/schedules
 // @desc    Create a new schedule
+// @access  Private
 router.post('/', protect, async (req, res) => {
     const newScheduleData = req.body;
     try {
@@ -101,8 +131,12 @@ router.put('/:id', protect, async (req, res) => {
                 if (needed > 0) playingLineup.push(...rotationPlayers.slice(0, needed));
                 updatedScheduleData.playingPlayersIds = playingLineup.map(p => p._id);
                 updatedScheduleData.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !updatedScheduleData.playingPlayersIds.some(pId => pId.equals(id)));
-            }
 
+                // Assign to courts if allowShuffle is enabled
+                const tempSchedule = { ...schedule.toObject(), ...updatedScheduleData };
+                assignPlayersToCourts(tempSchedule);
+                updatedScheduleData.courtAssignments = tempSchedule.courtAssignments;
+            }
         }
 
         schedule = await Schedule.findByIdAndUpdate(scheduleId, updatedScheduleData, { new: true });
@@ -186,6 +220,8 @@ router.post('/:scheduleId/complete-planning', protect, async (req, res) => {
             schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
         }
 
+        assignPlayersToCourts(schedule);
+
         schedule.status = 'ACTIVE';
         schedule.isRotationGenerated = true;
         schedule.lastRotationGeneratedDate = new Date();
@@ -218,6 +254,17 @@ router.put('/:id/swap', protect, async (req, res) => {
 
         schedule.benchPlayersIds.pull(playerInId);
         schedule.playingPlayersIds.addToSet(playerInId);
+
+        // Update court assignments if they exist
+        if (schedule.courtAssignments && schedule.courtAssignments.length > 0) {
+            for (const assignment of schedule.courtAssignments) {
+                const index = assignment.assignments.findIndex(a => a.playerId.equals(playerOutId));
+                if (index !== -1) {
+                    assignment.assignments[index].playerId = playerInId;
+                    break;
+                }
+            }
+        }
 
         await schedule.save();
         emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', schedule);
@@ -324,6 +371,9 @@ router.post('/:scheduleId/generate', protect, async (req, res) => {
             schedule.benchPlayersIds = availablePlayers.map(p => p._id).filter(id => !schedule.playingPlayersIds.some(pId => pId.equals(id)));
         }
 
+        // Assign to courts if allowShuffle is enabled
+        assignPlayersToCourts(schedule);
+
         // Update Schedule Metadata
         if (schedule.recurring && schedule.isRotationGenerated) {
             schedule.occurrenceNumber += 1;
@@ -389,6 +439,57 @@ router.get('/:id/rotation-button-state', protect, async (req, res) => {
         res.json(buttonState);
     } catch (error) {
         console.error('Error getting rotation button state:', error);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
+// @route   PUT /api/schedules/:id/shuffle
+// @desc    Shuffle players between courts
+// @access  Private
+router.put('/:id/shuffle', protect, async (req, res) => {
+    try {
+        const schedule = await Schedule.findById(req.params.id);
+        if (!schedule) return res.status(404).json({ msg: 'Schedule not found' });
+
+        const group = await Group.findById(schedule.groupId);
+        if (!isGroupAdmin(req.user, group)) return res.status(403).json({ msg: 'User not authorized' });
+
+        if (!schedule.allowShuffle) return res.status(400).json({ msg: 'Shuffling is not allowed for this schedule' });
+        if (schedule.courts.length <= 1) return res.status(400).json({ msg: 'Shuffling requires more than one court' });
+
+        if (!schedule.isRotationGenerated) return res.status(400).json({ msg: 'Rotation not generated yet' });
+
+        const playingPlayers = [...schedule.playingPlayersIds];
+        // Simple random shuffle for now. 
+        playingPlayers.sort(() => Math.random() - 0.5);
+
+        const assignments = [];
+        let playerIndex = 0;
+        for (const court of schedule.courts) {
+            const playersPerCourt = court.gameType === '1' ? 4 : 2;
+            const courtPlayers = playingPlayers.slice(playerIndex, playerIndex + playersPerCourt);
+
+            const courtAssignments = courtPlayers.map((pid, idx) => ({
+                playerId: pid,
+                side: idx % 2 === 0 ? 'Left' : 'Right'
+            }));
+
+            assignments.push({
+                courtId: court.courtId,
+                assignments: courtAssignments
+            });
+            playerIndex += playersPerCourt;
+        }
+        schedule.courtAssignments = assignments;
+
+        // Mark courtAssignments as modified for Mongoose to save it
+        schedule.markModified('courtAssignments');
+
+        const updatedSchedule = await schedule.save();
+        emitToGroup(schedule.groupId.toString(), 'scheduleUpdated', updatedSchedule);
+        res.status(200).json(updatedSchedule);
+    } catch (error) {
+        console.error('Error shuffling players:', error);
         res.status(500).json({ msg: 'Server Error' });
     }
 });

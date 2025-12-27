@@ -38,6 +38,14 @@ export interface ScheduleCourt {
     gameType: '0' | '1'; // 0: Singles, 1: Doubles
 }
 
+export interface CourtAssignment {
+    courtId: string;
+    assignments: {
+        playerId: string;
+        side: 'Left' | 'Right' | 'None';
+    }[];
+}
+
 export interface Schedule {
     occurrenceNumber: number;
     id: string;
@@ -56,6 +64,8 @@ export interface Schedule {
     benchPlayersIds: string[];
     backupPlayersIds?: string[];
     status: 'PLANNING' | 'ACTIVE' | 'COMPLETED';
+    courtAssignments?: CourtAssignment[];
+    allowShuffle?: boolean;
 }
 
 export interface ApiErrorResponse {
