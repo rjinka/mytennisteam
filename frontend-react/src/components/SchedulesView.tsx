@@ -42,7 +42,8 @@ const SchedulesView: React.FC = () => {
         courts: [] as { courtId: string, gameType: '0' | '1' }[],
         recurring: false,
         frequency: 2,
-        recurrenceCount: 8
+        recurrenceCount: 8,
+        allowShuffle: false
     });
 
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -144,7 +145,8 @@ const SchedulesView: React.FC = () => {
             courts: [],
             recurring: false,
             frequency: 2,
-            recurrenceCount: 8
+            recurrenceCount: 8,
+            allowShuffle: false
         });
         setIsScheduleModalOpen(true);
     };
@@ -164,7 +166,8 @@ const SchedulesView: React.FC = () => {
             courts: mappedCourts,
             recurring: schedule.recurring || false,
             frequency: schedule.frequency || 2,
-            recurrenceCount: schedule.recurrenceCount || 8
+            recurrenceCount: schedule.recurrenceCount || 8,
+            allowShuffle: schedule.allowShuffle || false
         });
         setIsScheduleModalOpen(true);
     };
@@ -185,7 +188,8 @@ const SchedulesView: React.FC = () => {
                 recurring: scheduleFormData.recurring,
                 frequency: scheduleFormData.recurring ? scheduleFormData.frequency : 0,
                 recurrenceCount: scheduleFormData.recurring ? scheduleFormData.recurrenceCount : 0,
-                maxPlayersCount
+                maxPlayersCount,
+                allowShuffle: scheduleFormData.allowShuffle
             };
 
             let savedSchedule: Schedule;
@@ -363,6 +367,16 @@ const SchedulesView: React.FC = () => {
         setIsSwapModalOpen(true);
     };
 
+    const handleShuffle = async (id: string) => {
+        try {
+            await api.shufflePlayers(id);
+            toast.success('Players shuffled successfully');
+            await refreshCurrentGroupData();
+        } catch (error) {
+            toast.error('Failed to shuffle players');
+        }
+    };
+
     return (
         <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -416,6 +430,7 @@ const SchedulesView: React.FC = () => {
                         handleUpdateSignupAvailability={handleUpdateSignupAvailability}
                         handleSwapPlayer={handleSwapPlayer}
                         handleDeleteSchedule={handleDeleteSchedule}
+                        handleShuffle={handleShuffle}
                         days={days}
                         getPlayerName={getPlayerName}
                         currentPlayer={currentPlayer}

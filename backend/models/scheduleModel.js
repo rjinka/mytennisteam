@@ -56,6 +56,21 @@ const scheduleSchema = new mongoose.Schema({
         enum: ['PLANNING', 'ACTIVE', 'COMPLETED'],
         default: 'PLANNING'
     },
+    // Assignments of players to specific courts.
+    courtAssignments: [{
+        _id: false,
+        courtId: { type: mongoose.Schema.Types.ObjectId, ref: 'Court' },
+        assignments: [{
+            _id: false,
+            playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+            side: { type: String, enum: ['Left', 'Right', 'None'], default: 'None' }
+        }]
+    }],
+    // Whether players are allowed to shuffle courts.
+    allowShuffle: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true,
     // Enable virtuals to be included in toJSON and toObject outputs

@@ -168,6 +168,22 @@ const ScheduleFormModal: React.FC<ScheduleFormModalProps> = ({
                         )}
                     </div>
 
+                    {formData.courts.length > 1 && (
+                        <div className="flex items-center gap-3 p-2 bg-black/20 rounded-xl border border-white/10 animate-fadeIn">
+                            <input
+                                type="checkbox"
+                                id="allowShuffle"
+                                checked={formData.allowShuffle}
+                                onChange={(e) => setFormData({ ...formData, allowShuffle: e.target.checked })}
+                                className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#667eea] focus:ring-[#667eea]"
+                            />
+                            <label htmlFor="allowShuffle" className="flex-1 cursor-pointer select-none">
+                                <span className="font-medium">Allow players to shuffle</span>
+                                <p className="text-xs text-white/40">Enable shuffling players between courts on game day</p>
+                            </label>
+                        </div>
+                    )}
+
                     <div className="flex gap-3">
                         <button
                             type="button"

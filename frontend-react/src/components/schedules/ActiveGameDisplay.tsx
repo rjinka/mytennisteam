@@ -15,6 +15,7 @@ interface ActiveGameDisplayProps {
     handleUpdateSignupAvailability: (playerId: string, type: string | null) => void;
     handleSwapPlayer: (playerId: string, type: 'in' | 'out') => void;
     handleDeleteSchedule: (schedule: Schedule) => void;
+    handleShuffle: (id: string) => void;
     days: string[];
     getPlayerName: (id: string) => string;
     currentPlayer: Player | undefined;
@@ -34,6 +35,7 @@ const ActiveGameDisplay: React.FC<ActiveGameDisplayProps> = ({
     handleUpdateSignupAvailability,
     handleSwapPlayer,
     handleDeleteSchedule,
+    handleShuffle,
     days,
     getPlayerName,
     currentPlayer
@@ -52,6 +54,8 @@ const ActiveGameDisplay: React.FC<ActiveGameDisplayProps> = ({
     }
 
     const sId = selectedSchedule.id || (selectedSchedule as any)._id;
+    const isGameDay = new Date().getDay() === selectedSchedule.day;
+    const canShuffle = isAdmin && selectedSchedule.isRotationGenerated && isGameDay && selectedSchedule.allowShuffle && selectedSchedule.courts.length > 1;
 
     return (
         <div className="glass-card space-y-8 animate-fadeIn">
@@ -123,6 +127,15 @@ const ActiveGameDisplay: React.FC<ActiveGameDisplayProps> = ({
                                 {rotationButtonStatus.text}
                             </button>
                         )}
+                        {canShuffle && (
+                            <button
+                                onClick={() => handleShuffle(sId)}
+                                className="btn-primary bg-[#56ab2f] hover:bg-[#458b26] whitespace-nowrap text-sm sm:text-base px-3 sm:px-6 py-2 sm:py-3"
+                                title="Shuffle players between courts"
+                            >
+                                Shuffle
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -161,59 +174,158 @@ const ActiveGameDisplay: React.FC<ActiveGameDisplayProps> = ({
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                        <h4 className="text-lg font-bold text-[#56ab2f] flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-[#56ab2f]"></div>
-                            Playing
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                            {selectedSchedule.playingPlayersIds.length === 0 ? (
-                                <p className="text-white/20 text-sm italic">No players assigned.</p>
-                            ) : (
-                                selectedSchedule.playingPlayersIds.map(id => (
-                                    <div key={id} className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center group">
-                                        <span className="font-medium">{getPlayerName(id)}</span>
-                                        {(isAdmin || (id === currentPlayerId && isRegularPlayer)) && (
-                                            <button
-                                                onClick={() => handleSwapPlayer(id, 'out')}
-                                                className="text-white/40 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg"
-                                            >
-                                                Swap
-                                            </button>
-                                        )}
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
+                {selectedSchedule.allowShuffle && selectedSchedule.courts.length > 1 && selectedSchedule.courtAssignments && selectedSchedule.courtAssignments.length > 0 ? (
+                    <div className="space-y-8">
+                        <div className="space-y-6">
+                            <h4 className="text-xl font-bold text-white/80">Court Assignments</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {selectedSchedule.courtAssignments.map((assignment, idx) => (
+                                    <div key={idx} className="bg-white/5 p-6 rounded-2xl border border-white/10 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h5 className="font-bold text-[#667eea]">Court {idx + 1}</h5>
+                                            <span className="text-xs bg-white/10 px-2 py-1 rounded-full text-white/60">
+                                                {selectedSchedule.courts.find(c => (c.courtId || (c as any).id) === assignment.courtId)?.gameType === '1' ? 'Doubles' : 'Singles'}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {/* Team 1 */}
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] text-white/30 uppercase font-bold tracking-wider px-1">Team 1</div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {assignment.assignments.slice(0, assignment.assignments.length / 2).map(a => (
+                                                        <div key={a.playerId} className="flex justify-between items-center bg-black/20 p-2 rounded-lg border border-white/5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium">{getPlayerName(a.playerId)}</span>
+                                                            </div>
+                                                            {(isAdmin || (a.playerId === currentPlayerId && isRegularPlayer)) && (
+                                                                <button
+                                                                    onClick={() => handleSwapPlayer(a.playerId, 'out')}
+                                                                    className="text-xs text-white/40 hover:text-white transition-colors"
+                                                                >
+                                                                    Swap
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
 
-                    <div className="space-y-4">
-                        <h4 className="text-lg font-bold text-[#f093fb] flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-[#f093fb]"></div>
-                            Bench
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                            {selectedSchedule.benchPlayersIds.length === 0 ? (
-                                <p className="text-white/20 text-sm italic">No players on bench.</p>
-                            ) : (
-                                selectedSchedule.benchPlayersIds.map(id => (
-                                    <div key={id} className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center group">
-                                        <span className="font-medium">{getPlayerName(id)}</span>
-                                        {(isAdmin || (id === currentPlayerId && isRegularPlayer)) && (
-                                            <button
-                                                onClick={() => handleSwapPlayer(id, 'in')}
-                                                className="text-white/40 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg"
-                                            >
-                                                Swap
-                                            </button>
-                                        )}
+                                            {/* VS Divider */}
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-[1px] flex-1 bg-white/10"></div>
+                                                <span className="text-[10px] font-black text-white/20 italic">VS</span>
+                                                <div className="h-[1px] flex-1 bg-white/10"></div>
+                                            </div>
+
+                                            {/* Team 2 */}
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] text-white/30 uppercase font-bold tracking-wider px-1">Team 2</div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {assignment.assignments.slice(assignment.assignments.length / 2).map(a => (
+                                                        <div key={a.playerId} className="flex justify-between items-center bg-black/20 p-2 rounded-lg border border-white/5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium">{getPlayerName(a.playerId)}</span>
+                                                            </div>
+                                                            {(isAdmin || (a.playerId === currentPlayerId && isRegularPlayer)) && (
+                                                                <button
+                                                                    onClick={() => handleSwapPlayer(a.playerId, 'out')}
+                                                                    className="text-xs text-white/40 hover:text-white transition-colors"
+                                                                >
+                                                                    Swap
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))
-                            )}
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Bench Section when Courts are shown */}
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-bold text-[#f093fb] flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-[#f093fb]"></div>
+                                Bench
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                {selectedSchedule.benchPlayersIds.length === 0 ? (
+                                    <p className="text-white/20 text-sm italic">No players on bench.</p>
+                                ) : (
+                                    selectedSchedule.benchPlayersIds.map(id => (
+                                        <div key={id} className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center group">
+                                            <span className="font-medium">{getPlayerName(id)}</span>
+                                            {(isAdmin || (id === currentPlayerId && isRegularPlayer)) && (
+                                                <button
+                                                    onClick={() => handleSwapPlayer(id, 'in')}
+                                                    className="text-white/40 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg"
+                                                >
+                                                    Swap
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-bold text-[#56ab2f] flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-[#56ab2f]"></div>
+                                Playing
+                            </h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {selectedSchedule.playingPlayersIds.length === 0 ? (
+                                    <p className="text-white/20 text-sm italic">No players assigned.</p>
+                                ) : (
+                                    selectedSchedule.playingPlayersIds.map(id => (
+                                        <div key={id} className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center group">
+                                            <span className="font-medium">{getPlayerName(id)}</span>
+                                            {(isAdmin || (id === currentPlayerId && isRegularPlayer)) && (
+                                                <button
+                                                    onClick={() => handleSwapPlayer(id, 'out')}
+                                                    className="text-white/40 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg"
+                                                >
+                                                    Swap
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-lg font-bold text-[#f093fb] flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-[#f093fb]"></div>
+                                Bench
+                            </h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {selectedSchedule.benchPlayersIds.length === 0 ? (
+                                    <p className="text-white/20 text-sm italic">No players on bench.</p>
+                                ) : (
+                                    selectedSchedule.benchPlayersIds.map(id => (
+                                        <div key={id} className="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center group">
+                                            <span className="font-medium">{getPlayerName(id)}</span>
+                                            {(isAdmin || (id === currentPlayerId && isRegularPlayer)) && (
+                                                <button
+                                                    onClick={() => handleSwapPlayer(id, 'in')}
+                                                    className="text-white/40 hover:text-white transition-colors text-sm font-medium bg-white/5 hover:bg-white/10 px-3 py-1 rounded-lg"
+                                                >
+                                                    Swap
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
